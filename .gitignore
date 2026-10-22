@@ -1,0 +1,18 @@
+# local env files
+.env
+.env.local
+*.env
+
+# dependencies
+node_modules/
+
+# Expo / build output
+.expo/
+dist/
+web-build/
+*.apk
+*.aab
+
+# OS files
+.DS_Store
+Thumbs.db
