@@ -13,18 +13,24 @@ import { colors, spacing } from '../../../shared/ui/theme';
 interface AuthLayoutProps {
   children: ReactNode;
   backButton?: ReactNode;
+  variant: 'login' | 'signup';
 }
 
-export function AuthLayout({ children, backButton }: AuthLayoutProps) {
+export function AuthLayout({ children, backButton, variant }: AuthLayoutProps) {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboard}
       >
-        <View style={styles.hero}>
+        <View
+          style={[
+            styles.hero,
+            variant === 'signup' ? styles.signupHero : styles.loginHero,
+          ]}
+        >
           <View style={styles.backButton}>{backButton}</View>
-          <BrandWordmark color="white" width={168} />
+          <BrandWordmark color="white" width={220} />
         </View>
         <ScrollView
           contentContainerStyle={styles.sheetContent}
@@ -48,10 +54,15 @@ const styles = StyleSheet.create({
   },
   hero: {
     minHeight: 218,
-    flex: 0.9,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.burgundy,
+  },
+  loginHero: {
+    flex: 0.9,
+  },
+  signupHero: {
+    flex: 1.08,
   },
   backButton: {
     position: 'absolute',
@@ -62,12 +73,13 @@ const styles = StyleSheet.create({
     flex: 1.1,
     marginTop: -24,
     backgroundColor: colors.warmWhite,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
   },
   sheetContent: {
     flexGrow: 1,
-    padding: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingHorizontal: 30,
+    paddingTop: 32,
+    paddingBottom: spacing.lg,
   },
 });

@@ -41,14 +41,14 @@ export function AuthField({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   input: {
     height: 46,
     paddingHorizontal: spacing.md,
     color: colors.text,
-    backgroundColor: '#FFFDFC',
-    borderColor: colors.border,
+    backgroundColor: colors.warmWhite,
+    borderColor: colors.mutedBurgundy,
     borderWidth: 1,
     borderRadius: 13,
     fontSize: 13,

@@ -84,6 +84,7 @@ export default function SignupScreen() {
 
   return (
     <AuthLayout
+      variant="signup"
       backButton={
         <Link href="/auth/login" asChild>
           <Pressable accessibilityLabel="Back to login" hitSlop={12}>
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
-    borderColor: colors.border,
+    borderColor: '#B9D5FF',
     borderWidth: 1,
     borderRadius: 13,
   },

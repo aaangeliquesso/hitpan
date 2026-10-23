@@ -89,7 +89,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout variant="login">
       <Text style={styles.heading}>Login to your Account</Text>
       <AuthField
         autoCapitalize="none"
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
-    borderColor: colors.border,
+    borderColor: '#B9D5FF',
     borderWidth: 1,
     borderRadius: 13,
   },
