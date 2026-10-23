@@ -128,4 +128,3 @@ This project is licensed under the ISC License.
 ## Contact
 
 For questions or collaboration opportunities, reach out via the repository issues or contact the project maintainer.
-```
