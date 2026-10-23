@@ -4,6 +4,9 @@
     "slug": "hitpan-app",
     "scheme": "hitpan",
     "owner": "aaangeliquesso",
+    "android": {
+      "package": "com.aaangeliquesso.hitpan"
+    },
     "plugins": [
       "expo-router",
       "expo-secure-store",
@@ -20,6 +23,12 @@
       "image": "./logo/white-secondary-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#641616"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "06d6b42c-40ba-44d7-9da1-6f10d7529c37"
+      }
     }
   }
 }
