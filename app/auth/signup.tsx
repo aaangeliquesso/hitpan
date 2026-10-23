@@ -11,7 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import { AuthField } from '../../src/modules/auth/components/AuthField';
 import { AuthLayout } from '../../src/modules/auth/components/AuthLayout';
-import { signInWithGoogle } from '../../src/modules/auth/services/authActions';
+import { GoogleLoginButton } from '../../src/modules/auth/components/GoogleLoginButton';
+import {
+  GoogleSignInUnavailableError,
+  signInWithGoogle,
+} from '../../src/modules/auth/services/authActions';
 import { supabase } from '../../src/lib/supabase';
 import { colors, spacing } from '../../src/shared/ui/theme';
 
@@ -64,19 +68,18 @@ export default function SignupScreen() {
     }
   }
 
-  async function handleGoogleSignup() {
+  async function handleGoogleLogin() {
     setLoading(true);
     try {
-      await signInWithGoogle();
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
+      const signedIn = await signInWithGoogle();
+      if (signedIn) {
         router.replace('/(tabs)');
       }
     } catch (cause) {
-      Alert.alert(
-        'Google sign-up failed',
-        cause instanceof Error ? cause.message : 'Please try again.',
-      );
+      if (!(cause instanceof GoogleSignInUnavailableError)) {
+        console.error('Google signup failed:', cause);
+      }
+      Alert.alert('Google sign-up failed', googleLoginErrorMessage(cause));
     } finally {
       setLoading(false);
     }
@@ -84,7 +87,6 @@ export default function SignupScreen() {
 
   return (
     <AuthLayout
-      variant="signup"
       backButton={
         <Link href="/auth/login" asChild>
           <Pressable accessibilityLabel="Back to login" hitSlop={12}>
@@ -128,15 +130,11 @@ export default function SignupScreen() {
           <Text style={styles.primaryLabel}>Sign up</Text>
         )}
       </Pressable>
-      <Pressable
-        accessibilityRole="button"
+      <GoogleLoginButton
         disabled={loading}
-        onPress={() => void handleGoogleSignup()}
-        style={styles.googleButton}
-      >
-        <Ionicons color="#4285F4" name="logo-google" size={17} />
-        <Text style={styles.googleLabel}>Sign up with Google</Text>
-      </Pressable>
+        label="Sign in with Google"
+        onPress={handleGoogleLogin}
+      />
       <View style={styles.footer}>
         <Text style={styles.footerText}>Already have an account? </Text>
         <Link href="/auth/login" style={styles.link}>
@@ -145,6 +143,13 @@ export default function SignupScreen() {
       </View>
     </AuthLayout>
   );
+}
+
+function googleLoginErrorMessage(cause: unknown): string {
+  if (cause instanceof GoogleSignInUnavailableError) {
+    return cause.message;
+  }
+  return 'We couldn’t create your account with Google. Please try again.';
 }
 
 const styles = StyleSheet.create({
@@ -169,21 +174,6 @@ const styles = StyleSheet.create({
     color: colors.warmWhite,
     fontSize: 14,
     fontWeight: '600',
-  },
-  googleButton: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    borderColor: '#B9D5FF',
-    borderWidth: 1,
-    borderRadius: 13,
-  },
-  googleLabel: {
-    color: colors.mutedText,
-    fontSize: 13,
   },
   footer: {
     flexDirection: 'row',

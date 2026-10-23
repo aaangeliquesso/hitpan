@@ -1,54 +1,54 @@
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
+import Constants, { AppOwnership } from 'expo-constants';
+import { Platform } from 'react-native';
 import { supabase } from '../../../lib/supabase';
 
-export async function signInWithGoogle(): Promise<void> {
-  const redirectTo = Linking.createURL('auth/callback');
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo,
-      skipBrowserRedirect: true,
-    },
-  });
+let googleSignInConfigured = false;
 
+export class GoogleSignInUnavailableError extends Error {}
+
+export async function signInWithGoogle(): Promise<boolean> {
+  if (Constants.appOwnership === AppOwnership.Expo) {
+    throw new GoogleSignInUnavailableError(
+      'Google sign-in requires an installed development build. Please open the app in its development build instead of Expo Go.',
+    );
+  }
+  if (Platform.OS === 'web') {
+    throw new GoogleSignInUnavailableError(
+      'Google sign-in is available in the iOS and Android app.',
+    );
+  }
+
+  const { GoogleSignin } = await import(
+    '@react-native-google-signin/google-signin'
+  );
+
+  if (!googleSignInConfigured) {
+    GoogleSignin.configure({
+      webClientId:
+        process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ??
+        'YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com',
+    });
+    googleSignInConfigured = true;
+  }
+
+  await GoogleSignin.hasPlayServices();
+  const response = await GoogleSignin.signIn();
+  if (response.type === 'cancelled') {
+    return false;
+  }
+
+  const idToken = response.data.idToken;
+  if (!idToken) {
+    throw new Error('Google did not return an ID token.');
+  }
+
+  const { error } = await supabase.auth.signInWithIdToken({
+    provider: 'google',
+    token: idToken,
+  });
   if (error) {
     throw error;
   }
-  if (!data.url) {
-    throw new Error('Supabase did not return a Google sign-in URL.');
-  }
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-  if (result.type !== 'success') {
-    return;
-  }
-
-  const callbackUrl = new URL(result.url);
-  const code = callbackUrl.searchParams.get('code');
-  if (code) {
-    const { error: exchangeError } =
-      await supabase.auth.exchangeCodeForSession(result.url);
-    if (exchangeError) {
-      throw exchangeError;
-    }
-    return;
-  }
-
-  const authParams = new URLSearchParams(
-    callbackUrl.hash.replace(/^#/, '') || callbackUrl.search.replace(/^\?/, ''),
-  );
-  const accessToken = authParams.get('access_token');
-  const refreshToken = authParams.get('refresh_token');
-  if (!accessToken || !refreshToken) {
-    throw new Error('Google sign-in did not return a valid session.');
-  }
-
-  const { error: sessionError } = await supabase.auth.setSession({
-    access_token: accessToken,
-    refresh_token: refreshToken,
-  });
-  if (sessionError) {
-    throw sessionError;
-  }
+  return true;
 }

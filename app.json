@@ -8,7 +8,13 @@
       "expo-router",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.replace-with-your-ios-client-id"
+        }
+      ]
     ],
     "splash": {
       "image": "./logo/white-secondary-logo.png",

@@ -29,7 +29,7 @@ export function AuthField({
         keyboardType={keyboardType}
         onChangeText={onChangeText}
         placeholder={label}
-        placeholderTextColor={colors.mutedText}
+        placeholderTextColor={colors.accessibleMutedText}
         secureTextEntry={secureTextEntry}
         style={styles.input}
         textContentType={textContentType}
