@@ -1,5 +1,5 @@
 export const colors = {
-  burgundy: '#5A1818',
+  burgundy: '#641616',
   cream: '#F7F0E5',
   warmWhite: '#FFF9F7',
   mutedBurgundy: '#D9BDB2',

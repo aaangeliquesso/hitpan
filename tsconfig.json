@@ -1,6 +1,12 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "target": "ESNext",
+    "module": "Preserve",
+    "moduleResolution": "Bundler",
+    "jsx": "react-native",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
     "strict": true,
     "noEmit": true
   },
@@ -10,5 +16,6 @@
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }
