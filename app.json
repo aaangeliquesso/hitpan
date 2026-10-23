@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "HitPan",
+    "slug": "hitpan-app",
+    "scheme": "hitpan",
+    "owner": "aaangeliquesso",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-splash-screen"
+    ],
+    "splash": {
+      "image": "./logo/white-secondary-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#641616"
+    }
+  }
+}
