@@ -93,11 +93,6 @@ const styles = StyleSheet.create({
     backgroundColor: BURGUNDY,
     borderTopWidth: 0,
     borderRadius: 24,
-    elevation: 8,
-    shadowColor: '#2B0909',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
   },
   tabLabel: {
     fontSize: 11,

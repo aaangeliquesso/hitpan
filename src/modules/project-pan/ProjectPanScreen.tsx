@@ -307,10 +307,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.cyan,
     borderRadius: 27,
-    shadowColor: '#3D2222',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.16,
-    shadowRadius: 5,
-    elevation: 4,
   },
 });

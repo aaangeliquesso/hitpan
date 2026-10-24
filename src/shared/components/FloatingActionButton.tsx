@@ -33,7 +33,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.burgundy,
     borderRadius: 26,
-    elevation: 4,
   },
   pressed: {
     opacity: 0.82,

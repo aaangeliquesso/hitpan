@@ -4,8 +4,14 @@
     "slug": "hitpan-app",
     "scheme": "hitpan",
     "owner": "aaangeliquesso",
+    "icon": "./logo/icon.png",
     "android": {
-      "package": "com.aaangeliquesso.hitpan"
+      "package": "com.aaangeliquesso.hitpan",
+      "icon": "./logo/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./logo/icon.png",
+        "backgroundColor": "#641616"
+      }
     },
     "plugins": [
       "expo-router",

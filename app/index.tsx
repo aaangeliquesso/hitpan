@@ -2,7 +2,6 @@ import { createElement, useEffect } from 'react';
 import { Alert, Image, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { hideAsync } from 'expo-splash-screen';
-import { colors } from '../src/shared/ui/theme';
 import { supabase } from '../src/lib/supabase';
 
 export default function SplashScreenComponent() {
@@ -50,7 +49,7 @@ export default function SplashScreenComponent() {
     View,
     { style: styles.container },
     createElement(Image, {
-      accessibilityLabel: 'HitPan',
+      accessibilityLabel: 'Brand mark',
       resizeMode: 'contain',
       source: require('../logo/white-secondary-logo.png'),
       style: styles.logo,
@@ -63,7 +62,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.burgundy || '#641616',
+    backgroundColor: '#641616',
   },
   logo: {
     width: 120,
