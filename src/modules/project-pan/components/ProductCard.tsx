@@ -78,11 +78,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 16,
-    shadowColor: '#3D2222',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 5,
-    elevation: 2,
   },
   finishedCard: {
     backgroundColor: '#FFFCFA',

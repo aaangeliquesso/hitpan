@@ -6,6 +6,7 @@ export const colors = {
   cyan: '#67E8F9',
   text: '#2B2020',
   mutedText: '#776767',
+  accessibleMutedText: '#5F4B4B',
   border: '#E8DCD0',
   accent: '#A66A58',
   success: '#54775A',

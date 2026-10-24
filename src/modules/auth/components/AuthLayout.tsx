@@ -13,25 +13,19 @@ import { colors, spacing } from '../../../shared/ui/theme';
 interface AuthLayoutProps {
   children: ReactNode;
   backButton?: ReactNode;
-  variant: 'login' | 'signup';
 }
 
-export function AuthLayout({ children, backButton, variant }: AuthLayoutProps) {
+export function AuthLayout({ children, backButton }: AuthLayoutProps) {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+      <View style={styles.hero}>
+        <View style={styles.backButton}>{backButton}</View>
+        <BrandWordmark color="white" width={220} />
+      </View>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboard}
       >
-        <View
-          style={[
-            styles.hero,
-            variant === 'signup' ? styles.signupHero : styles.loginHero,
-          ]}
-        >
-          <View style={styles.backButton}>{backButton}</View>
-          <BrandWordmark color="white" width={220} />
-        </View>
         <ScrollView
           contentContainerStyle={styles.sheetContent}
           keyboardShouldPersistTaps="handled"
@@ -53,16 +47,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   hero: {
-    minHeight: 218,
+    height: 168,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.burgundy,
-  },
-  loginHero: {
-    flex: 0.9,
-  },
-  signupHero: {
-    flex: 1.08,
   },
   backButton: {
     position: 'absolute',
