@@ -16,7 +16,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
-import { getNavbarBottom, NAVBAR_HEIGHT } from '../../shared/ui/navigation';
+import {
+  getNavbarSafePadding,
+  NAVBAR_HEIGHT,
+} from '../../shared/ui/navigation';
 import { colors, spacing } from '../../shared/ui/theme';
 import { AddPanItemModal } from './components/AddPanItemModal';
 import { ProductCard } from './components/ProductCard';
@@ -64,7 +67,7 @@ function ProductSection({
 export default function ProjectPanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const navbarBottom = getNavbarBottom(insets.bottom);
+  const navbarSafePadding = getNavbarSafePadding(insets.bottom);
   const { items, loading, error, refresh, addItem } = usePanItems();
   const {
     logs,
@@ -211,7 +214,7 @@ export default function ProjectPanScreen() {
         onPress={() => setAddModalVisible(true)}
         style={({ pressed }) => [
           styles.fab,
-          { bottom: navbarBottom + NAVBAR_HEIGHT + 16 },
+          { bottom: navbarSafePadding + NAVBAR_HEIGHT + 16 },
           pressed && styles.fabPressed,
         ]}
       >
@@ -340,7 +343,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 5,
-    zIndex: 2,
+    zIndex: 999,
   },
   fabPressed: {
     opacity: 0.8,
