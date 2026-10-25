@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandWordmark } from '../../src/shared/components/BrandWordmark';
 import { colors, spacing } from '../../src/shared/ui/theme';
 import { ProgressBar } from '../../src/modules/project-pan/components/ProgressBar';
@@ -107,7 +108,7 @@ export default function ProductDetailsScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
         <Pressable
           accessibilityLabel="Go back"
@@ -221,7 +222,7 @@ export default function ProductDetailsScreen() {
           )}
         </ScrollView>
       ) : null}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -231,9 +232,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
   header: {
-    height: 58,
+    height: 66,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: spacing.xs,
     backgroundColor: colors.cream,
   },
   backButton: {
