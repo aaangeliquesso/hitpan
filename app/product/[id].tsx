@@ -15,7 +15,11 @@ import { BrandWordmark } from '../../src/shared/components/BrandWordmark';
 import { colors, spacing } from '../../src/shared/ui/theme';
 import { ProgressBar } from '../../src/modules/project-pan/components/ProgressBar';
 import { ProgressLogCard } from '../../src/modules/project-pan/components/ProgressLogCard';
-import { getPanItemById, updatePanItemRating } from '../../src/modules/project-pan/services/panService';
+import {
+  deletePanItem,
+  getPanItemById,
+  updatePanItemRating,
+} from '../../src/modules/project-pan/services/panService';
 import { useProgressLogs } from '../../src/modules/project-pan/hooks/useProgressLogs';
 import type { VanityItem } from '../../src/types';
 
@@ -26,6 +30,7 @@ export default function ProductDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingRating, setSavingRating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { logs, loading: logsLoading, error: logsError } = useProgressLogs(id);
 
   const loadItem = useCallback(async () => {
@@ -67,6 +72,40 @@ export default function ProductDetailsScreen() {
     }
   }
 
+  function confirmDelete() {
+    if (!item || deleting) return;
+
+    Alert.alert(
+      'Delete product?',
+      `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => void handleDelete(),
+        },
+      ],
+    );
+  }
+
+  async function handleDelete() {
+    if (!item || deleting) return;
+
+    setDeleting(true);
+    try {
+      await deletePanItem(item.id);
+      router.back();
+    } catch (cause) {
+      Alert.alert(
+        'Product not deleted',
+        cause instanceof Error ? cause.message : 'Please try again.',
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
@@ -80,6 +119,20 @@ export default function ProductDetailsScreen() {
           <Ionicons color={colors.burgundy} name="arrow-back" size={22} />
         </Pressable>
         <BrandWordmark width={112} />
+        <Pressable
+          accessibilityLabel="Delete product"
+          accessibilityRole="button"
+          disabled={deleting}
+          hitSlop={10}
+          onPress={confirmDelete}
+          style={styles.deleteButton}
+        >
+          {deleting ? (
+            <ActivityIndicator color={colors.burgundy} size="small" />
+          ) : (
+            <Ionicons color={colors.burgundy} name="trash-outline" size={21} />
+          )}
+        </Pressable>
       </View>
       {loading ? (
         <ActivityIndicator color={colors.burgundy} style={styles.loader} />
@@ -187,6 +240,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.md,
     zIndex: 1,
+  },
+  deleteButton: {
+    position: 'absolute',
+    right: spacing.md,
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F4E5E3',
+    borderRadius: 19,
   },
   loader: {
     flex: 1,

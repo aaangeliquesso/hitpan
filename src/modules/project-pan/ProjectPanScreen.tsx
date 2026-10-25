@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -14,7 +14,7 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
 import {
   getNavbarSafePadding,
@@ -89,6 +89,7 @@ export default function ProjectPanScreen() {
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
   const { items, loading, error, refresh, addItem } = usePanItems();
+  const hasFocusedProjectPan = useRef(false);
   const {
     logs,
     error: logsError,
@@ -102,6 +103,16 @@ export default function ProjectPanScreen() {
   );
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (hasFocusedProjectPan.current) {
+        void refresh();
+      } else {
+        hasFocusedProjectPan.current = true;
+      }
+    }, [refresh]),
+  );
 
   const customCategories = useMemo(() => {
     const predefinedCategories = new Set<string>(

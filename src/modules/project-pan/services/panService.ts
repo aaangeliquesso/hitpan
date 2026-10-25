@@ -85,6 +85,22 @@ export async function getPanItemById(id: string): Promise<VanityItem> {
   return data;
 }
 
+export async function deletePanItem(id: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('vanity_items')
+    .delete()
+    .eq('id', id)
+    .select('id')
+    .maybeSingle<{ id: string }>();
+
+  if (error) {
+    throw error;
+  }
+  if (!data) {
+    throw new Error('This product could not be found or deleted.');
+  }
+}
+
 export async function updatePanItemRating(
   id: string,
   rating: number,
