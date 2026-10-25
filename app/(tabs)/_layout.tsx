@@ -1,31 +1,54 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import type { ComponentProps } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getNavbarBottom, NAVBAR_HEIGHT } from '../../src/shared/ui/navigation';
+import {
+  getNavbarSafePadding,
+  NAVBAR_HEIGHT,
+} from '../../src/shared/ui/navigation';
 
 const BURGUNDY = '#4A121A';
 const CREAM = '#F7F0E5';
+type IconName = ComponentProps<typeof Ionicons>['name'];
+
+function TabIcon({
+  name,
+  focused,
+  color,
+}: {
+  name: IconName;
+  focused: boolean;
+  color: string;
+}) {
+  return (
+    <View style={[styles.tabIcon, focused && styles.activeTabPill]}>
+      <Ionicons color={focused ? CREAM : color} name={name} size={22} />
+    </View>
+  );
+}
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const bottom = getNavbarBottom(insets.bottom);
+  const navbarSafePadding = getNavbarSafePadding(insets.bottom);
 
   return (
     <Tabs
+      initialRouteName="home"
       screenOptions={{
         headerShown: false,
         tabBarStyle: [
           styles.tabBar,
           {
-            bottom,
+            bottom: 0,
+            height: NAVBAR_HEIGHT + navbarSafePadding,
+            paddingBottom: navbarSafePadding,
           },
         ],
         tabBarItemStyle: styles.tabBarItem,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: CREAM,
         tabBarInactiveTintColor: '#D9BDB2',
-        tabBarLabelStyle: styles.tabLabel,
-        tabBarIconStyle: styles.tabIcon,
       }}
     >
       <Tabs.Screen
@@ -33,18 +56,11 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <View
-              style={[
-                styles.iconHighlight,
-                focused && styles.activeIconHighlight,
-              ]}
-            >
-              <Ionicons
-                name="home-outline"
-                size={20}
-                color={focused ? BURGUNDY : String(color)}
-              />
-            </View>
+            <TabIcon
+              color={String(color)}
+              focused={focused}
+              name="home-outline"
+            />
           ),
         }}
       />
@@ -53,18 +69,11 @@ export default function TabLayout() {
         options={{
           title: 'Project Pan',
           tabBarIcon: ({ color, focused }) => (
-            <View
-              style={[
-                styles.iconHighlight,
-                focused && styles.activeIconHighlight,
-              ]}
-            >
-              <Ionicons
-                name="disc-outline"
-                size={20}
-                color={focused ? BURGUNDY : String(color)}
-              />
-            </View>
+            <TabIcon
+              color={String(color)}
+              focused={focused}
+              name="disc-outline"
+            />
           ),
         }}
       />
@@ -73,18 +82,11 @@ export default function TabLayout() {
         options={{
           title: 'Wishlist',
           tabBarIcon: ({ color, focused }) => (
-            <View
-              style={[
-                styles.iconHighlight,
-                focused && styles.activeIconHighlight,
-              ]}
-            >
-              <Ionicons
-                name="heart-outline"
-                size={20}
-                color={focused ? BURGUNDY : String(color)}
-              />
-            </View>
+            <TabIcon
+              color={String(color)}
+              focused={focused}
+              name="heart-outline"
+            />
           ),
         }}
       />
@@ -93,18 +95,11 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
-            <View
-              style={[
-                styles.iconHighlight,
-                focused && styles.activeIconHighlight,
-              ]}
-            >
-              <Ionicons
-                name="person-outline"
-                size={20}
-                color={focused ? BURGUNDY : String(color)}
-              />
-            </View>
+            <TabIcon
+              color={String(color)}
+              focused={focused}
+              name="person-outline"
+            />
           ),
         }}
       />
@@ -116,34 +111,34 @@ const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    left: 20,
-    right: 20,
+    left: 0,
+    right: 0,
     height: NAVBAR_HEIGHT,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: BURGUNDY,
     borderTopWidth: 0,
-    borderRadius: 30,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   tabBarItem: {
     flex: 1,
-  },
-  tabLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  tabIcon: {
-    marginTop: 1,
-  },
-  iconHighlight: {
-    width: 38,
-    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 15,
   },
-  activeIconHighlight: {
-    backgroundColor: CREAM,
+  tabIcon: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 24,
+    transform: [{ translateY: -6 }],
+  },
+  activeTabPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
 });

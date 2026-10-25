@@ -1,5 +1,5 @@
-export const NAVBAR_HEIGHT = 72;
+export const NAVBAR_HEIGHT = 76;
 
-export function getNavbarBottom(bottomInset: number): number {
-  return bottomInset > 0 ? bottomInset + 8 : 16;
+export function getNavbarSafePadding(bottomInset: number): number {
+  return Math.max(bottomInset, 12);
 }
