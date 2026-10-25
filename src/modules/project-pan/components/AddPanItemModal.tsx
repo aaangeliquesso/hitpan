@@ -114,6 +114,10 @@ function isValidDate(value: string): boolean {
   );
 }
 
+function isSelectableDate(value: string): boolean {
+  return isValidDate(value) && value <= getToday();
+}
+
 export function AddPanItemModal({
   visible,
   onClose,
@@ -206,13 +210,24 @@ export function AddPanItemModal({
   }
 
   function changeCalendarMonth(offset: number) {
-    setCalendarMonth(
-      (current) =>
-        new Date(current.getFullYear(), current.getMonth() + offset, 1),
-    );
+    setCalendarMonth((current) => {
+      const nextMonth = new Date(
+        current.getFullYear(),
+        current.getMonth() + offset,
+        1,
+      );
+      const today = new Date();
+      const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      return nextMonth > currentMonth ? current : nextMonth;
+    });
   }
 
   function selectDate(day: number) {
+    const selected = `${calendarMonth.getFullYear()}-${String(
+      calendarMonth.getMonth() + 1,
+    ).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (!isSelectableDate(selected)) return;
+
     useCalendarDateParts(
       calendarMonth.getFullYear(),
       calendarMonth.getMonth() + 1,
@@ -222,6 +237,7 @@ export function AddPanItemModal({
 
   function useCalendarDateParts(year: number, month: number, day: number) {
     const selected = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (!isSelectableDate(selected)) return;
     setDateYear(String(year));
     setDateMonth(String(month).padStart(2, '0'));
     setDateDay(String(day).padStart(2, '0'));
@@ -247,7 +263,7 @@ export function AddPanItemModal({
       return;
     }
     const candidate = `${nextParts.year}-${nextParts.month.padStart(2, '0')}-${nextParts.day.padStart(2, '0')}`;
-    if (!isValidDate(candidate)) return;
+    if (!isSelectableDate(candidate)) return;
     const date = parseDate(candidate);
     setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1));
   }
@@ -261,7 +277,7 @@ export function AddPanItemModal({
   }
 
   function confirmDateInput() {
-    if (!isValidDate(dateInput)) return;
+    if (!isSelectableDate(dateInput)) return;
     setAcquiredOn(dateInput);
     setDatePickerVisible(false);
   }
@@ -412,7 +428,8 @@ export function AddPanItemModal({
       ? `${dateYear}-${dateMonth.padStart(2, '0')}-${dateDay.padStart(2, '0')}`
       : '';
   const hasDateInput = Boolean(dateYear || dateMonth || dateDay);
-  const hasValidDateInput = Boolean(dateInput) && isValidDate(dateInput);
+  const hasValidDateInput =
+    Boolean(dateInput) && isSelectableDate(dateInput);
   const selectedDate = parseDate(
     dateInput && isValidDate(dateInput) ? dateInput : acquiredOn,
   );
@@ -420,6 +437,10 @@ export function AddPanItemModal({
     month: 'long',
   });
   const yearLabel = String(calendarMonth.getFullYear());
+  const todayValue = getToday();
+  const nextMonthDisabled =
+    calendarMonth.getFullYear() === new Date().getFullYear() &&
+    calendarMonth.getMonth() === new Date().getMonth();
 
   return (
     <Modal
@@ -978,7 +999,9 @@ export function AddPanItemModal({
                   {hasDateInput &&
                   dateInput.length > 0 &&
                   !hasValidDateInput
-                    ? 'Check the year, month, and day.'
+                    ? isValidDate(dateInput) && dateInput > todayValue
+                      ? 'Future dates are unavailable.'
+                      : 'Check the year, month, and day.'
                     : 'Enter a date above or select a day below.'}
                 </Text>
               </View>
@@ -1001,8 +1024,13 @@ export function AddPanItemModal({
                 <Pressable
                   accessibilityLabel="Next month"
                   accessibilityRole="button"
+                  accessibilityState={{ disabled: nextMonthDisabled }}
+                  disabled={nextMonthDisabled}
                   onPress={() => changeCalendarMonth(1)}
-                  style={styles.calendarArrow}
+                  style={[
+                    styles.calendarArrow,
+                    nextMonthDisabled && styles.disabledCalendarControl,
+                  ]}
                 >
                   <Ionicons
                     color={colors.burgundy}
@@ -1038,18 +1066,27 @@ export function AddPanItemModal({
                     new Date().getFullYear() === calendarMonth.getFullYear() &&
                     new Date().getMonth() === calendarMonth.getMonth() &&
                     new Date().getDate() === day;
+                  const dayValue = `${calendarMonth.getFullYear()}-${String(
+                    calendarMonth.getMonth() + 1,
+                  ).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  const isFutureDate = dayValue > todayValue;
 
                     return (
                       <Pressable
                         accessibilityLabel={`${monthLabel} ${day}, ${yearLabel}`}
                         accessibilityRole="button"
-                        accessibilityState={{ selected: isSelected }}
+                        accessibilityState={{
+                          selected: isSelected,
+                          disabled: isFutureDate,
+                        }}
+                        disabled={isFutureDate}
                         key={`day-${day}`}
                         onPress={() => selectDate(day)}
                         style={[
                           styles.calendarDay,
                           isToday && styles.todayCalendarDay,
                           isSelected && styles.selectedCalendarDay,
+                          isFutureDate && styles.disabledCalendarDay,
                         ]}
                       >
                         <Text
@@ -1057,6 +1094,7 @@ export function AddPanItemModal({
                             styles.calendarDayText,
                             isToday && styles.todayCalendarDayText,
                             isSelected && styles.selectedCalendarDayText,
+                            isFutureDate && styles.disabledCalendarDayText,
                           ]}
                         >
                           {day}
@@ -1464,6 +1502,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0E4DA',
     borderRadius: 19,
   },
+  disabledCalendarControl: {
+    opacity: 0.4,
+  },
   calendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1483,6 +1524,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 21,
+  },
+  disabledCalendarDay: {
+    backgroundColor: '#F1EBE7',
+  },
+  disabledCalendarDayText: {
+    color: '#B9AAA4',
   },
   calendarActions: {
     flexDirection: 'row',
