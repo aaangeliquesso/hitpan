@@ -15,6 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../../../shared/ui/theme';
+import { PRODUCT_CATEGORIES } from '../categories';
+import { ProgressSlider } from './ProgressSlider';
 import type { NewPanItemInput } from '../services/panService';
 
 interface AddPanItemModalProps {
@@ -69,11 +71,14 @@ export function AddPanItemModal({
   const [brand, setBrand] = useState('');
   const [variant, setVariant] = useState('');
   const [category, setCategory] = useState('');
+  const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
+  const [customCategoryMode, setCustomCategoryMode] = useState(false);
+  const [customCategory, setCustomCategory] = useState('');
   const [price, setPrice] = useState('');
   const [acquisitionType, setAcquisitionType] =
     useState<NewPanItemInput['acquisition_type']>('bought');
   const [acquiredOn, setAcquiredOn] = useState(getToday);
-  const [progress, setProgress] = useState('0');
+  const [progress, setProgress] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,19 +88,30 @@ export function AddPanItemModal({
     setBrand('');
     setVariant('');
     setCategory('');
+    setCategoryPickerVisible(false);
+    setCustomCategoryMode(false);
+    setCustomCategory('');
     setPrice('');
     setAcquisitionType('bought');
     setAcquiredOn(getToday());
-    setProgress('0');
+    setProgress(0);
     setError(null);
   }, [visible]);
+
+  function selectCategory(value: string) {
+    setCategory(value);
+    setCategoryPickerVisible(false);
+    setCustomCategoryMode(false);
+    setCustomCategory('');
+    setError(null);
+  }
 
   async function submit() {
     if (saving) return;
     const normalizedName = name.trim();
     const normalizedBrand = brand.trim();
     const normalizedCategory = category.trim();
-    const parsedProgress = Number(progress);
+    const parsedProgress = progress;
     const parsedPrice = Number(price);
 
     if (!normalizedName || !normalizedBrand || !normalizedCategory) {
@@ -104,10 +120,6 @@ export function AddPanItemModal({
     }
     if (!isValidDate(acquiredOn)) {
       setError('Enter a valid date in YYYY-MM-DD format.');
-      return;
-    }
-    if (!Number.isFinite(parsedProgress) || parsedProgress < 0 || parsedProgress > 100) {
-      setError('Progress must be a number from 0 to 100.');
       return;
     }
     if (
@@ -198,13 +210,36 @@ export function AddPanItemModal({
                 placeholder="Shade, size, or finish"
                 value={variant}
               />
-              <FormField
-                autoCapitalize="words"
-                label="Category"
-                onChangeText={setCategory}
-                placeholder="e.g. Lip Product"
-                value={category}
-              />
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>Category</Text>
+                <Pressable
+                  accessibilityLabel={
+                    category ? `Category: ${category}` : 'Select category'
+                  }
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setCustomCategoryMode(false);
+                    setCustomCategory('');
+                    setCategoryPickerVisible(true);
+                  }}
+                  style={styles.categorySelector}
+                >
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.categorySelectorText,
+                      !category && styles.categoryPlaceholder,
+                    ]}
+                  >
+                    {category || 'Select Category'}
+                  </Text>
+                  <Ionicons
+                    color={colors.burgundy}
+                    name="chevron-down"
+                    size={18}
+                  />
+                </Pressable>
+              </View>
 
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>Price or gift</Text>
@@ -251,13 +286,49 @@ export function AddPanItemModal({
                 placeholder="YYYY-MM-DD"
                 value={acquiredOn}
               />
-              <FormField
-                keyboardType="decimal-pad"
-                label="Initial progress (%)"
-                onChangeText={setProgress}
-                placeholder="0"
-                value={progress}
-              />
+              <View style={styles.field}>
+                <View style={styles.progressCard}>
+                  <View style={styles.progressHeading}>
+                    <View style={styles.progressTitleGroup}>
+                      <View style={styles.progressIcon}>
+                        <Ionicons
+                          color={colors.burgundy}
+                          name="pie-chart-outline"
+                          size={17}
+                        />
+                      </View>
+                      <View>
+                        <Text style={styles.progressTitle}>
+                          Initial progress
+                        </Text>
+                        <Text style={styles.progressHint}>
+                          How much have you used?
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.progressBadge}>
+                      <Text style={styles.progressValue}>{progress}%</Text>
+                    </View>
+                  </View>
+                  <ProgressSlider
+                    onValueChange={setProgress}
+                    value={progress}
+                  />
+                  <View style={styles.progressLabels}>
+                    {[0, 25, 50, 75, 100].map((value) => (
+                      <Text
+                        key={value}
+                        style={[
+                          styles.progressEndpoint,
+                          progress === value && styles.activeProgressEndpoint,
+                        ]}
+                      >
+                        {value}%
+                      </Text>
+                    ))}
+                  </View>
+                </View>
+              </View>
 
               {error ? (
                 <Text accessibilityRole="alert" style={styles.error}>
@@ -288,6 +359,115 @@ export function AddPanItemModal({
             </ScrollView>
           </SafeAreaView>
         </KeyboardAvoidingView>
+        <Modal
+          animationType="slide"
+          onRequestClose={() => setCategoryPickerVisible(false)}
+          transparent
+          visible={categoryPickerVisible}
+        >
+          <View style={styles.categoryOverlay}>
+            <View style={styles.categorySheet}>
+              <View style={styles.categoryHeading}>
+                <View>
+                  <Text style={styles.categoryTitle}>Choose a category</Text>
+                  <Text style={styles.categorySubtitle}>
+                    Select a product type or add your own.
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Close category selector"
+                  accessibilityRole="button"
+                  onPress={() => setCategoryPickerVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <Ionicons color={colors.burgundy} name="close" size={23} />
+                </Pressable>
+              </View>
+              <ScrollView
+                contentContainerStyle={styles.categoryList}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {PRODUCT_CATEGORIES.map((group) => (
+                  <View key={group.title} style={styles.categoryGroup}>
+                    <Text style={styles.categoryGroupTitle}>{group.title}</Text>
+                    <View style={styles.categoryOptions}>
+                      {group.options.map((option) => {
+                        const selected = category === option;
+                        return (
+                          <Pressable
+                            accessibilityRole="radio"
+                            accessibilityState={{ checked: selected }}
+                            key={option}
+                            onPress={() => selectCategory(option)}
+                            style={[
+                              styles.categoryOption,
+                              selected && styles.selectedCategoryOption,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.categoryOptionText,
+                                selected && styles.selectedCategoryOptionText,
+                              ]}
+                            >
+                              {option}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ))}
+                <View style={styles.customCategorySection}>
+                  <Text style={styles.categoryGroupTitle}>Custom</Text>
+                  {!customCategoryMode ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => setCustomCategoryMode(true)}
+                      style={styles.customCategoryOption}
+                    >
+                      <Ionicons
+                        color={colors.burgundy}
+                        name="add"
+                        size={18}
+                      />
+                      <Text style={styles.customCategoryOptionText}>
+                        Custom Category
+                      </Text>
+                    </Pressable>
+                  ) : (
+                    <>
+                      <TextInput
+                        accessibilityLabel="Custom category name"
+                        autoCapitalize="words"
+                        onChangeText={setCustomCategory}
+                        placeholder="Enter a custom category"
+                        placeholderTextColor={colors.mutedText}
+                        returnKeyType="done"
+                        style={styles.input}
+                        value={customCategory}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={!customCategory.trim()}
+                        onPress={() => selectCategory(customCategory.trim())}
+                        style={[
+                          styles.customCategoryButton,
+                          !customCategory.trim() && styles.disabled,
+                        ]}
+                      >
+                        <Text style={styles.customCategoryButtonText}>
+                          Use Custom Category
+                        </Text>
+                      </Pressable>
+                    </>
+                  )}
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </View>
     </Modal>
   );
@@ -357,6 +537,190 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 11,
     fontSize: 14,
+  },
+  progressCard: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 9,
+    backgroundColor: colors.warmWhite,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 15,
+  },
+  progressHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  progressTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  progressIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F4E5E3',
+    borderRadius: 17,
+  },
+  progressTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  progressHint: {
+    color: colors.mutedText,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  progressBadge: {
+    minWidth: 54,
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#F4E5E3',
+    borderRadius: 13,
+  },
+  progressValue: {
+    color: colors.burgundy,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: -2,
+  },
+  progressEndpoint: {
+    color: colors.mutedText,
+    fontSize: 11,
+  },
+  activeProgressEndpoint: {
+    color: colors.burgundy,
+    fontWeight: '700',
+  },
+  categorySelector: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    backgroundColor: colors.warmWhite,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 11,
+  },
+  categorySelectorText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+    marginRight: spacing.sm,
+  },
+  categoryPlaceholder: {
+    color: colors.mutedText,
+  },
+  categoryOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(35, 18, 18, 0.45)',
+  },
+  categorySheet: {
+    maxHeight: '82%',
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.cream,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+  },
+  categoryHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  categoryTitle: {
+    color: colors.burgundy,
+    fontSize: 19,
+    fontWeight: '700',
+  },
+  categorySubtitle: {
+    color: colors.mutedText,
+    fontSize: 12,
+    marginTop: 3,
+  },
+  categoryList: {
+    paddingBottom: spacing.md,
+  },
+  categoryGroup: {
+    marginBottom: spacing.md,
+  },
+  categoryGroupTitle: {
+    color: colors.burgundy,
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  categoryOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  categoryOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.warmWhite,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 16,
+  },
+  selectedCategoryOption: {
+    backgroundColor: '#F4E0E1',
+    borderColor: colors.burgundy,
+  },
+  categoryOptionText: {
+    color: colors.mutedText,
+    fontSize: 12,
+  },
+  selectedCategoryOptionText: {
+    color: colors.burgundy,
+    fontWeight: '600',
+  },
+  customCategorySection: {
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+  },
+  customCategoryOption: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: '#F4E0E1',
+    borderColor: '#E8C9CB',
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  customCategoryOptionText: {
+    color: colors.burgundy,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  customCategoryButton: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.burgundy,
+    borderRadius: 12,
+  },
+  customCategoryButtonText: {
+    color: colors.cream,
+    fontSize: 13,
+    fontWeight: '700',
   },
   choiceRow: {
     flexDirection: 'row',
