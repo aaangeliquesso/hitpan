@@ -125,9 +125,6 @@ export function AddPanItemModal({
   const [category, setCategory] = useState('');
   const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
-  const [calendarSelectionMode, setCalendarSelectionMode] = useState<
-    'days' | 'month' | 'year'
-  >('days');
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const [year, month] = getToday().split('-').map(Number);
     return new Date(year, month - 1, 1);
@@ -164,7 +161,6 @@ export function AddPanItemModal({
     setCategory('');
     setCategoryPickerVisible(false);
     setDatePickerVisible(false);
-    setCalendarSelectionMode('days');
     setCustomCategoryMode(false);
     setCustomCategory('');
     setPrice('');
@@ -206,7 +202,6 @@ export function AddPanItemModal({
     setCalendarMonth(
       new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
     );
-    setCalendarSelectionMode('days');
     setDatePickerVisible(true);
   }
 
@@ -215,20 +210,6 @@ export function AddPanItemModal({
       (current) =>
         new Date(current.getFullYear(), current.getMonth() + offset, 1),
     );
-  }
-
-  function selectCalendarMonth(month: number) {
-    setCalendarMonth(
-      (current) => new Date(current.getFullYear(), month, 1),
-    );
-    setCalendarSelectionMode('days');
-  }
-
-  function selectCalendarYear(year: number) {
-    setCalendarMonth(
-      (current) => new Date(year, current.getMonth(), 1),
-    );
-    setCalendarSelectionMode('days');
   }
 
   function selectDate(day: number) {
@@ -269,7 +250,6 @@ export function AddPanItemModal({
     if (!isValidDate(candidate)) return;
     const date = parseDate(candidate);
     setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1));
-    setCalendarSelectionMode('days');
   }
 
   function useToday() {
@@ -278,7 +258,6 @@ export function AddPanItemModal({
     setDateMonth(String(today.getMonth() + 1).padStart(2, '0'));
     setDateDay(String(today.getDate()).padStart(2, '0'));
     setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-    setCalendarSelectionMode('days');
   }
 
   function confirmDateInput() {
@@ -288,7 +267,6 @@ export function AddPanItemModal({
   }
 
   function cancelDatePicker() {
-    setCalendarSelectionMode('days');
     setDateYear(acquiredOn.slice(0, 4));
     setDateMonth(acquiredOn.slice(5, 7));
     setDateDay(acquiredOn.slice(8, 10));
@@ -442,11 +420,6 @@ export function AddPanItemModal({
     month: 'long',
   });
   const yearLabel = String(calendarMonth.getFullYear());
-  const firstYear = Math.max(1900, calendarMonth.getFullYear() - 50);
-  const calendarYears = Array.from(
-    { length: 101 },
-    (_, index) => firstYear + index,
-  );
 
   return (
     <Modal
@@ -1010,160 +983,35 @@ export function AddPanItemModal({
                 </Text>
               </View>
               <View style={styles.calendarMonthRow}>
-                {calendarSelectionMode === 'days' ? (
-                  <>
-                    <Pressable
-                      accessibilityLabel="Previous month"
-                      accessibilityRole="button"
-                      onPress={() => changeCalendarMonth(-1)}
-                      style={styles.calendarArrow}
-                    >
-                      <Ionicons
-                        color={colors.burgundy}
-                        name="chevron-back"
-                        size={20}
-                      />
-                    </Pressable>
-                    <View style={styles.calendarDateSelectors}>
-                      <Pressable
-                        accessibilityLabel={`Choose month, ${monthLabel}`}
-                        accessibilityRole="button"
-                        onPress={() => setCalendarSelectionMode('month')}
-                        style={styles.calendarDateSelector}
-                      >
-                        <Text style={styles.calendarMonth}>{monthLabel}</Text>
-                        <Ionicons
-                          color={colors.burgundy}
-                          name="chevron-down"
-                          size={14}
-                        />
-                      </Pressable>
-                      <Pressable
-                        accessibilityLabel={`Choose year, ${yearLabel}`}
-                        accessibilityRole="button"
-                        onPress={() => setCalendarSelectionMode('year')}
-                        style={styles.calendarDateSelector}
-                      >
-                        <Text style={styles.calendarMonth}>{yearLabel}</Text>
-                        <Ionicons
-                          color={colors.burgundy}
-                          name="chevron-down"
-                          size={14}
-                        />
-                      </Pressable>
-                    </View>
-                    <Pressable
-                      accessibilityLabel="Next month"
-                      accessibilityRole="button"
-                      onPress={() => changeCalendarMonth(1)}
-                      style={styles.calendarArrow}
-                    >
-                      <Ionicons
-                        color={colors.burgundy}
-                        name="chevron-forward"
-                        size={20}
-                      />
-                    </Pressable>
-                  </>
-                ) : (
-                  <>
-                    <Pressable
-                      accessibilityLabel="Back to calendar"
-                      accessibilityRole="button"
-                      onPress={() => setCalendarSelectionMode('days')}
-                      style={styles.calendarArrow}
-                    >
-                      <Ionicons
-                        color={colors.burgundy}
-                        name="chevron-back"
-                        size={20}
-                      />
-                    </Pressable>
-                    <Text style={styles.calendarMonth}>
-                      {calendarSelectionMode === 'month'
-                        ? yearLabel
-                        : 'Choose year'}
-                    </Text>
-                    <Pressable
-                      accessibilityLabel="Back to calendar"
-                      accessibilityRole="button"
-                      onPress={() => setCalendarSelectionMode('days')}
-                      style={styles.calendarArrow}
-                    >
-                      <Ionicons
-                        color={colors.burgundy}
-                        name="close"
-                        size={20}
-                      />
-                    </Pressable>
-                  </>
-                )}
-              </View>
-              {calendarSelectionMode === 'month' ? (
-                <View style={styles.calendarChoiceGrid}>
-                  {Array.from({ length: 12 }, (_, month) => {
-                    const selected =
-                      calendarMonth.getMonth() === month;
-                    const label = new Date(
-                      calendarMonth.getFullYear(),
-                      month,
-                      1,
-                    ).toLocaleDateString(undefined, { month: 'long' });
-                    return (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        key={month}
-                        onPress={() => selectCalendarMonth(month)}
-                        style={[
-                          styles.calendarChoice,
-                          selected && styles.selectedCalendarChoice,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.calendarChoiceText,
-                            selected && styles.selectedCalendarChoiceText,
-                          ]}
-                        >
-                          {label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              ) : calendarSelectionMode === 'year' ? (
-                <ScrollView
-                  contentContainerStyle={styles.calendarYearGrid}
-                  showsVerticalScrollIndicator={false}
+                <Pressable
+                  accessibilityLabel="Previous month"
+                  accessibilityRole="button"
+                  onPress={() => changeCalendarMonth(-1)}
+                  style={styles.calendarArrow}
                 >
-                  {calendarYears.map((year) => {
-                    const selected = calendarMonth.getFullYear() === year;
-                    return (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                        key={year}
-                        onPress={() => selectCalendarYear(year)}
-                        style={[
-                          styles.calendarYearChoice,
-                          selected && styles.selectedCalendarChoice,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.calendarChoiceText,
-                            selected && styles.selectedCalendarChoiceText,
-                          ]}
-                        >
-                          {year}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              ) : (
-                <View style={styles.calendarGrid}>
+                  <Ionicons
+                    color={colors.burgundy}
+                    name="chevron-back"
+                    size={20}
+                  />
+                </Pressable>
+                <Text style={styles.calendarMonth}>
+                  {monthLabel} {yearLabel}
+                </Text>
+                <Pressable
+                  accessibilityLabel="Next month"
+                  accessibilityRole="button"
+                  onPress={() => changeCalendarMonth(1)}
+                  style={styles.calendarArrow}
+                >
+                  <Ionicons
+                    color={colors.burgundy}
+                    name="chevron-forward"
+                    size={20}
+                  />
+                </Pressable>
+              </View>
+              <View style={styles.calendarGrid}>
                   {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
                     <Text
                       key={`${day}-${index}`}
@@ -1216,8 +1064,7 @@ export function AddPanItemModal({
                       </Pressable>
                     );
                   })}
-                </View>
-              )}
+              </View>
               <View style={styles.calendarActions}>
                 <Pressable
                   accessibilityRole="button"
@@ -1604,74 +1451,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.sm,
   },
-  calendarDateSelectors: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  calendarDateSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: colors.warmWhite,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 12,
-  },
   calendarMonth: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: '700',
-  },
-  calendarChoiceGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  calendarChoice: {
-    width: '31%',
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.warmWhite,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 14,
-  },
-  calendarYearGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  calendarYearChoice: {
-    width: '22%',
-    minHeight: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.warmWhite,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 13,
-  },
-  calendarChoiceText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  selectedCalendarChoice: {
-    backgroundColor: '#F4E0E1',
-    borderColor: colors.burgundy,
-  },
-  selectedCalendarChoiceText: {
-    color: colors.burgundy,
     fontWeight: '700',
   },
   calendarArrow: {
