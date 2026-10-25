@@ -1,5 +1,5 @@
 import { createElement, useEffect } from 'react';
-import { Alert, Image, StyleSheet, View } from 'react-native';
+import { Alert, Image, StatusBar, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { hideAsync } from 'expo-splash-screen';
 import { supabase } from '../src/lib/supabase';
@@ -48,6 +48,10 @@ export default function SplashScreenComponent() {
   return createElement(
     View,
     { style: styles.container },
+    createElement(
+      StatusBar,
+      { barStyle: 'light-content', backgroundColor: '#641616' },
+    ),
     createElement(Image, {
       accessibilityLabel: 'Brand mark',
       resizeMode: 'contain',

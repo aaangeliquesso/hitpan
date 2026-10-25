@@ -90,7 +90,7 @@ export function ProgressSlider({ value, onValueChange }: ProgressSliderProps) {
 const styles = StyleSheet.create({
   slider: {
     width: '100%',
-    height: 54,
+    height: 42,
     justifyContent: 'center',
   },
   track: {
