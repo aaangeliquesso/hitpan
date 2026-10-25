@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Dimensions,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -10,11 +12,15 @@ import {
   Text,
   TextInput,
   View,
+  type StyleProp,
   type TextInputProps,
+  type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../../../shared/ui/theme';
+import { PRODUCT_CATEGORIES } from '../categories';
+import { ProgressSlider } from './ProgressSlider';
 import type { NewPanItemInput } from '../services/panService';
 
 interface AddPanItemModalProps {
@@ -25,17 +31,38 @@ interface AddPanItemModalProps {
 
 interface FormFieldProps extends TextInputProps {
   label: string;
+  required?: boolean;
+  error?: string;
+  shakeValue?: Animated.Value;
+  containerStyle?: StyleProp<ViewStyle>;
 }
 
-function FormField({ label, ...inputProps }: FormFieldProps) {
+function FormField({
+  label,
+  required = false,
+  error,
+  shakeValue,
+  containerStyle,
+  ...inputProps
+}: FormFieldProps) {
   return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        placeholderTextColor={colors.mutedText}
-        style={styles.input}
-        {...inputProps}
-      />
+    <View style={[styles.field, containerStyle]}>
+      <Text style={styles.fieldLabel}>
+        {label}
+        {required ? <Text style={styles.requiredMark}>*</Text> : null}
+      </Text>
+      <Animated.View
+        style={[
+          shakeValue ? { transform: [{ translateX: shakeValue }] } : undefined,
+        ]}
+      >
+        <TextInput
+          placeholderTextColor={colors.mutedText}
+          style={[styles.input, error ? styles.invalidInput : undefined]}
+          {...inputProps}
+        />
+      </Animated.View>
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
     </View>
   );
 }
@@ -45,6 +72,33 @@ function getToday(): string {
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   return `${today.getFullYear()}-${month}-${day}`;
+}
+
+function parseDate(value: string): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function formatDate(value: string): string {
+  return parseDate(value).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function getCalendarCells(month: Date): Array<number | null> {
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  const leadingDays = new Date(year, monthIndex, 1).getDay();
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const trailingDays = 42 - leadingDays - daysInMonth;
+
+  return [
+    ...Array<number | null>(leadingDays).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
+    ...Array<number | null>(trailingDays).fill(null),
+  ];
 }
 
 function isValidDate(value: string): boolean {
@@ -60,6 +114,10 @@ function isValidDate(value: string): boolean {
   );
 }
 
+function isSelectableDate(value: string): boolean {
+  return isValidDate(value) && value <= getToday();
+}
+
 export function AddPanItemModal({
   visible,
   onClose,
@@ -69,55 +127,276 @@ export function AddPanItemModal({
   const [brand, setBrand] = useState('');
   const [variant, setVariant] = useState('');
   const [category, setCategory] = useState('');
+  const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const [year, month] = getToday().split('-').map(Number);
+    return new Date(year, month - 1, 1);
+  });
+  const [customCategoryMode, setCustomCategoryMode] = useState(false);
+  const [customCategory, setCustomCategory] = useState('');
   const [price, setPrice] = useState('');
   const [acquisitionType, setAcquisitionType] =
     useState<NewPanItemInput['acquisition_type']>('bought');
   const [acquiredOn, setAcquiredOn] = useState(getToday);
-  const [progress, setProgress] = useState('0');
+  const [dateYear, setDateYear] = useState(() => getToday().slice(0, 4));
+  const [dateMonth, setDateMonth] = useState(() => getToday().slice(5, 7));
+  const [dateDay, setDateDay] = useState(() => getToday().slice(8, 10));
+  const [progress, setProgress] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [cancelConfirmationVisible, setCancelConfirmationVisible] =
+    useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
+    brand?: string;
+    category?: string;
+    price?: string;
+  }>({});
+  const nameShake = useRef(new Animated.Value(0)).current;
+  const brandShake = useRef(new Animated.Value(0)).current;
+  const categoryShake = useRef(new Animated.Value(0)).current;
+  const priceShake = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (!visible) return;
+  function resetForm() {
     setName('');
     setBrand('');
     setVariant('');
     setCategory('');
+    setCategoryPickerVisible(false);
+    setDatePickerVisible(false);
+    setCustomCategoryMode(false);
+    setCustomCategory('');
     setPrice('');
     setAcquisitionType('bought');
     setAcquiredOn(getToday());
-    setProgress('0');
+    setDateYear(getToday().slice(0, 4));
+    setDateMonth(getToday().slice(5, 7));
+    setDateDay(getToday().slice(8, 10));
+    const today = new Date();
+    setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    setProgress(0);
     setError(null);
+    setFieldErrors({});
+    nameShake.setValue(0);
+    brandShake.setValue(0);
+    categoryShake.setValue(0);
+    priceShake.setValue(0);
+  }
+
+  useEffect(() => {
+    if (!visible) return;
+    resetForm();
   }, [visible]);
+
+  function selectCategory(value: string) {
+    setCategory(value);
+    setFieldErrors((current) => ({ ...current, category: undefined }));
+    setCategoryPickerVisible(false);
+    setCustomCategoryMode(false);
+    setCustomCategory('');
+    setError(null);
+  }
+
+  function openDatePicker() {
+    const selectedDate = parseDate(acquiredOn);
+    setDateYear(acquiredOn.slice(0, 4));
+    setDateMonth(acquiredOn.slice(5, 7));
+    setDateDay(acquiredOn.slice(8, 10));
+    setCalendarMonth(
+      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+    );
+    setDatePickerVisible(true);
+  }
+
+  function changeCalendarMonth(offset: number) {
+    setCalendarMonth((current) => {
+      const nextMonth = new Date(
+        current.getFullYear(),
+        current.getMonth() + offset,
+        1,
+      );
+      const today = new Date();
+      const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      return nextMonth > currentMonth ? current : nextMonth;
+    });
+  }
+
+  function selectDate(day: number) {
+    const selected = `${calendarMonth.getFullYear()}-${String(
+      calendarMonth.getMonth() + 1,
+    ).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (!isSelectableDate(selected)) return;
+
+    useCalendarDateParts(
+      calendarMonth.getFullYear(),
+      calendarMonth.getMonth() + 1,
+      day,
+    );
+  }
+
+  function useCalendarDateParts(year: number, month: number, day: number) {
+    const selected = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    if (!isSelectableDate(selected)) return;
+    setDateYear(String(year));
+    setDateMonth(String(month).padStart(2, '0'));
+    setDateDay(String(day).padStart(2, '0'));
+    const date = parseDate(selected);
+    setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+  }
+
+  function changeDatePart(part: 'year' | 'month' | 'day', value: string) {
+    const digits = value.replace(/\D/g, '');
+    const limits = { year: 4, month: 2, day: 2 };
+    const nextValue = digits.slice(0, limits[part]);
+    const nextParts = {
+      year: dateYear,
+      month: dateMonth,
+      day: dateDay,
+      [part]: nextValue,
+    };
+    setDateYear(nextParts.year);
+    setDateMonth(nextParts.month);
+    setDateDay(nextParts.day);
+
+    if (nextParts.year.length !== 4 || !nextParts.month || !nextParts.day) {
+      return;
+    }
+    const candidate = `${nextParts.year}-${nextParts.month.padStart(2, '0')}-${nextParts.day.padStart(2, '0')}`;
+    if (!isSelectableDate(candidate)) return;
+    const date = parseDate(candidate);
+    setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+  }
+
+  function useToday() {
+    const today = new Date();
+    setDateYear(String(today.getFullYear()));
+    setDateMonth(String(today.getMonth() + 1).padStart(2, '0'));
+    setDateDay(String(today.getDate()).padStart(2, '0'));
+    setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+  }
+
+  function confirmDateInput() {
+    if (!isSelectableDate(dateInput)) return;
+    setAcquiredOn(dateInput);
+    setDatePickerVisible(false);
+  }
+
+  function cancelDatePicker() {
+    setDateYear(acquiredOn.slice(0, 4));
+    setDateMonth(acquiredOn.slice(5, 7));
+    setDateDay(acquiredOn.slice(8, 10));
+    setDatePickerVisible(false);
+  }
+
+  function shakeInvalidFields(fields: Array<Animated.Value>) {
+    const animations = fields.map((value) => {
+      value.setValue(0);
+      return Animated.sequence([
+        Animated.timing(value, {
+          toValue: -10,
+          duration: 45,
+          useNativeDriver: true,
+        }),
+        Animated.timing(value, {
+          toValue: 10,
+          duration: 45,
+          useNativeDriver: true,
+        }),
+        Animated.timing(value, {
+          toValue: -8,
+          duration: 45,
+          useNativeDriver: true,
+        }),
+        Animated.timing(value, {
+          toValue: 8,
+          duration: 45,
+          useNativeDriver: true,
+        }),
+        Animated.timing(value, {
+          toValue: -4,
+          duration: 45,
+          useNativeDriver: true,
+        }),
+        Animated.timing(value, {
+          toValue: 4,
+          duration: 45,
+          useNativeDriver: true,
+        }),
+        Animated.timing(value, {
+          toValue: 0,
+          duration: 45,
+          useNativeDriver: true,
+        }),
+      ]);
+    });
+    Animated.parallel(animations).start();
+  }
+
+  function hasUnsavedChanges() {
+    return Boolean(
+      name.trim() ||
+        brand.trim() ||
+        variant.trim() ||
+        category ||
+        customCategory.trim() ||
+        price.trim() ||
+        acquisitionType !== 'bought' ||
+        acquiredOn !== getToday() ||
+        progress !== 0,
+    );
+  }
+
+  function cancelForm() {
+    if (saving) return;
+    if (!hasUnsavedChanges()) {
+      resetForm();
+      onClose();
+      return;
+    }
+
+    setCancelConfirmationVisible(true);
+  }
+
+  function discardForm() {
+    setCancelConfirmationVisible(false);
+    resetForm();
+    onClose();
+  }
 
   async function submit() {
     if (saving) return;
     const normalizedName = name.trim();
     const normalizedBrand = brand.trim();
     const normalizedCategory = category.trim();
-    const parsedProgress = Number(progress);
+    const parsedProgress = progress;
     const parsedPrice = Number(price);
 
-    if (!normalizedName || !normalizedBrand || !normalizedCategory) {
-      setError('Enter a product name, brand, and category.');
+    const nextFieldErrors = {
+      ...(!normalizedName ? { name: 'Product name is required' } : {}),
+      ...(!normalizedBrand ? { brand: 'Brand is required' } : {}),
+      ...(!normalizedCategory ? { category: 'Category is required' } : {}),
+      ...(acquisitionType === 'bought' &&
+      (!price.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0)
+        ? { price: 'Enter a valid price' }
+        : {}),
+    };
+    setFieldErrors(nextFieldErrors);
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      const invalidFields = [
+        nextFieldErrors.name ? nameShake : null,
+        nextFieldErrors.brand ? brandShake : null,
+        nextFieldErrors.category ? categoryShake : null,
+        nextFieldErrors.price ? priceShake : null,
+      ].filter((field): field is Animated.Value => field !== null);
+      shakeInvalidFields(invalidFields);
       return;
     }
     if (!isValidDate(acquiredOn)) {
       setError('Enter a valid date in YYYY-MM-DD format.');
       return;
     }
-    if (!Number.isFinite(parsedProgress) || parsedProgress < 0 || parsedProgress > 100) {
-      setError('Progress must be a number from 0 to 100.');
-      return;
-    }
-    if (
-      acquisitionType === 'bought' &&
-      (!price.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0)
-    ) {
-      setError('Enter a valid price, or choose Gift.');
-      return;
-    }
-
     setError(null);
     setSaving(true);
     try {
@@ -143,10 +422,36 @@ export function AddPanItemModal({
     }
   }
 
+  const calendarCells = getCalendarCells(calendarMonth);
+  const dateInput =
+    dateYear.length === 4 && dateMonth.length > 0 && dateDay.length > 0
+      ? `${dateYear}-${dateMonth.padStart(2, '0')}-${dateDay.padStart(2, '0')}`
+      : '';
+  const hasDateInput = Boolean(dateYear || dateMonth || dateDay);
+  const hasValidDateInput =
+    Boolean(dateInput) && isSelectableDate(dateInput);
+  const selectedDate = parseDate(
+    dateInput && isValidDate(dateInput) ? dateInput : acquiredOn,
+  );
+  const monthLabel = calendarMonth.toLocaleDateString(undefined, {
+    month: 'long',
+  });
+  const yearLabel = String(calendarMonth.getFullYear());
+  const todayValue = getToday();
+  const nextMonthDisabled =
+    calendarMonth.getFullYear() === new Date().getFullYear() &&
+    calendarMonth.getMonth() === new Date().getMonth();
+
   return (
     <Modal
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={() => {
+        if (cancelConfirmationVisible) {
+          setCancelConfirmationVisible(false);
+          return;
+        }
+        cancelForm();
+      }}
       statusBarTranslucent
       transparent
       visible={visible}
@@ -166,45 +471,112 @@ export function AddPanItemModal({
                 accessibilityLabel="Close add product form"
                 accessibilityRole="button"
                 disabled={saving}
-                onPress={onClose}
+                onPress={cancelForm}
                 style={styles.closeButton}
               >
                 <Ionicons color={colors.burgundy} name="close" size={23} />
               </Pressable>
             </View>
             <ScrollView
+              style={styles.formScroll}
               contentContainerStyle={styles.form}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <FormField
-                autoCapitalize="words"
-                label="Product name"
-                onChangeText={setName}
-                placeholder="e.g. Velvet lipstick"
-                value={name}
-              />
-              <FormField
-                autoCapitalize="words"
-                label="Brand"
-                onChangeText={setBrand}
-                placeholder="e.g. Example Beauty"
-                value={brand}
-              />
-              <FormField
-                autoCapitalize="words"
-                label="Variant (optional)"
-                onChangeText={setVariant}
-                placeholder="Shade, size, or finish"
-                value={variant}
-              />
-              <FormField
-                autoCapitalize="words"
-                label="Category"
-                onChangeText={setCategory}
-                placeholder="e.g. Lip Product"
-                value={category}
-              />
+              <View style={styles.compactRow}>
+                <FormField
+                  autoCapitalize="words"
+                  containerStyle={styles.compactField}
+                  label="Product name"
+                  required
+                  error={fieldErrors.name}
+                  shakeValue={nameShake}
+                  onChangeText={(value) => {
+                    setName(value);
+                    if (value.trim()) {
+                      setFieldErrors((current) => ({
+                        ...current,
+                        name: undefined,
+                      }));
+                    }
+                  }}
+                  placeholder="e.g. Lipstick"
+                  value={name}
+                />
+                <FormField
+                  autoCapitalize="words"
+                  containerStyle={styles.compactField}
+                  label="Brand"
+                  required
+                  error={fieldErrors.brand}
+                  shakeValue={brandShake}
+                  onChangeText={(value) => {
+                    setBrand(value);
+                    if (value.trim()) {
+                      setFieldErrors((current) => ({
+                        ...current,
+                        brand: undefined,
+                      }));
+                    }
+                  }}
+                  placeholder="Brand name"
+                  value={brand}
+                />
+              </View>
+              <View style={styles.compactRow}>
+                <FormField
+                  autoCapitalize="words"
+                  containerStyle={styles.compactField}
+                  label="Variant (optional)"
+                  onChangeText={setVariant}
+                  placeholder="Shade or finish"
+                  value={variant}
+                />
+                <View style={[styles.field, styles.compactField]}>
+                  <Text style={styles.fieldLabel}>
+                    Category<Text style={styles.requiredMark}>*</Text>
+                  </Text>
+                  <Animated.View
+                    style={{ transform: [{ translateX: categoryShake }] }}
+                  >
+                    <Pressable
+                      accessibilityLabel={
+                        category ? `Category: ${category}` : 'Select category'
+                      }
+                      accessibilityRole="button"
+                      onPress={() => {
+                        setCustomCategoryMode(false);
+                        setCustomCategory('');
+                        setCategoryPickerVisible(true);
+                      }}
+                      style={[
+                        styles.categorySelector,
+                        fieldErrors.category && styles.invalidInput,
+                      ]}
+                    >
+                      <Text
+                        numberOfLines={1}
+                        style={[
+                          styles.categorySelectorText,
+                          !category && styles.categoryPlaceholder,
+                        ]}
+                      >
+                        {category || 'Select Category'}
+                      </Text>
+                      <Ionicons
+                        color={colors.burgundy}
+                        name="chevron-down"
+                        size={18}
+                      />
+                    </Pressable>
+                  </Animated.View>
+                  {fieldErrors.category ? (
+                    <Text style={styles.fieldError}>
+                      {fieldErrors.category}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
 
               <View style={styles.field}>
                 <Text style={styles.fieldLabel}>Price or gift</Text>
@@ -236,28 +608,127 @@ export function AddPanItemModal({
                 </View>
               </View>
               {acquisitionType === 'bought' ? (
-                <FormField
-                  keyboardType="decimal-pad"
-                  label="Price (₱)"
-                  onChangeText={setPrice}
-                  placeholder="0.00"
-                  value={price}
-                />
-              ) : null}
-              <FormField
-                autoCapitalize="none"
-                label={acquisitionType === 'gifted' ? 'Gift date' : 'Purchase date'}
-                onChangeText={setAcquiredOn}
-                placeholder="YYYY-MM-DD"
-                value={acquiredOn}
-              />
-              <FormField
-                keyboardType="decimal-pad"
-                label="Initial progress (%)"
-                onChangeText={setProgress}
-                placeholder="0"
-                value={progress}
-              />
+                <View style={styles.purchaseRow}>
+                  <View style={[styles.field, styles.purchaseColumn]}>
+                    <Text style={styles.fieldLabel}>
+                      Price (₱)
+                      {acquisitionType === 'bought' ? (
+                        <Text style={styles.requiredMark}>*</Text>
+                      ) : null}
+                    </Text>
+                    <Animated.View
+                      style={{ transform: [{ translateX: priceShake }] }}
+                    >
+                      <TextInput
+                        keyboardType="decimal-pad"
+                        onChangeText={(value) => {
+                          setPrice(value);
+                          if (
+                            value.trim() &&
+                            Number.isFinite(Number(value)) &&
+                            Number(value) >= 0
+                          ) {
+                            setFieldErrors((current) => ({
+                              ...current,
+                              price: undefined,
+                            }));
+                          }
+                        }}
+                        placeholder="0.00"
+                        placeholderTextColor={colors.mutedText}
+                        style={[
+                          styles.input,
+                          fieldErrors.price && styles.invalidInput,
+                        ]}
+                        value={price}
+                      />
+                    </Animated.View>
+                    {fieldErrors.price ? (
+                      <Text style={styles.fieldError}>{fieldErrors.price}</Text>
+                    ) : null}
+                  </View>
+                  <View style={[styles.field, styles.purchaseColumn]}>
+                    <Text style={styles.fieldLabel}>Purchase date</Text>
+                    <Pressable
+                      accessibilityLabel={`Purchase date: ${formatDate(acquiredOn)}`}
+                      accessibilityRole="button"
+                      onPress={openDatePicker}
+                      style={styles.dateSelector}
+                    >
+                      <Text numberOfLines={1} style={styles.dateSelectorText}>
+                        {formatDate(acquiredOn)}
+                      </Text>
+                      <Ionicons
+                        color={colors.burgundy}
+                        name="calendar-outline"
+                        size={18}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.field}>
+                  <Text style={styles.fieldLabel}>Gift date</Text>
+                  <Pressable
+                    accessibilityLabel={`Gift date: ${formatDate(acquiredOn)}`}
+                    accessibilityRole="button"
+                    onPress={openDatePicker}
+                    style={styles.dateSelector}
+                  >
+                    <Text numberOfLines={1} style={styles.dateSelectorText}>
+                      {formatDate(acquiredOn)}
+                    </Text>
+                    <Ionicons
+                      color={colors.burgundy}
+                      name="calendar-outline"
+                      size={18}
+                    />
+                  </Pressable>
+                </View>
+              )}
+              <View style={styles.field}>
+                <View style={styles.progressCard}>
+                  <View style={styles.progressHeading}>
+                    <View style={styles.progressTitleGroup}>
+                      <View style={styles.progressIcon}>
+                        <Ionicons
+                          color={colors.burgundy}
+                          name="pie-chart-outline"
+                          size={17}
+                        />
+                      </View>
+                      <View>
+                        <Text style={styles.progressTitle}>
+                          Initial progress
+                        </Text>
+                        <Text style={styles.progressHint}>
+                          How much have you used?
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.progressBadge}>
+                      <Text style={styles.progressValue}>{progress}%</Text>
+                    </View>
+                  </View>
+                  <ProgressSlider
+                    onValueChange={setProgress}
+                    value={progress}
+                  />
+                  <View style={styles.progressLabels}>
+                    {[0, 25, 50, 75, 100].map((value) => (
+                      <Text
+                        key={value}
+                        style={[
+                          styles.progressEndpoint,
+                          progress === value && styles.activeProgressEndpoint,
+                        ]}
+                      >
+                        {value}%
+                      </Text>
+                    ))}
+                  </View>
+                </View>
+              </View>
 
               {error ? (
                 <Text accessibilityRole="alert" style={styles.error}>
@@ -267,10 +738,10 @@ export function AddPanItemModal({
               <View style={styles.actions}>
                 <Pressable
                   disabled={saving}
-                  onPress={onClose}
+                  onPress={cancelForm}
                   style={[styles.actionButton, styles.dismissButton]}
                 >
-                  <Text style={styles.dismissText}>Close</Text>
+                  <Text style={styles.dismissText}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -288,6 +759,419 @@ export function AddPanItemModal({
             </ScrollView>
           </SafeAreaView>
         </KeyboardAvoidingView>
+        <Modal
+          animationType="slide"
+          onRequestClose={() => setCategoryPickerVisible(false)}
+          transparent
+          visible={categoryPickerVisible}
+        >
+          <View style={styles.categoryOverlay}>
+            <View style={styles.categorySheet}>
+              <View style={styles.categoryHeading}>
+                <View>
+                  <Text style={styles.categoryTitle}>Choose a category</Text>
+                  <Text style={styles.categorySubtitle}>
+                    Select a product type or add your own.
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Close category selector"
+                  accessibilityRole="button"
+                  onPress={() => setCategoryPickerVisible(false)}
+                  style={styles.closeButton}
+                >
+                  <Ionicons color={colors.burgundy} name="close" size={23} />
+                </Pressable>
+              </View>
+              <ScrollView
+                contentContainerStyle={styles.categoryList}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {PRODUCT_CATEGORIES.map((group) => (
+                  <View key={group.title} style={styles.categoryGroup}>
+                    <Text style={styles.categoryGroupTitle}>{group.title}</Text>
+                    <View style={styles.categoryOptions}>
+                      {group.options.map((option) => {
+                        const selected = category === option;
+                        return (
+                          <Pressable
+                            accessibilityRole="radio"
+                            accessibilityState={{ checked: selected }}
+                            key={option}
+                            onPress={() => selectCategory(option)}
+                            style={[
+                              styles.categoryOption,
+                              selected && styles.selectedCategoryOption,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.categoryOptionText,
+                                selected && styles.selectedCategoryOptionText,
+                              ]}
+                            >
+                              {option}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ))}
+                <View style={styles.customCategorySection}>
+                  <Text style={styles.categoryGroupTitle}>Custom</Text>
+                  {!customCategoryMode ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => setCustomCategoryMode(true)}
+                      style={styles.customCategoryOption}
+                    >
+                      <Ionicons
+                        color={colors.burgundy}
+                        name="add"
+                        size={18}
+                      />
+                      <Text style={styles.customCategoryOptionText}>
+                        Custom Category
+                      </Text>
+                    </Pressable>
+                  ) : (
+                    <>
+                      <TextInput
+                        accessibilityLabel="Custom category name"
+                        autoCapitalize="words"
+                        onChangeText={setCustomCategory}
+                        placeholder="Enter a custom category"
+                        placeholderTextColor={colors.mutedText}
+                        returnKeyType="done"
+                        style={styles.input}
+                        value={customCategory}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={!customCategory.trim()}
+                        onPress={() => selectCategory(customCategory.trim())}
+                        style={[
+                          styles.customCategoryButton,
+                          !customCategory.trim() && styles.disabled,
+                        ]}
+                      >
+                        <Text style={styles.customCategoryButtonText}>
+                          Use Custom Category
+                        </Text>
+                      </Pressable>
+                    </>
+                  )}
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+        <Modal
+          animationType="slide"
+          onRequestClose={cancelDatePicker}
+          transparent
+          visible={datePickerVisible}
+        >
+          <View style={styles.calendarOverlay}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={styles.calendarKeyboardArea}
+            >
+              <SafeAreaView edges={['bottom']} style={styles.calendarSheet}>
+              <View style={styles.calendarHeader}>
+                <View>
+                  <Text style={styles.calendarTitle}>
+                    {acquisitionType === 'gifted' ? 'Gift date' : 'Purchase date'}
+                  </Text>
+                  <Text style={styles.calendarSelectedDate}>
+                    {hasValidDateInput
+                      ? formatDate(dateInput)
+                      : 'Choose a date'}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Cancel date selection"
+                  accessibilityRole="button"
+                  onPress={cancelDatePicker}
+                  style={styles.closeButton}
+                >
+                  <Ionicons color={colors.burgundy} name="close" size={23} />
+                </Pressable>
+              </View>
+              <View style={styles.dateEntryCard}>
+                <View style={styles.dateEntryHeading}>
+                  <Ionicons
+                    color={colors.burgundy}
+                    name="create-outline"
+                    size={17}
+                  />
+                  <Text style={styles.dateEntryLabel}>Or enter a date</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={useToday}
+                    style={styles.todayButton}
+                  >
+                    <Text style={styles.todayButtonText}>Today</Text>
+                  </Pressable>
+                </View>
+                <View style={styles.dateEntryFields}>
+                  <View style={[styles.datePartField, styles.dateYearField]}>
+                    <Text style={styles.datePartLabel}>Year</Text>
+                    <TextInput
+                      accessibilityLabel="Year"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      onChangeText={(value) => changeDatePart('year', value)}
+                      placeholder="YYYY"
+                      placeholderTextColor={colors.mutedText}
+                      returnKeyType="next"
+                      selectTextOnFocus
+                      style={[
+                        styles.datePartInput,
+                        hasDateInput &&
+                          dateYear.length > 0 &&
+                          dateYear.length !== 4 &&
+                          styles.invalidDateEntryInput,
+                      ]}
+                      value={dateYear}
+                    />
+                  </View>
+                  <Text style={styles.datePartSeparator}>/</Text>
+                  <View style={styles.datePartField}>
+                    <Text style={styles.datePartLabel}>Month</Text>
+                    <TextInput
+                      accessibilityLabel="Month, 1 to 12"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      onChangeText={(value) => changeDatePart('month', value)}
+                      placeholder="MM"
+                      placeholderTextColor={colors.mutedText}
+                      returnKeyType="next"
+                      selectTextOnFocus
+                      style={[
+                        styles.datePartInput,
+                        dateMonth.length > 0 &&
+                          (Number(dateMonth) < 1 || Number(dateMonth) > 12) &&
+                          styles.invalidDateEntryInput,
+                      ]}
+                      value={dateMonth}
+                    />
+                  </View>
+                  <Text style={styles.datePartSeparator}>/</Text>
+                  <View style={styles.datePartField}>
+                    <Text style={styles.datePartLabel}>Day</Text>
+                    <TextInput
+                      accessibilityLabel="Day"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      onChangeText={(value) => changeDatePart('day', value)}
+                      placeholder="DD"
+                      placeholderTextColor={colors.mutedText}
+                      returnKeyType="done"
+                      selectTextOnFocus
+                      style={[
+                        styles.datePartInput,
+                        dateInput.length > 0 &&
+                          !hasValidDateInput &&
+                          styles.invalidDateEntryInput,
+                      ]}
+                      value={dateDay}
+                    />
+                  </View>
+                </View>
+                <Text
+                  style={[
+                    styles.dateEntryHint,
+                    hasDateInput &&
+                      dateInput.length > 0 &&
+                      !hasValidDateInput &&
+                      styles.invalidDateEntryHint,
+                  ]}
+                >
+                  {hasDateInput &&
+                  dateInput.length > 0 &&
+                  !hasValidDateInput
+                    ? isValidDate(dateInput) && dateInput > todayValue
+                      ? 'Future dates are unavailable.'
+                      : 'Check the year, month, and day.'
+                    : 'Enter a date above or select a day below.'}
+                </Text>
+              </View>
+              <View style={styles.calendarMonthRow}>
+                <Pressable
+                  accessibilityLabel="Previous month"
+                  accessibilityRole="button"
+                  onPress={() => changeCalendarMonth(-1)}
+                  style={styles.calendarArrow}
+                >
+                  <Ionicons
+                    color={colors.burgundy}
+                    name="chevron-back"
+                    size={20}
+                  />
+                </Pressable>
+                <Text style={styles.calendarMonth}>
+                  {monthLabel} {yearLabel}
+                </Text>
+                <Pressable
+                  accessibilityLabel="Next month"
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: nextMonthDisabled }}
+                  disabled={nextMonthDisabled}
+                  onPress={() => changeCalendarMonth(1)}
+                  style={[
+                    styles.calendarArrow,
+                    nextMonthDisabled && styles.disabledCalendarControl,
+                  ]}
+                >
+                  <Ionicons
+                    color={colors.burgundy}
+                    name="chevron-forward"
+                    size={20}
+                  />
+                </Pressable>
+              </View>
+              <View style={styles.calendarGrid}>
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                    <Text
+                      key={`${day}-${index}`}
+                      style={styles.calendarWeekday}
+                    >
+                      {day}
+                    </Text>
+                  ))}
+                  {calendarCells.map((day, index) => {
+                  if (day === null) {
+                    return (
+                      <View
+                        key={`empty-${index}`}
+                        style={styles.calendarDay}
+                      />
+                    );
+                  }
+
+                  const isSelected =
+                    selectedDate.getFullYear() === calendarMonth.getFullYear() &&
+                    selectedDate.getMonth() === calendarMonth.getMonth() &&
+                    selectedDate.getDate() === day;
+                  const isToday =
+                    new Date().getFullYear() === calendarMonth.getFullYear() &&
+                    new Date().getMonth() === calendarMonth.getMonth() &&
+                    new Date().getDate() === day;
+                  const dayValue = `${calendarMonth.getFullYear()}-${String(
+                    calendarMonth.getMonth() + 1,
+                  ).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  const isFutureDate = dayValue > todayValue;
+
+                    return (
+                      <Pressable
+                        accessibilityLabel={`${monthLabel} ${day}, ${yearLabel}`}
+                        accessibilityRole="button"
+                        accessibilityState={{
+                          selected: isSelected,
+                          disabled: isFutureDate,
+                        }}
+                        disabled={isFutureDate}
+                        key={`day-${day}`}
+                        onPress={() => selectDate(day)}
+                        style={[
+                          styles.calendarDay,
+                          isToday && styles.todayCalendarDay,
+                          isSelected && styles.selectedCalendarDay,
+                          isFutureDate && styles.disabledCalendarDay,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.calendarDayText,
+                            isToday && styles.todayCalendarDayText,
+                            isSelected && styles.selectedCalendarDayText,
+                            isFutureDate && styles.disabledCalendarDayText,
+                          ]}
+                        >
+                          {day}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+              </View>
+              <View style={styles.calendarActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={cancelDatePicker}
+                  style={[styles.calendarAction, styles.calendarCancelAction]}
+                >
+                  <Text style={styles.calendarCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={!hasValidDateInput}
+                  onPress={confirmDateInput}
+                  style={[
+                    styles.calendarAction,
+                    styles.calendarConfirmAction,
+                    !hasValidDateInput && styles.disabled,
+                  ]}
+                >
+                  <Text style={styles.calendarConfirmText}>Confirm date</Text>
+                </Pressable>
+              </View>
+              </SafeAreaView>
+            </KeyboardAvoidingView>
+          </View>
+        </Modal>
+        {cancelConfirmationVisible ? (
+          <View style={styles.confirmationOverlay}>
+            <View
+              accessibilityViewIsModal
+              style={styles.confirmationDialog}
+            >
+              <View style={styles.confirmationIcon}>
+                <Ionicons
+                  color={colors.burgundy}
+                  name="alert-circle-outline"
+                  size={27}
+                />
+              </View>
+              <Text style={styles.confirmationTitle}>
+                Cancel Product Setup
+              </Text>
+              <Text style={styles.confirmationMessage}>
+                Are you sure you want to cancel? All details will not be saved.
+              </Text>
+              <View style={styles.confirmationActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setCancelConfirmationVisible(false)}
+                  style={[
+                    styles.confirmationButton,
+                    styles.keepEditingButton,
+                  ]}
+                >
+                  <Text style={styles.keepEditingText}>Keep Editing</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={discardForm}
+                  style={[
+                    styles.confirmationButton,
+                    styles.discardButton,
+                  ]}
+                >
+                  <Text style={styles.discardText}>Discard / Cancel</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        ) : null}
       </View>
     </Modal>
   );
@@ -299,14 +1183,92 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(35, 18, 18, 0.45)',
   },
+  confirmationOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    backgroundColor: 'rgba(35, 18, 18, 0.58)',
+    zIndex: 10,
+  },
+  confirmationDialog: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    padding: spacing.lg,
+    backgroundColor: colors.cream,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 24,
+    shadowColor: '#241010',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  confirmationIcon: {
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+    backgroundColor: '#F4E5E3',
+    borderRadius: 28,
+  },
+  confirmationTitle: {
+    color: colors.burgundy,
+    fontSize: 19,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  confirmationMessage: {
+    color: colors.mutedText,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
+  confirmationActions: {
+    width: '100%',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  confirmationButton: {
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+  },
+  keepEditingButton: {
+    backgroundColor: colors.burgundy,
+  },
+  keepEditingText: {
+    color: colors.cream,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  discardButton: {
+    backgroundColor: '#F4E5E3',
+    borderColor: '#E8C9CB',
+    borderWidth: 1,
+  },
+  discardText: {
+    color: colors.burgundy,
+    fontSize: 14,
+    fontWeight: '700',
+  },
   keyboardArea: {
     justifyContent: 'flex-end',
-    maxHeight: '94%',
+    maxHeight: '92%',
   },
   sheet: {
     overflow: 'hidden',
     paddingTop: spacing.lg,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.cream,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
@@ -338,14 +1300,42 @@ const styles = StyleSheet.create({
   form: {
     paddingBottom: spacing.md,
   },
+  formScroll: {
+    flexShrink: 1,
+  },
+  compactRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
   field: {
     marginBottom: spacing.sm,
+  },
+  compactField: {
+    flex: 1,
+    minWidth: 0,
+  },
+  purchaseRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  purchaseColumn: {
+    flex: 1,
+    minWidth: 0,
   },
   fieldLabel: {
     color: colors.text,
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 5,
+  },
+  requiredMark: {
+    color: '#FF4D4D',
+    fontWeight: '700',
+  },
+  fieldError: {
+    color: '#FF4D4D',
+    fontSize: 11,
+    marginTop: 4,
   },
   input: {
     minHeight: 44,
@@ -358,13 +1348,428 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     fontSize: 14,
   },
+  invalidInput: {
+    borderColor: '#FF4D4D',
+    borderWidth: 1.5,
+  },
+  dateSelector: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+    paddingHorizontal: 12,
+    backgroundColor: colors.warmWhite,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 11,
+  },
+  dateSelectorText: {
+    flexShrink: 1,
+    color: colors.text,
+    fontSize: 12,
+  },
+  calendarOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(35, 18, 18, 0.45)',
+  },
+  calendarKeyboardArea: {
+    justifyContent: 'flex-end',
+  },
+  calendarSheet: {
+    minHeight: Dimensions.get('window').height * 0.7,
+    maxHeight: Dimensions.get('window').height * 0.9,
+    justifyContent: 'space-between',
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.xl + 8,
+    backgroundColor: colors.cream,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  calendarTitle: {
+    color: colors.burgundy,
+    fontSize: 19,
+    fontWeight: '700',
+  },
+  calendarSelectedDate: {
+    color: colors.mutedText,
+    fontSize: 13,
+    marginTop: 3,
+  },
+  dateEntryCard: {
+    padding: 12,
+    marginBottom: spacing.md,
+    backgroundColor: colors.warmWhite,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 16,
+  },
+  dateEntryHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  dateEntryLabel: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  todayButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: '#F4E5E3',
+    borderRadius: 11,
+  },
+  todayButtonText: {
+    color: colors.burgundy,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  dateEntryFields: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.xs,
+  },
+  datePartField: {
+    flex: 1,
+    minWidth: 0,
+  },
+  dateYearField: {
+    flex: 1.35,
+  },
+  datePartLabel: {
+    color: colors.mutedText,
+    fontSize: 10,
+    fontWeight: '600',
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  datePartInput: {
+    minHeight: 44,
+    paddingHorizontal: 6,
+    color: colors.text,
+    backgroundColor: colors.cream,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  datePartSeparator: {
+    color: colors.mutedText,
+    fontSize: 16,
+    fontWeight: '600',
+    paddingBottom: 12,
+  },
+  invalidDateEntryInput: {
+    borderColor: colors.burgundy,
+  },
+  dateEntryHint: {
+    color: colors.mutedText,
+    fontSize: 11,
+    marginTop: spacing.xs,
+  },
+  invalidDateEntryHint: {
+    color: colors.burgundy,
+  },
+  calendarMonthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  calendarMonth: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  calendarArrow: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0E4DA',
+    borderRadius: 19,
+  },
+  disabledCalendarControl: {
+    opacity: 0.4,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarWeekday: {
+    width: '14.2857%',
+    height: 34,
+    color: colors.mutedText,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 34,
+    textAlign: 'center',
+  },
+  calendarDay: {
+    width: '14.2857%',
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 21,
+  },
+  disabledCalendarDay: {
+    backgroundColor: '#F1EBE7',
+  },
+  disabledCalendarDayText: {
+    color: '#B9AAA4',
+  },
+  calendarActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  calendarAction: {
+    minHeight: 48,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+  },
+  calendarCancelAction: {
+    backgroundColor: '#EDE2D8',
+  },
+  calendarCancelText: {
+    color: colors.burgundy,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  calendarConfirmAction: {
+    backgroundColor: colors.burgundy,
+  },
+  calendarConfirmText: {
+    color: colors.cream,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  calendarDayText: {
+    color: colors.text,
+    fontSize: 13,
+  },
+  todayCalendarDay: {
+    borderColor: '#D6A9AC',
+    borderWidth: 1,
+  },
+  todayCalendarDayText: {
+    color: colors.burgundy,
+    fontWeight: '700',
+  },
+  selectedCalendarDay: {
+    backgroundColor: colors.burgundy,
+    borderColor: colors.burgundy,
+  },
+  selectedCalendarDayText: {
+    color: colors.cream,
+    fontWeight: '700',
+  },
+  progressCard: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 10,
+    backgroundColor: colors.warmWhite,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 15,
+  },
+  progressHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  progressTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  progressIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F4E5E3',
+    borderRadius: 17,
+  },
+  progressTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  progressHint: {
+    color: colors.mutedText,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  progressBadge: {
+    minWidth: 54,
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#F4E5E3',
+    borderRadius: 13,
+  },
+  progressValue: {
+    color: colors.burgundy,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: -2,
+  },
+  progressEndpoint: {
+    color: colors.mutedText,
+    fontSize: 11,
+  },
+  activeProgressEndpoint: {
+    color: colors.burgundy,
+    fontWeight: '700',
+  },
+  categorySelector: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    backgroundColor: colors.warmWhite,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 11,
+  },
+  categorySelectorText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+    marginRight: spacing.sm,
+  },
+  categoryPlaceholder: {
+    color: colors.mutedText,
+  },
+  categoryOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(35, 18, 18, 0.45)',
+  },
+  categorySheet: {
+    maxHeight: '82%',
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.cream,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+  },
+  categoryHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  categoryTitle: {
+    color: colors.burgundy,
+    fontSize: 19,
+    fontWeight: '700',
+  },
+  categorySubtitle: {
+    color: colors.mutedText,
+    fontSize: 12,
+    marginTop: 3,
+  },
+  categoryList: {
+    paddingBottom: spacing.md,
+  },
+  categoryGroup: {
+    marginBottom: spacing.md,
+  },
+  categoryGroupTitle: {
+    color: colors.burgundy,
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  categoryOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  categoryOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.warmWhite,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 16,
+  },
+  selectedCategoryOption: {
+    backgroundColor: '#F4E0E1',
+    borderColor: colors.burgundy,
+  },
+  categoryOptionText: {
+    color: colors.mutedText,
+    fontSize: 12,
+  },
+  selectedCategoryOptionText: {
+    color: colors.burgundy,
+    fontWeight: '600',
+  },
+  customCategorySection: {
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+  },
+  customCategoryOption: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: '#F4E0E1',
+    borderColor: '#E8C9CB',
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  customCategoryOptionText: {
+    color: colors.burgundy,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  customCategoryButton: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.burgundy,
+    borderRadius: 12,
+  },
+  customCategoryButtonText: {
+    color: colors.cream,
+    fontSize: 13,
+    fontWeight: '700',
+  },
   choiceRow: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
   choice: {
     flex: 1,
-    minHeight: 42,
+    minHeight: 38,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.warmWhite,
@@ -395,7 +1800,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   actionButton: {
-    minHeight: 48,
+    minHeight: 44,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',

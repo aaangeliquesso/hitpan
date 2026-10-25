@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -14,12 +14,16 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
-import { getNavbarBottom, NAVBAR_HEIGHT } from '../../shared/ui/navigation';
+import {
+  getNavbarSafePadding,
+  NAVBAR_HEIGHT,
+} from '../../shared/ui/navigation';
 import { colors, spacing } from '../../shared/ui/theme';
 import { AddPanItemModal } from './components/AddPanItemModal';
 import { ProductCard } from './components/ProductCard';
+import { getCategoryGroup, PRODUCT_CATEGORIES } from './categories';
 import { usePanItems } from './hooks/usePanItems';
 import { useProgressLogs } from './hooks/useProgressLogs';
 import { createPanItem } from './services/panService';
@@ -61,29 +65,89 @@ function ProductSection({
   );
 }
 
+function matchesCategoryFilters(
+  item: VanityItem,
+  selectedCategories: Set<string>,
+  customCategories: string[],
+): boolean {
+  if (selectedCategories.size === 0) return true;
+  const group = getCategoryGroup(item.category);
+  const groupName =
+    group?.title ??
+    (customCategories.includes(item.category)
+      ? 'Custom Categories'
+      : undefined);
+
+  return (
+    selectedCategories.has(item.category) ||
+    (groupName !== undefined && selectedCategories.has(groupName))
+  );
+}
+
 export default function ProjectPanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const navbarBottom = getNavbarBottom(insets.bottom);
+  const navbarSafePadding = getNavbarSafePadding(insets.bottom);
   const { items, loading, error, refresh, addItem } = usePanItems();
+  const hasFocusedProjectPan = useRef(false);
   const {
     logs,
     error: logsError,
     refresh: refreshLogs,
   } = useProgressLogs();
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [draftCategories, setDraftCategories] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
 
-  const categories = useMemo(
-    () => [...new Set(items.map((item) => item.category))].sort(),
-    [items],
+  useFocusEffect(
+    useCallback(() => {
+      if (hasFocusedProjectPan.current) {
+        void refresh();
+      } else {
+        hasFocusedProjectPan.current = true;
+      }
+    }, [refresh]),
+  );
+
+  const customCategories = useMemo(() => {
+    const predefinedCategories = new Set<string>(
+      PRODUCT_CATEGORIES.flatMap((group) => [group.title, ...group.options]),
+    );
+    return [
+      ...new Set(
+        items
+          .map((item) => item.category)
+          .filter((category) => !predefinedCategories.has(category)),
+      ),
+    ].sort();
+  }, [items]);
+  const filterGroups = useMemo(
+    () => [
+      ...PRODUCT_CATEGORIES,
+      ...(customCategories.length
+        ? [{ title: 'Custom Categories', options: customCategories }]
+        : []),
+    ],
+    [customCategories],
   );
   const filteredItems = useMemo(
     () =>
-      categoryFilter
-        ? items.filter((item) => item.category === categoryFilter)
-        : items,
-    [categoryFilter, items],
+      items.filter((item) =>
+        matchesCategoryFilters(item, selectedCategories, customCategories),
+      ),
+    [customCategories, items, selectedCategories],
+  );
+  const draftFilteredCount = useMemo(
+    () =>
+      items.filter((item) =>
+        matchesCategoryFilters(item, draftCategories, customCategories),
+      ).length,
+    [customCategories, draftCategories, items],
   );
   const photoByItem = useMemo(() => {
     const map = new Map<string, string>();
@@ -95,18 +159,21 @@ export default function ProjectPanScreen() {
     return map;
   }, [logs]);
 
-  function showCategoryFilter() {
-    Alert.alert('Filter by category', undefined, [
-      {
-        text: categoryFilter ? 'Show all' : 'All categories',
-        onPress: () => setCategoryFilter(null),
-      },
-      ...categories.map((category) => ({
-        text: category,
-        onPress: () => setCategoryFilter(category),
-      })),
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+  function openCategoryFilter() {
+    setDraftCategories(new Set(selectedCategories));
+    setFilterModalVisible(true);
+  }
+
+  function toggleDraftCategory(category: string) {
+    setDraftCategories((current) => {
+      const next = new Set(current);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
   }
 
   async function handleRefresh() {
@@ -146,19 +213,26 @@ export default function ProjectPanScreen() {
           <Pressable
             accessibilityLabel="Filter products by category"
             accessibilityRole="button"
-            onPress={showCategoryFilter}
+            onPress={openCategoryFilter}
             style={styles.filterButton}
           >
-            <Ionicons color={colors.burgundy} name="filter" size={19} />
+            <Ionicons color={colors.burgundy} name="options-outline" size={20} />
           </Pressable>
         </View>
-        {categoryFilter ? (
-          <Pressable
-            onPress={() => setCategoryFilter(null)}
-            style={styles.activeFilter}
-          >
-            <Text style={styles.activeFilterText}>{categoryFilter}  ×</Text>
-          </Pressable>
+        {selectedCategories.size > 0 ? (
+          <View style={styles.activeFilterRow}>
+            <Text style={styles.activeFilterText}>
+              {selectedCategories.size} filter
+              {selectedCategories.size === 1 ? '' : 's'} selected
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setSelectedCategories(new Set())}
+              style={styles.clearFiltersButton}
+            >
+              <Text style={styles.clearFiltersText}>Clear all</Text>
+            </Pressable>
+          </View>
         ) : null}
         {logsError ? (
           <Text style={styles.error}>
@@ -211,12 +285,132 @@ export default function ProjectPanScreen() {
         onPress={() => setAddModalVisible(true)}
         style={({ pressed }) => [
           styles.fab,
-          { bottom: navbarBottom + NAVBAR_HEIGHT + 16 },
+          { bottom: navbarSafePadding + NAVBAR_HEIGHT + 16 },
           pressed && styles.fabPressed,
         ]}
       >
         <Ionicons color={colors.burgundy} name="add" size={30} />
       </Pressable>
+      <Modal
+        animationType="slide"
+        onRequestClose={() => setFilterModalVisible(false)}
+        statusBarTranslucent
+        transparent
+        visible={filterModalVisible}
+      >
+        <View style={styles.filterOverlay}>
+          <SafeAreaView edges={['bottom']} style={styles.filterSheet}>
+            <View style={styles.filterHeader}>
+              <View>
+                <Text style={styles.filterTitle}>Filter your pan</Text>
+                <Text style={styles.filterSubtitle}>
+                  Choose categories and product types.
+                </Text>
+              </View>
+              <Pressable
+                accessibilityLabel="Close category filters"
+                accessibilityRole="button"
+                onPress={() => setFilterModalVisible(false)}
+                style={styles.filterCloseButton}
+              >
+                <Ionicons color={colors.burgundy} name="close" size={22} />
+              </Pressable>
+            </View>
+            <ScrollView
+              contentContainerStyle={styles.filterList}
+              showsVerticalScrollIndicator={false}
+            >
+              {filterGroups.map((group) => {
+                const groupSelected = draftCategories.has(group.title);
+                return (
+                  <View key={group.title} style={styles.filterGroup}>
+                    <Pressable
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: groupSelected }}
+                      onPress={() => toggleDraftCategory(group.title)}
+                      style={styles.filterGroupHeader}
+                    >
+                      <View style={styles.filterGroupHeading}>
+                        <Text style={styles.filterGroupTitle}>
+                          {group.title}
+                        </Text>
+                        <Text style={styles.filterGroupCount}>
+                          {group.options.length}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        color={
+                          groupSelected ? colors.burgundy : colors.mutedText
+                        }
+                        name={
+                          groupSelected
+                            ? 'checkbox'
+                            : 'square-outline'
+                        }
+                        size={21}
+                      />
+                    </Pressable>
+                    <View style={styles.filterOptions}>
+                      {group.options.map((category) => {
+                        const checked = draftCategories.has(category);
+                        return (
+                          <Pressable
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked }}
+                            key={category}
+                            onPress={() => toggleDraftCategory(category)}
+                            style={[
+                              styles.filterOption,
+                              checked && styles.selectedFilterOption,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.filterOptionText,
+                                checked && styles.selectedFilterOptionText,
+                              ]}
+                            >
+                              {category}
+                            </Text>
+                            {checked ? (
+                              <Ionicons
+                                color={colors.burgundy}
+                                name="checkmark"
+                                size={15}
+                              />
+                            ) : null}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <View style={styles.filterActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setDraftCategories(new Set())}
+                style={[styles.filterAction, styles.resetFilterAction]}
+              >
+                <Text style={styles.resetFilterText}>Clear</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setSelectedCategories(new Set(draftCategories));
+                  setFilterModalVisible(false);
+                }}
+                style={[styles.filterAction, styles.applyFilterAction]}
+              >
+                <Text style={styles.applyFilterText}>
+                  Show {draftFilteredCount} products
+                </Text>
+              </Pressable>
+            </View>
+          </SafeAreaView>
+        </View>
+      </Modal>
       <AddPanItemModal
         onClose={() => setAddModalVisible(false)}
         onSave={saveProduct}
@@ -259,18 +453,161 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  activeFilter: {
+  activeFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: spacing.sm,
     marginBottom: spacing.sm,
-    backgroundColor: '#F2DDDA',
-    borderRadius: 12,
   },
   activeFilterText: {
     color: colors.burgundy,
     fontSize: 11,
     fontWeight: '600',
+  },
+  clearFiltersButton: {
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    backgroundColor: '#F2DDDA',
+    borderRadius: 12,
+  },
+  clearFiltersText: {
+    color: colors.burgundy,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  filterOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(35, 18, 18, 0.45)',
+  },
+  filterSheet: {
+    maxHeight: '84%',
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.cream,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  filterTitle: {
+    color: colors.burgundy,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  filterSubtitle: {
+    color: colors.mutedText,
+    fontSize: 12,
+    marginTop: 3,
+  },
+  filterCloseButton: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 19,
+    backgroundColor: '#F0E4DA',
+  },
+  filterList: {
+    paddingBottom: spacing.md,
+  },
+  filterGroup: {
+    paddingVertical: spacing.sm,
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+  },
+  filterGroupHeader: {
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  filterGroupHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  filterGroupTitle: {
+    color: colors.burgundy,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  filterGroupCount: {
+    minWidth: 20,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    overflow: 'hidden',
+    color: colors.mutedText,
+    backgroundColor: '#EEE9E5',
+    borderRadius: 8,
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  filterOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  filterOption: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: colors.warmWhite,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 17,
+  },
+  selectedFilterOption: {
+    backgroundColor: '#F4E0E1',
+    borderColor: '#D6A9AC',
+  },
+  filterOptionText: {
+    color: colors.mutedText,
+    fontSize: 11,
+  },
+  selectedFilterOptionText: {
+    color: colors.burgundy,
+    fontWeight: '600',
+  },
+  filterActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.cream,
+  },
+  filterAction: {
+    minHeight: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 13,
+  },
+  resetFilterAction: {
+    width: 84,
+    backgroundColor: '#EDE2D8',
+  },
+  resetFilterText: {
+    color: colors.burgundy,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  applyFilterAction: {
+    flex: 1,
+    backgroundColor: colors.burgundy,
+  },
+  applyFilterText: {
+    color: colors.cream,
+    fontSize: 13,
+    fontWeight: '700',
   },
   divider: {
     flexDirection: 'row',
@@ -340,7 +677,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 5,
-    zIndex: 2,
+    zIndex: 999,
   },
   fabPressed: {
     opacity: 0.8,
