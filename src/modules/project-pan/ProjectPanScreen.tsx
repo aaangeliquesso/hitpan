@@ -9,13 +9,20 @@ import {
   Text,
   View,
 } from 'react-native';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
+import { getNavbarBottom, NAVBAR_HEIGHT } from '../../shared/ui/navigation';
 import { colors, spacing } from '../../shared/ui/theme';
+import { AddPanItemModal } from './components/AddPanItemModal';
 import { ProductCard } from './components/ProductCard';
 import { usePanItems } from './hooks/usePanItems';
 import { useProgressLogs } from './hooks/useProgressLogs';
+import { createPanItem } from './services/panService';
 import type { VanityItem } from '../../types';
 
 function ProductSection({
@@ -56,13 +63,16 @@ function ProductSection({
 
 export default function ProjectPanScreen() {
   const router = useRouter();
-  const { items, loading, error, refresh } = usePanItems();
+  const insets = useSafeAreaInsets();
+  const navbarBottom = getNavbarBottom(insets.bottom);
+  const { items, loading, error, refresh, addItem } = usePanItems();
   const {
     logs,
     error: logsError,
     refresh: refreshLogs,
   } = useProgressLogs();
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [addModalVisible, setAddModalVisible] = useState(false);
 
   const categories = useMemo(
     () => [...new Set(items.map((item) => item.category))].sort(),
@@ -107,13 +117,17 @@ export default function ProjectPanScreen() {
     router.push({ pathname: '/product/[id]', params: { id: item.id } });
   }
 
+  async function saveProduct(input: Parameters<typeof createPanItem>[0]) {
+    addItem(await createPanItem(input));
+  }
+
   const activeItems = filteredItems.filter((item) => item.status === 'active');
   const finishedItems = filteredItems.filter(
     (item) => item.status === 'finished',
   );
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView edges={['top']} style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -191,10 +205,24 @@ export default function ProjectPanScreen() {
           <Text style={styles.refreshText}>Refresh</Text>
         </Pressable>
       </ScrollView>
-      <View accessibilityElementsHidden style={styles.fab}>
-        <Ionicons color={colors.burgundy} name="add" size={27} />
-      </View>
-    </View>
+      <Pressable
+        accessibilityLabel="Add product"
+        accessibilityRole="button"
+        onPress={() => setAddModalVisible(true)}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: navbarBottom + NAVBAR_HEIGHT + 16 },
+          pressed && styles.fabPressed,
+        ]}
+      >
+        <Ionicons color={colors.burgundy} name="add" size={30} />
+      </Pressable>
+      <AddPanItemModal
+        onClose={() => setAddModalVisible(false)}
+        onSave={saveProduct}
+        visible={addModalVisible}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -206,11 +234,12 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: 110,
+    paddingTop: spacing.sm,
+    paddingBottom: 150,
   },
   brandHeader: {
     alignItems: 'center',
+    marginTop: spacing.md,
     marginBottom: spacing.md,
   },
   titleRow: {
@@ -299,13 +328,22 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    right: 22,
-    bottom: 91,
-    width: 54,
-    height: 54,
+    right: 24,
+    width: 58,
+    height: 58,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.cyan,
-    borderRadius: 27,
+    borderRadius: 29,
+    shadowColor: '#301A1A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
+    zIndex: 2,
+  },
+  fabPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.96 }],
   },
 });

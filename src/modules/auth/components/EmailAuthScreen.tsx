@@ -9,7 +9,7 @@ import {
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
-import { makeRedirectUri } from 'expo-auth-session';
+import * as Linking from 'expo-linking';
 import { supabase } from '../../../lib/supabase';
 import { colors, spacing } from '../../../shared/ui/theme';
 import { AuthField } from './AuthField';
@@ -140,7 +140,7 @@ export function EmailAuthScreen({ initialMode }: EmailAuthScreenProps) {
           email: values.email,
           password: values.password,
           options: {
-            emailRedirectTo: makeRedirectUri({ scheme: 'hitpan', path: '/' }),
+            emailRedirectTo: Linking.createURL('/'),
           },
         });
         if (error) throw error;

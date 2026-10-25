@@ -22,9 +22,13 @@ export function usePanItems() {
     }
   }, []);
 
+  const addItem = useCallback((item: VanityItem) => {
+    setItems((currentItems) => [item, ...currentItems]);
+  }, []);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  return { items, loading, error, refresh };
+  return { items, loading, error, refresh, addItem };
 }

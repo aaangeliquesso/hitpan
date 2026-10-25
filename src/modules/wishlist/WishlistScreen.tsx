@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
 import { colors, spacing } from '../../shared/ui/theme';
@@ -106,7 +107,7 @@ export default function WishlistScreen() {
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView edges={['top']} style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -226,7 +227,7 @@ export default function WishlistScreen() {
       <View accessibilityElementsHidden style={styles.fab}>
         <Ionicons color={colors.burgundy} name="add" size={27} />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -238,11 +239,12 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     paddingBottom: 110,
   },
   brandHeader: {
     alignItems: 'center',
+    marginTop: spacing.md,
     marginBottom: spacing.md,
   },
   titleRow: {

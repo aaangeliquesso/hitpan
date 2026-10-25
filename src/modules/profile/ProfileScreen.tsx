@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BrandWordmark } from '../../shared/components/BrandWordmark';
 import { Header } from '../../shared/components/Header';
 import { colors, spacing } from '../../shared/ui/theme';
 import { ProfileSummary } from './components/ProfileSummary';
@@ -38,25 +40,38 @@ export default function ProfileScreen() {
   }, []);
 
   return (
-    <View style={styles.content}>
-      <Header title="Profile" subtitle="Your HitPan account." />
-      {loading ? (
-        <ActivityIndicator color={colors.burgundy} />
-      ) : error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : (
-        <ProfileSummary email={email} />
-      )}
-    </View>
+    <SafeAreaView edges={['top']} style={styles.screen}>
+      <View style={styles.content}>
+        <View style={styles.brandHeader}>
+          <BrandWordmark width={116} />
+        </View>
+        <Header title="Profile" subtitle="Your HitPan account." />
+        {loading ? (
+          <ActivityIndicator color={colors.burgundy} />
+        ) : error ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : (
+          <ProfileSummary email={email} />
+        )}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.cream,
+  },
   content: {
     flex: 1,
-    padding: spacing.md,
-    paddingTop: spacing.lg,
-    backgroundColor: colors.cream,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  brandHeader: {
+    alignItems: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
   error: {
     color: colors.burgundy,

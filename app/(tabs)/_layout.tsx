@@ -1,22 +1,53 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getNavbarBottom, NAVBAR_HEIGHT } from '../../src/shared/ui/navigation';
 
-const BURGUNDY = '#5A1818';
+const BURGUNDY = '#4A121A';
 const CREAM = '#F7F0E5';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const bottom = getNavbarBottom(insets.bottom);
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            bottom,
+          },
+        ],
+        tabBarItemStyle: styles.tabBarItem,
         tabBarActiveTintColor: CREAM,
         tabBarInactiveTintColor: '#D9BDB2',
         tabBarLabelStyle: styles.tabLabel,
         tabBarIconStyle: styles.tabIcon,
       }}
     >
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <View
+              style={[
+                styles.iconHighlight,
+                focused && styles.activeIconHighlight,
+              ]}
+            >
+              <Ionicons
+                name="home-outline"
+                size={20}
+                color={focused ? BURGUNDY : String(color)}
+              />
+            </View>
+          ),
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{
@@ -84,15 +115,19 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 12,
-    height: 68,
-    paddingTop: 7,
-    paddingBottom: 6,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    left: 20,
+    right: 20,
+    height: NAVBAR_HEIGHT,
+    paddingVertical: 10,
     backgroundColor: BURGUNDY,
     borderTopWidth: 0,
-    borderRadius: 24,
+    borderRadius: 30,
+  },
+  tabBarItem: {
+    flex: 1,
   },
   tabLabel: {
     fontSize: 11,

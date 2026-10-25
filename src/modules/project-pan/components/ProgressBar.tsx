@@ -3,9 +3,10 @@ import { colors } from '../../../shared/ui/theme';
 
 interface ProgressBarProps {
   progress: number;
+  finished?: boolean;
 }
 
-export function ProgressBar({ progress }: ProgressBarProps) {
+export function ProgressBar({ progress, finished = false }: ProgressBarProps) {
   const boundedProgress = Math.max(0, Math.min(100, progress));
 
   return (
@@ -14,7 +15,13 @@ export function ProgressBar({ progress }: ProgressBarProps) {
       accessibilityValue={{ min: 0, max: 100, now: boundedProgress }}
       style={styles.track}
     >
-      <View style={[styles.fill, { width: `${boundedProgress}%` }]} />
+      <View
+        style={[
+          styles.fill,
+          finished && styles.finishedFill,
+          { width: `${boundedProgress}%` },
+        ]}
+      />
     </View>
   );
 }
@@ -28,7 +35,10 @@ const styles = StyleSheet.create({
   },
   fill: {
     height: '100%',
-    backgroundColor: colors.burgundy,
+    backgroundColor: '#D9829A',
     borderRadius: 4,
+  },
+  finishedFill: {
+    backgroundColor: colors.success,
   },
 });

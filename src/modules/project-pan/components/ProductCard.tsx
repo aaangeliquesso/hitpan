@@ -42,7 +42,9 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
             <Text numberOfLines={2} style={styles.name}>
               {item.name}
             </Text>
-            {item.price !== undefined ? (
+            {item.acquisition_type === 'gifted' ? (
+              <Text style={styles.gift}>Gift</Text>
+            ) : item.price !== undefined ? (
               <Text style={styles.price}>₱{item.price}</Text>
             ) : null}
           </View>
@@ -63,8 +65,18 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
         </View>
       </View>
       <View style={styles.progressRow}>
-        <ProgressBar progress={item.current_progress} />
-        <Text style={styles.progressText}>{item.current_progress}%</Text>
+        <ProgressBar
+          finished={item.status === 'finished'}
+          progress={item.current_progress}
+        />
+        <Text
+          style={[
+            styles.progressText,
+            item.status === 'finished' && styles.finishedProgressText,
+          ]}
+        >
+          {item.current_progress}%
+        </Text>
       </View>
     </Pressable>
   );
@@ -74,13 +86,19 @@ const styles = StyleSheet.create({
   card: {
     padding: 10,
     marginBottom: spacing.md,
-    backgroundColor: colors.warmWhite,
-    borderColor: colors.border,
+    backgroundColor: '#FFF5F5',
+    borderColor: '#F1DCDD',
     borderWidth: 1,
     borderRadius: 16,
+    shadowColor: '#392424',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
   finishedCard: {
-    backgroundColor: '#FFFCFA',
+    backgroundColor: '#F7F7F4',
+    borderColor: '#E4E5DD',
   },
   pressed: {
     opacity: 0.85,
@@ -129,6 +147,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
+  gift: {
+    color: colors.success,
+    backgroundColor: '#E5EFE4',
+    borderRadius: 10,
+    overflow: 'hidden',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    fontSize: 10,
+    fontWeight: '700',
+  },
   brand: {
     color: colors.mutedText,
     fontSize: 10,
@@ -161,5 +189,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     textAlign: 'right',
+  },
+  finishedProgressText: {
+    color: colors.success,
   },
 });
