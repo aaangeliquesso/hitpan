@@ -1,11 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { VanityItem } from '../../../types';
 import { StarRating } from '../../../shared/components/StarRating';
 import { colors, spacing } from '../../../shared/ui/theme';
@@ -18,65 +12,79 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
+  const acquiredLabel =
+    item.acquisition_type === 'gifted' ? 'Received on' : 'Bought on';
+  const acquiredDate = new Date(
+    `${item.acquired_on}T00:00:00`,
+  ).toLocaleDateString(undefined, {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`View ${item.name}`}
+      accessibilityLabel={`View details for ${item.name}`}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        item.status === 'finished' && styles.finishedCard,
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <View style={styles.main}>
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.image} />
+          <Image
+            accessibilityLabel={`${item.name} product photo`}
+            source={{ uri: imageUrl }}
+            style={styles.image}
+          />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Ionicons color={colors.mutedBurgundy} name="image-outline" size={27} />
+            <Ionicons
+              color={colors.mutedBurgundy}
+              name="image-outline"
+              size={30}
+            />
           </View>
         )}
+
         <View style={styles.details}>
-          <View style={styles.topRow}>
-            <Text numberOfLines={2} style={styles.name}>
-              {item.name}
-            </Text>
-            {item.acquisition_type === 'gifted' ? (
-              <Text style={styles.gift}>Gift</Text>
-            ) : item.price !== undefined ? (
-              <Text style={styles.price}>₱{item.price}</Text>
-            ) : null}
-          </View>
+          <Text numberOfLines={2} style={styles.name}>
+            {item.name}
+          </Text>
           <Text numberOfLines={1} style={styles.brand}>
-            {item.brand}{item.variant ? ` · ${item.variant}` : ''}
+            {item.brand}
           </Text>
-          <Text style={styles.acquired}>
-            {item.acquisition_type === 'gifted' ? 'Gifted' : 'Bought'} on{' '}
-            {new Date(`${item.acquired_on}T00:00:00`).toLocaleDateString(
-              undefined,
-              { month: 'short', day: 'numeric', year: 'numeric' },
-            )}
+          {item.variant ? (
+            <Text numberOfLines={1} style={styles.variant}>
+              {item.variant}
+            </Text>
+          ) : null}
+          <Text numberOfLines={1} style={styles.acquired}>
+            {acquiredLabel} {acquiredDate}
           </Text>
-          <View style={styles.pills}>
-            <Text style={styles.category}>{item.category}</Text>
+        </View>
+
+        <View style={styles.tags}>
+          {item.acquisition_type === 'gifted' ? (
+            <Text style={[styles.pill, styles.giftPill]}>Gift</Text>
+          ) : item.price !== undefined ? (
+            <Text style={[styles.pill, styles.pricePill]}>
+              ₱{item.price.toLocaleString()}
+            </Text>
+          ) : null}
+          <Text numberOfLines={2} style={[styles.pill, styles.categoryPill]}>
+            {item.category}
+          </Text>
+          <View style={styles.rating}>
+            <StarRating rating={item.rating ?? 0} />
           </View>
-          <StarRating rating={item.rating ?? 0} />
         </View>
       </View>
+
       <View style={styles.progressRow}>
-        <ProgressBar
-          finished={item.status === 'finished'}
-          progress={item.current_progress}
-        />
-        <Text
-          style={[
-            styles.progressText,
-            item.status === 'finished' && styles.finishedProgressText,
-          ]}
-        >
-          {item.current_progress}%
-        </Text>
+        <View style={styles.progressBar}>
+          <ProgressBar progress={item.current_progress} />
+        </View>
+        <Text style={styles.progressText}>{item.current_progress}%</Text>
       </View>
     </Pressable>
   );
@@ -86,96 +94,98 @@ const styles = StyleSheet.create({
   card: {
     padding: 10,
     marginBottom: spacing.md,
-    backgroundColor: '#FFF5F5',
-    borderColor: '#F1DCDD',
+    backgroundColor: '#FFF0F0',
+    borderColor: '#F1D3D5',
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 18,
     shadowColor: '#392424',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.07,
     shadowRadius: 8,
     elevation: 2,
   },
-  finishedCard: {
-    backgroundColor: '#F7F7F4',
-    borderColor: '#E4E5DD',
-  },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.86,
   },
   main: {
     flexDirection: 'row',
+    alignItems: 'stretch',
     gap: spacing.sm,
   },
   image: {
-    width: 68,
-    height: 74,
-    borderRadius: 10,
+    width: 76,
+    height: 128,
+    borderRadius: 14,
     backgroundColor: colors.border,
   },
   imagePlaceholder: {
-    width: 68,
-    height: 74,
+    width: 76,
+    height: 128,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F1E5E1',
-    borderRadius: 10,
+    borderRadius: 14,
   },
   details: {
     flex: 1,
-    gap: 3,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    minWidth: 0,
     justifyContent: 'space-between',
-    gap: spacing.xs,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs,
   },
   name: {
-    flex: 1,
     color: colors.text,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
-  },
-  price: {
-    color: colors.burgundy,
-    backgroundColor: '#F8E2E0',
-    borderRadius: 10,
-    overflow: 'hidden',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  gift: {
-    color: colors.success,
-    backgroundColor: '#E5EFE4',
-    borderRadius: 10,
-    overflow: 'hidden',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    fontSize: 10,
-    fontWeight: '700',
+    lineHeight: 19,
   },
   brand: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  variant: {
     color: colors.mutedText,
+    fontSize: 12,
+  },
+  tags: {
+    width: 84,
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+    gap: spacing.xs,
+  },
+  pill: {
+    maxWidth: '100%',
+    overflow: 'hidden',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    borderRadius: 14,
+    textAlign: 'center',
     fontSize: 10,
+    fontWeight: '600',
+  },
+  pricePill: {
+    color: colors.burgundy,
+    backgroundColor: '#F8E2E0',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  giftPill: {
+    color: colors.success,
+    backgroundColor: '#E5EFE4',
+  },
+  categoryPill: {
+    color: colors.burgundy,
+    backgroundColor: '#F7E9E7',
+  },
+  rating: {
+    alignSelf: 'flex-end',
+    marginTop: 'auto',
   },
   acquired: {
     color: colors.mutedText,
-    fontSize: 9,
-  },
-  pills: {
-    flexDirection: 'row',
-  },
-  category: {
-    color: colors.burgundy,
-    backgroundColor: '#F7E9E7',
-    overflow: 'hidden',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 8,
-    fontSize: 9,
+    fontSize: 10,
   },
   progressRow: {
     flexDirection: 'row',
@@ -183,14 +193,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
+  progressBar: {
+    flex: 1,
+  },
   progressText: {
-    minWidth: 34,
+    minWidth: 38,
     color: colors.burgundy,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textAlign: 'right',
-  },
-  finishedProgressText: {
-    color: colors.success,
   },
 });
