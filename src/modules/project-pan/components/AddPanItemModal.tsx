@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Dimensions,
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -20,7 +18,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing } from '../../../shared/ui/theme';
 import { PRODUCT_CATEGORIES } from '../categories';
 import { ProgressSlider } from './ProgressSlider';
@@ -146,7 +143,6 @@ export function AddPanItemModal({
   const [dateMonth, setDateMonth] = useState(() => getToday().slice(5, 7));
   const [dateDay, setDateDay] = useState(() => getToday().slice(8, 10));
   const [progress, setProgress] = useState(0);
-  const [imageUri, setImageUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [cancelConfirmationVisible, setCancelConfirmationVisible] =
     useState(false);
@@ -177,7 +173,6 @@ export function AddPanItemModal({
     setDateYear(getToday().slice(0, 4));
     setDateMonth(getToday().slice(5, 7));
     setDateDay(getToday().slice(8, 10));
-    setImageUri(null);
     const today = new Date();
     setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1));
     setProgress(0);
@@ -343,7 +338,6 @@ export function AddPanItemModal({
       name.trim() ||
         brand.trim() ||
         variant.trim() ||
-        imageUri ||
         category ||
         customCategory.trim() ||
         price.trim() ||
@@ -351,36 +345,6 @@ export function AddPanItemModal({
         acquiredOn !== getToday() ||
         progress !== 0,
     );
-  }
-
-  async function takeProductPhoto() {
-    try {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert(
-          'Permission Denied',
-          'Camera access is required to take product photos. Please enable it in your device settings.',
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]?.uri) {
-        setImageUri(result.assets[0].uri);
-      }
-    } catch (cause) {
-      Alert.alert(
-        'Unable to open camera',
-        cause instanceof Error
-          ? cause.message
-          : 'Please check your camera permissions and try again.',
-      );
-    }
   }
 
   function cancelForm() {
@@ -445,7 +409,6 @@ export function AddPanItemModal({
         acquisition_type: acquisitionType,
         acquired_on: acquiredOn,
         current_progress: parsedProgress,
-        ...(imageUri ? { image_uri: imageUri } : {}),
       });
       onClose();
     } catch (cause) {
@@ -520,73 +483,6 @@ export function AddPanItemModal({
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <View style={styles.photoSection}>
-                {imageUri ? (
-                  <>
-                    <Image
-                      accessibilityLabel="Captured product photo preview"
-                      source={{ uri: imageUri }}
-                      style={styles.photoPreview}
-                    />
-                    <View style={styles.photoActions}>
-                      <Text style={styles.photoTitle}>Product photo</Text>
-                      <Pressable
-                        accessibilityRole="button"
-                        disabled={saving}
-                        onPress={() => void takeProductPhoto()}
-                        style={styles.photoAction}
-                      >
-                        <Ionicons
-                          color={colors.burgundy}
-                          name="camera-outline"
-                          size={17}
-                        />
-                        <Text style={styles.photoActionText}>Retake</Text>
-                      </Pressable>
-                      <Pressable
-                        accessibilityRole="button"
-                        disabled={saving}
-                        onPress={() => setImageUri(null)}
-                        style={styles.photoAction}
-                      >
-                        <Ionicons
-                          color={colors.burgundy}
-                          name="trash-outline"
-                          size={17}
-                        />
-                        <Text style={styles.photoActionText}>Remove</Text>
-                      </Pressable>
-                    </View>
-                  </>
-                ) : (
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={saving}
-                    onPress={() => void takeProductPhoto()}
-                    style={({ pressed }) => [
-                      styles.addPhotoButton,
-                      pressed && styles.addPhotoButtonPressed,
-                    ]}
-                  >
-                    <Ionicons
-                      color={colors.burgundy}
-                      name="camera-outline"
-                      size={22}
-                    />
-                    <View style={styles.addPhotoTextGroup}>
-                      <Text style={styles.photoTitle}>Add product photo</Text>
-                      <Text style={styles.photoHint}>
-                        Take a photo now (optional)
-                      </Text>
-                    </View>
-                    <Ionicons
-                      color={colors.mutedText}
-                      name="chevron-forward"
-                      size={18}
-                    />
-                  </Pressable>
-                )}
-              </View>
               <View style={styles.compactRow}>
                 <FormField
                   autoCapitalize="words"
@@ -1406,68 +1302,6 @@ const styles = StyleSheet.create({
   },
   formScroll: {
     flexShrink: 1,
-  },
-  photoSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-    padding: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    backgroundColor: colors.warmWhite,
-  },
-  addPhotoButton: {
-    flex: 1,
-    minHeight: 62,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  addPhotoButtonPressed: {
-    opacity: 0.75,
-  },
-  addPhotoTextGroup: {
-    flex: 1,
-    gap: 2,
-  },
-  photoTitle: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  photoHint: {
-    color: colors.mutedText,
-    fontSize: 11,
-  },
-  photoPreview: {
-    width: 76,
-    height: 76,
-    borderRadius: 10,
-    backgroundColor: colors.cream,
-  },
-  photoActions: {
-    flex: 1,
-    minHeight: 76,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  photoAction: {
-    minHeight: 36,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: 10,
-    backgroundColor: colors.cream,
-  },
-  photoActionText: {
-    color: colors.burgundy,
-    fontSize: 12,
-    fontWeight: '600',
   },
   compactRow: {
     flexDirection: 'row',

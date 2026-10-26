@@ -11,13 +11,18 @@ import { colors } from '../../../shared/ui/theme';
 interface ProgressSliderProps {
   value: number;
   onValueChange: (value: number) => void;
+  accessibilityLabel?: string;
 }
 
 function clampProgress(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value / 10) * 10));
 }
 
-export function ProgressSlider({ value, onValueChange }: ProgressSliderProps) {
+export function ProgressSlider({
+  value,
+  onValueChange,
+  accessibilityLabel = 'Initial progress',
+}: ProgressSliderProps) {
   const [width, setWidth] = useState(0);
   const panResponder = useMemo(
     () =>
@@ -61,7 +66,7 @@ export function ProgressSlider({ value, onValueChange }: ProgressSliderProps) {
   return (
     <View
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-      accessibilityLabel="Initial progress"
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="adjustable"
       accessibilityValue={{ min: 0, max: 100, now: value, text: `${value}%` }}
       onAccessibilityAction={handleAccessibilityAction}

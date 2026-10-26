@@ -16,11 +16,13 @@ import { BrandWordmark } from '../../src/shared/components/BrandWordmark';
 import { colors, spacing } from '../../src/shared/ui/theme';
 import { ProgressBar } from '../../src/modules/project-pan/components/ProgressBar';
 import { ProgressLogCard } from '../../src/modules/project-pan/components/ProgressLogCard';
+import { LogProgressModal } from '../../src/modules/project-pan/components/LogProgressModal';
 import {
   deletePanItem,
   getPanItemById,
   updatePanItemRating,
 } from '../../src/modules/project-pan/services/panService';
+import { createProgressLog } from '../../src/modules/project-pan/services/progressLogService';
 import { useProgressLogs } from '../../src/modules/project-pan/hooks/useProgressLogs';
 import type { VanityItem } from '../../src/types';
 
@@ -32,7 +34,13 @@ export default function ProductDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [savingRating, setSavingRating] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const { logs, loading: logsLoading, error: logsError } = useProgressLogs(id);
+  const [logProgressVisible, setLogProgressVisible] = useState(false);
+  const {
+    logs,
+    loading: logsLoading,
+    error: logsError,
+    refresh: refreshLogs,
+  } = useProgressLogs(id);
 
   const loadItem = useCallback(async () => {
     setLoading(true);
@@ -107,122 +115,164 @@ export default function ProductDetailsScreen() {
     }
   }
 
+  async function saveProgress(
+    input: Parameters<typeof createProgressLog>[0],
+  ) {
+    await createProgressLog(input);
+    await refreshLogs();
+  }
+
   return (
-    <SafeAreaView edges={['top']} style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-          hitSlop={10}
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Ionicons color={colors.burgundy} name="arrow-back" size={22} />
-        </Pressable>
-        <BrandWordmark width={112} />
-        <Pressable
-          accessibilityLabel="Delete product"
-          accessibilityRole="button"
-          disabled={deleting}
-          hitSlop={10}
-          onPress={confirmDelete}
-          style={styles.deleteButton}
-        >
-          {deleting ? (
-            <ActivityIndicator color={colors.burgundy} size="small" />
-          ) : (
-            <Ionicons color={colors.burgundy} name="trash-outline" size={21} />
-          )}
-        </Pressable>
-      </View>
-      {loading ? (
-        <ActivityIndicator color={colors.burgundy} style={styles.loader} />
-      ) : error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : item ? (
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.productCard}>
-            <View style={styles.metadata}>
-              <Text style={styles.metadataLabel}>Name</Text>
-              <Text style={styles.metadataValue}>{item.name}</Text>
-              <Text style={styles.metadataLabel}>Brand</Text>
-              <Text style={styles.metadataValue}>{item.brand}</Text>
-              {item.variant ? (
-                <>
-                  <Text style={styles.metadataLabel}>Variant</Text>
-                  <Text style={styles.metadataValue}>{item.variant}</Text>
-                </>
-              ) : null}
-              <Text style={styles.metadataLabel}>
-                {item.acquisition_type === 'gifted' ? 'Gifted on' : 'Bought on'}
-              </Text>
-              <Text style={styles.metadataValue}>
-                {new Date(`${item.acquired_on}T00:00:00`).toLocaleDateString()}
-              </Text>
-            </View>
-            <View style={styles.badges}>
-              {item.acquisition_type === 'gifted' ? (
-                <Text style={styles.badge}>Gift</Text>
-              ) : null}
-              <Text style={styles.badge}>{item.category}</Text>
-              {item.price !== undefined ? (
-                <Text style={styles.badge}>₱{item.price}</Text>
-              ) : null}
-            </View>
-            <View style={styles.ratingRow}>
-              <Text style={styles.ratingLabel}>Rating</Text>
-              <View style={styles.stars}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Pressable
-                    accessibilityLabel={`Rate ${star} out of 5`}
-                    accessibilityRole="button"
-                    disabled={savingRating}
-                    key={star}
-                    onPress={() => void handleRatingChange(star)}
-                    hitSlop={4}
-                  >
-                    <Text
-                      style={[
-                        styles.star,
-                        star <= (item.rating ?? 0) && styles.filledStar,
-                      ]}
+    <>
+      <SafeAreaView edges={['top']} style={styles.screen}>
+        <View style={styles.header}>
+          <Pressable
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+            hitSlop={10}
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons color={colors.burgundy} name="arrow-back" size={22} />
+          </Pressable>
+          <BrandWordmark width={112} />
+          <Pressable
+            accessibilityLabel="Delete product"
+            accessibilityRole="button"
+            disabled={deleting}
+            hitSlop={10}
+            onPress={confirmDelete}
+            style={styles.deleteButton}
+          >
+            {deleting ? (
+              <ActivityIndicator color={colors.burgundy} size="small" />
+            ) : (
+              <Ionicons
+                color={colors.burgundy}
+                name="trash-outline"
+                size={21}
+              />
+            )}
+          </Pressable>
+        </View>
+        {loading ? (
+          <ActivityIndicator color={colors.burgundy} style={styles.loader} />
+        ) : error ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : item ? (
+          <ScrollView contentContainerStyle={styles.content}>
+            <View style={styles.productCard}>
+              <View style={styles.metadata}>
+                <Text style={styles.metadataLabel}>Name</Text>
+                <Text style={styles.metadataValue}>{item.name}</Text>
+                <Text style={styles.metadataLabel}>Brand</Text>
+                <Text style={styles.metadataValue}>{item.brand}</Text>
+                {item.variant ? (
+                  <>
+                    <Text style={styles.metadataLabel}>Variant</Text>
+                    <Text style={styles.metadataValue}>{item.variant}</Text>
+                  </>
+                ) : null}
+                <Text style={styles.metadataLabel}>
+                  {item.acquisition_type === 'gifted'
+                    ? 'Gifted on'
+                    : 'Bought on'}
+                </Text>
+                <Text style={styles.metadataValue}>
+                  {new Date(
+                    `${item.acquired_on}T00:00:00`,
+                  ).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={styles.badges}>
+                {item.acquisition_type === 'gifted' ? (
+                  <Text style={styles.badge}>Gift</Text>
+                ) : null}
+                <Text style={styles.badge}>{item.category}</Text>
+                {item.price !== undefined ? (
+                  <Text style={styles.badge}>₱{item.price}</Text>
+                ) : null}
+              </View>
+              <View style={styles.ratingRow}>
+                <Text style={styles.ratingLabel}>Rating</Text>
+                <View style={styles.stars}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Pressable
+                      accessibilityLabel={`Rate ${star} out of 5`}
+                      accessibilityRole="button"
+                      disabled={savingRating}
+                      key={star}
+                      onPress={() => void handleRatingChange(star)}
+                      hitSlop={4}
                     >
-                      ★
-                    </Text>
-                  </Pressable>
+                      <Text
+                        style={[
+                          styles.star,
+                          star <= (item.rating ?? 0) && styles.filledStar,
+                        ]}
+                      >
+                        ★
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>Progress</Text>
+                <Text style={styles.progressValue}>
+                  {item.current_progress}%
+                </Text>
+              </View>
+              <ProgressBar progress={item.current_progress} />
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setLogProgressVisible(true)}
+                style={({ pressed }) => [
+                  styles.logProgressButton,
+                  pressed && styles.logProgressButtonPressed,
+                ]}
+              >
+                <Ionicons
+                  color={colors.warmWhite}
+                  name="camera-outline"
+                  size={18}
+                />
+                <Text style={styles.logProgressButtonText}>Log Progress</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.sectionHeading}>
+              <View style={styles.rule} />
+              <Text style={styles.sectionTitle}>Pictures</Text>
+              <View style={styles.rule} />
+            </View>
+            {logsLoading ? (
+              <ActivityIndicator color={colors.burgundy} />
+            ) : logsError ? (
+              <Text style={styles.error}>{logsError.message}</Text>
+            ) : logs.length ? (
+              <View style={styles.logs}>
+                {logs.map((log) => (
+                  <ProgressLogCard key={log.id} log={log} />
                 ))}
               </View>
-            </View>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Progress</Text>
-              <Text style={styles.progressValue}>{item.current_progress}%</Text>
-            </View>
-            <ProgressBar progress={item.current_progress} />
-          </View>
-
-          <View style={styles.sectionHeading}>
-            <View style={styles.rule} />
-            <Text style={styles.sectionTitle}>Pictures</Text>
-            <View style={styles.rule} />
-          </View>
-          {logsLoading ? (
-            <ActivityIndicator color={colors.burgundy} />
-          ) : logsError ? (
-            <Text style={styles.error}>{logsError.message}</Text>
-          ) : logs.length ? (
-            <View style={styles.logs}>
-              {logs.map((log) => (
-                <ProgressLogCard key={log.id} log={log} />
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.empty}>
-              Progress photos will appear here as you log updates.
-            </Text>
-          )}
-        </ScrollView>
-      ) : null}
-    </SafeAreaView>
+            ) : (
+              <Text style={styles.empty}>
+                Progress photos will appear here as you log updates.
+              </Text>
+            )}
+          </ScrollView>
+        ) : null}
+      </SafeAreaView>
+      <LogProgressModal
+        currentProgress={item?.current_progress ?? 0}
+        itemId={item?.id ?? id}
+        itemName={item?.name ?? 'Product'}
+        onClose={() => setLogProgressVisible(false)}
+        onSave={saveProgress}
+        visible={logProgressVisible}
+      />
+    </>
   );
 }
 
@@ -334,6 +384,24 @@ const styles = StyleSheet.create({
     color: colors.success,
     fontSize: 11,
     fontWeight: '700',
+  },
+  logProgressButton: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    borderRadius: 12,
+    backgroundColor: colors.burgundy,
+  },
+  logProgressButtonText: {
+    color: colors.warmWhite,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  logProgressButtonPressed: {
+    opacity: 0.82,
   },
   sectionHeading: {
     flexDirection: 'row',

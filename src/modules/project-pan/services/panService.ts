@@ -10,7 +10,6 @@ export interface NewPanItemInput {
   acquisition_type: 'bought' | 'gifted';
   acquired_on: string;
   current_progress: number;
-  image_uri?: string;
 }
 
 export async function getPanItems(): Promise<VanityItem[]> {
