@@ -1,8 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -21,6 +24,8 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [logoutConfirmationVisible, setLogoutConfirmationVisible] =
+    useState(false);
   const signOutInProgress = useRef(false);
 
   useEffect(() => {
@@ -78,36 +83,81 @@ export default function ProfileScreen() {
   };
 
   const confirmLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log Out',
-        style: 'destructive',
-        onPress: () => void handleLogout(),
-      },
-    ]);
+    setLogoutConfirmationVisible(true);
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.screen}>
-      <View style={styles.content}>
-        <View style={styles.brandHeader}>
-          <BrandWordmark width={116} />
+    <>
+      <SafeAreaView edges={['top']} style={styles.screen}>
+        <View style={styles.content}>
+          <View style={styles.brandHeader}>
+            <BrandWordmark width={116} />
+          </View>
+          <Header title="Profile" subtitle="Your HitPan account." />
+          {loading ? (
+            <ActivityIndicator color={colors.burgundy} />
+          ) : error ? (
+            <Text style={styles.error}>{error}</Text>
+          ) : (
+            <ProfileSummary
+              email={email}
+              onLogout={confirmLogout}
+              signingOut={signingOut}
+            />
+          )}
         </View>
-        <Header title="Profile" subtitle="Your HitPan account." />
-        {loading ? (
-          <ActivityIndicator color={colors.burgundy} />
-        ) : error ? (
-          <Text style={styles.error}>{error}</Text>
-        ) : (
-          <ProfileSummary
-            email={email}
-            onLogout={confirmLogout}
-            signingOut={signingOut}
-          />
-        )}
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setLogoutConfirmationVisible(false)}
+        transparent
+        visible={logoutConfirmationVisible}
+      >
+        <View style={styles.modalBackdrop}>
+          <View
+            accessibilityViewIsModal
+            style={styles.confirmationCard}
+          >
+            <View style={styles.confirmationIcon}>
+              <Ionicons
+                color={colors.burgundy}
+                name="log-out-outline"
+                size={24}
+              />
+            </View>
+            <Text style={styles.confirmationTitle}>Log out?</Text>
+            <Text style={styles.confirmationMessage}>
+              Are you sure you want to log out?
+            </Text>
+            <View style={styles.confirmationActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setLogoutConfirmationVisible(false)}
+                style={({ pressed }) => [
+                  styles.cancelButton,
+                  pressed && styles.confirmationButtonPressed,
+                ]}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  setLogoutConfirmationVisible(false);
+                  void handleLogout();
+                }}
+                style={({ pressed }) => [
+                  styles.confirmLogoutButton,
+                  pressed && styles.confirmationButtonPressed,
+                ]}
+              >
+                <Text style={styles.confirmLogoutButtonText}>Log Out</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -128,5 +178,80 @@ const styles = StyleSheet.create({
   },
   error: {
     color: colors.burgundy,
+  },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+    backgroundColor: 'rgba(43, 32, 32, 0.55)',
+  },
+  confirmationCard: {
+    width: '100%',
+    maxWidth: 360,
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    backgroundColor: colors.warmWhite,
+  },
+  confirmationIcon: {
+    width: 48,
+    height: 48,
+    marginBottom: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 24,
+    backgroundColor: colors.cream,
+  },
+  confirmationTitle: {
+    color: colors.burgundy,
+    fontSize: 21,
+    fontWeight: '700',
+  },
+  confirmationMessage: {
+    marginTop: spacing.sm,
+    color: colors.mutedText,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  confirmationActions: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  cancelButton: {
+    flex: 1,
+    minHeight: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.cream,
+  },
+  cancelButtonText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  confirmLogoutButton: {
+    flex: 1,
+    minHeight: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: colors.burgundy,
+  },
+  confirmLogoutButtonText: {
+    color: colors.warmWhite,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  confirmationButtonPressed: {
+    opacity: 0.8,
   },
 });
