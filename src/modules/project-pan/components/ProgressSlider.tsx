@@ -15,7 +15,7 @@ interface ProgressSliderProps {
 }
 
 function clampProgress(value: number): number {
-  return Math.max(0, Math.min(100, Math.round(value / 10) * 10));
+  return Math.max(0, Math.min(100, Math.round(value)));
 }
 
 export function ProgressSlider({
@@ -30,20 +30,16 @@ export function ProgressSlider({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (event) => {
-          if (width > 24) {
+          if (width > 0) {
             onValueChange(
-              clampProgress(
-                ((event.nativeEvent.locationX - 12) / (width - 24)) * 100,
-              ),
+              clampProgress((event.nativeEvent.locationX / width) * 100),
             );
           }
         },
         onPanResponderMove: (event) => {
-          if (width > 24) {
+          if (width > 0) {
             onValueChange(
-              clampProgress(
-                ((event.nativeEvent.locationX - 12) / (width - 24)) * 100,
-              ),
+              clampProgress((event.nativeEvent.locationX / width) * 100),
             );
           }
         },
@@ -57,9 +53,9 @@ export function ProgressSlider({
 
   function handleAccessibilityAction(event: AccessibilityActionEvent) {
     if (event.nativeEvent.actionName === 'increment') {
-      onValueChange(clampProgress(value + 10));
+      onValueChange(clampProgress(value + 1));
     } else if (event.nativeEvent.actionName === 'decrement') {
-      onValueChange(clampProgress(value - 10));
+      onValueChange(clampProgress(value - 1));
     }
   }
 
@@ -100,8 +96,8 @@ const styles = StyleSheet.create({
   },
   track: {
     position: 'absolute',
-    left: 12,
-    right: 12,
+    left: 0,
+    right: 0,
     height: 10,
     justifyContent: 'center',
     backgroundColor: '#E9DCD7',
@@ -111,7 +107,6 @@ const styles = StyleSheet.create({
     height: 6,
     backgroundColor: colors.burgundy,
     borderRadius: 5,
-    marginLeft: 2,
   },
   tick: {
     position: 'absolute',
