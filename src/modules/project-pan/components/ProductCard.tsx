@@ -62,7 +62,6 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
             {acquiredLabel} {acquiredDate}
           </Text>
         </View>
-
         <View style={styles.tags}>
           {item.acquisition_type === 'gifted' ? (
             <Text style={[styles.pill, styles.giftPill]}>Gift</Text>
@@ -79,7 +78,6 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
           </View>
         </View>
       </View>
-
       <View style={styles.progressRow}>
         <View style={styles.progressBar}>
           <ProgressBar progress={item.current_progress} />

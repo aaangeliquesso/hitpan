@@ -89,7 +89,7 @@ export default function ProductDetailsScreen() {
 
     Alert.alert(
       'Delete product?',
-      `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
+      'Are you sure you want to delete this product?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -150,24 +150,6 @@ export default function ProductDetailsScreen() {
             <Ionicons color={colors.burgundy} name="arrow-back" size={22} />
           </Pressable>
           <BrandWordmark width={112} />
-          <Pressable
-            accessibilityLabel="Delete product"
-            accessibilityRole="button"
-            disabled={deleting}
-            hitSlop={10}
-            onPress={confirmDelete}
-            style={styles.deleteButton}
-          >
-            {deleting ? (
-              <ActivityIndicator color={colors.burgundy} size="small" />
-            ) : (
-              <Ionicons
-                color={colors.burgundy}
-                name="trash-outline"
-                size={21}
-              />
-            )}
-          </Pressable>
         </View>
         {loading ? (
           <ActivityIndicator color={colors.burgundy} style={styles.loader} />
@@ -176,52 +158,71 @@ export default function ProductDetailsScreen() {
         ) : item ? (
           <ScrollView contentContainerStyle={styles.content}>
             <View style={styles.productCard}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setEditVisible(true)}
-                style={({ pressed }) => [
-                  styles.editButton,
-                  pressed && styles.logProgressButtonPressed,
-                ]}
-              >
-                <Ionicons
-                  color={colors.burgundy}
-                  name="create-outline"
-                  size={16}
-                />
-                <Text style={styles.editButtonText}>Edit</Text>
-              </Pressable>
-              <View style={styles.metadata}>
-                <Text style={styles.metadataLabel}>Name</Text>
-                <Text style={styles.metadataValue}>{item.name}</Text>
-                <Text style={styles.metadataLabel}>Brand</Text>
-                <Text style={styles.metadataValue}>{item.brand}</Text>
-                {item.variant ? (
-                  <>
-                    <Text style={styles.metadataLabel}>Variant</Text>
-                    <Text style={styles.metadataValue}>{item.variant}</Text>
-                  </>
-                ) : null}
-                <Text style={styles.metadataLabel}>
-                  {item.acquisition_type === 'gifted'
-                    ? 'Gifted on'
-                    : 'Bought on'}
+              <View style={styles.titleRow}>
+                <Text numberOfLines={2} style={styles.productName}>
+                  {item.name}
                 </Text>
-                <Text style={styles.metadataValue}>
-                  {new Date(
-                    `${item.acquired_on}T00:00:00`,
-                  ).toLocaleDateString()}
-                </Text>
+                <View style={styles.cardActions}>
+                  <Pressable
+                    accessibilityLabel="Edit product"
+                    accessibilityRole="button"
+                    onPress={() => setEditVisible(true)}
+                    style={({ pressed }) => [
+                      styles.cardActionButton,
+                      pressed && styles.cardActionPressed,
+                    ]}
+                  >
+                    <Ionicons
+                      color={colors.burgundy}
+                      name="create-outline"
+                      size={18}
+                    />
+                  </Pressable>
+                  <Pressable
+                    accessibilityLabel="Delete product"
+                    accessibilityRole="button"
+                    disabled={deleting}
+                    onPress={confirmDelete}
+                    style={({ pressed }) => [
+                      styles.cardActionButton,
+                      pressed && styles.cardActionPressed,
+                    ]}
+                  >
+                    {deleting ? (
+                      <ActivityIndicator color={colors.burgundy} size="small" />
+                    ) : (
+                      <Ionicons
+                        color={colors.burgundy}
+                        name="trash-outline"
+                        size={18}
+                      />
+                    )}
+                  </Pressable>
+                </View>
               </View>
-              <View style={styles.badges}>
+              <Text style={styles.productSubtitle}>
+                {item.brand}
+                {item.variant ? ` • ${item.variant}` : ''}
+              </Text>
+              <View style={styles.badgeRow}>
+                <Text numberOfLines={1} style={[styles.badge, styles.categoryBadge]}>
+                  {item.category}
+                </Text>
                 {item.acquisition_type === 'gifted' ? (
-                  <Text style={styles.badge}>Gift</Text>
-                ) : null}
-                <Text style={styles.badge}>{item.category}</Text>
-                {typeof item.price === 'number' ? (
-                  <Text style={styles.badge}>₱{item.price}</Text>
+                  <Text style={[styles.badge, styles.giftBadge]}>Gift</Text>
+                ) : typeof item.price === 'number' ? (
+                  <Text style={[styles.badge, styles.priceBadge]}>
+                    ₱{item.price.toLocaleString()}
+                  </Text>
                 ) : null}
               </View>
+              <Text style={styles.acquiredDate}>
+                {item.acquisition_type === 'gifted' ? 'Received on' : 'Bought on'}{' '}
+                {new Date(`${item.acquired_on}T00:00:00`).toLocaleDateString(
+                  undefined,
+                  { month: 'long', day: 'numeric', year: 'numeric' },
+                )}
+              </Text>
               <View style={styles.ratingRow}>
                 <Text style={styles.ratingLabel}>Rating</Text>
                 <View style={styles.stars}>
@@ -246,13 +247,14 @@ export default function ProductDetailsScreen() {
                   ))}
                 </View>
               </View>
-              <View style={styles.progressHeader}>
-                <Text style={styles.progressLabel}>Progress</Text>
+              <View style={styles.progressRow}>
                 <Text style={styles.progressValue}>
                   {item.current_progress}%
                 </Text>
+                <View style={styles.progressBar}>
+                  <ProgressBar progress={item.current_progress} />
+                </View>
               </View>
-              <ProgressBar progress={item.current_progress} />
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setLogProgressVisible(true)}
@@ -328,15 +330,22 @@ const styles = StyleSheet.create({
     left: spacing.md,
     zIndex: 1,
   },
-  deleteButton: {
-    position: 'absolute',
-    right: spacing.md,
-    width: 38,
-    height: 38,
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginBottom: spacing.xs,
+  },
+  cardActionButton: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(244, 229, 227, 0.75)',
+    borderRadius: 18,
+  },
+  cardActionPressed: {
     backgroundColor: '#F4E5E3',
-    borderRadius: 19,
   },
   loader: {
     flex: 1,
@@ -351,60 +360,61 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 16,
+    gap: spacing.md,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
-  editButton: {
-    minHeight: 32,
-    alignSelf: 'flex-end',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    backgroundColor: '#F4E5E3',
-    borderRadius: 12,
+  productName: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: 'bold',
   },
-  editButtonText: {
-    color: colors.burgundy,
-    fontSize: 12,
-    fontWeight: '700',
+  productSubtitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: -spacing.xs,
   },
-  metadata: {
-    display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    rowGap: spacing.xs,
-  },
-  metadataLabel: {
-    width: '28%',
+  acquiredDate: {
     color: colors.mutedText,
     fontSize: 12,
+    marginTop: -spacing.xs,
   },
-  metadataValue: {
-    width: '72%',
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  badges: {
+  badgeRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    paddingTop: spacing.xs,
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   badge: {
-    color: colors.burgundy,
-    backgroundColor: '#F5E6E4',
     borderRadius: 10,
     overflow: 'hidden',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  categoryBadge: {
+    color: colors.burgundy,
+    backgroundColor: '#F5E6E4',
+  },
+  priceBadge: {
+    color: colors.burgundy,
+    backgroundColor: '#F8E2E0',
+    fontWeight: '700',
+  },
+  giftBadge: {
+    color: colors.success,
+    backgroundColor: '#E5EFE4',
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: -spacing.xs,
   },
   ratingLabel: {
     color: colors.mutedText,
@@ -421,19 +431,18 @@ const styles = StyleSheet.create({
   filledStar: {
     color: '#E3B532',
   },
-  progressHeader: {
+  progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  progressLabel: {
-    color: colors.mutedText,
-    fontSize: 12,
+    gap: spacing.sm,
   },
   progressValue: {
     color: colors.success,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
+  },
+  progressBar: {
+    flex: 1,
   },
   logProgressButton: {
     minHeight: 44,
