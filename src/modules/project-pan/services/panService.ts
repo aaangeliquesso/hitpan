@@ -7,9 +7,11 @@ export interface NewPanItemInput {
   variant?: string;
   category: string;
   price?: number;
+  rating?: number;
   acquisition_type: 'bought' | 'gifted';
   acquired_on: string;
   current_progress: number;
+  status?: VanityItem['status'];
 }
 
 export async function getPanItems(): Promise<VanityItem[]> {
@@ -63,6 +65,40 @@ export async function createPanItem(
   }
   if (!data) {
     throw new Error('The product could not be added.');
+  }
+
+  return data;
+}
+
+export async function updatePanItem(
+  id: string,
+  input: NewPanItemInput,
+): Promise<VanityItem> {
+  const { data, error } = await supabase
+    .from('vanity_items')
+    .update({
+      name: input.name,
+      brand: input.brand,
+      variant: input.variant || null,
+      category: input.category,
+      price: input.acquisition_type === 'bought' ? input.price : null,
+      rating: input.rating ?? 0,
+      acquisition_type: input.acquisition_type,
+      acquired_on: input.acquired_on,
+      current_progress: input.current_progress,
+      status:
+        input.status ??
+        (input.current_progress === 100 ? 'finished' : 'active'),
+    })
+    .eq('id', id)
+    .select('*')
+    .maybeSingle<VanityItem>();
+
+  if (error) {
+    throw error;
+  }
+  if (!data) {
+    throw new Error('This product could not be found or updated.');
   }
 
   return data;

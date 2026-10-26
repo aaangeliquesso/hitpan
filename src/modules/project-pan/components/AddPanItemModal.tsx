@@ -22,11 +22,13 @@ import { colors, spacing } from '../../../shared/ui/theme';
 import { PRODUCT_CATEGORIES } from '../categories';
 import { ProgressSlider } from './ProgressSlider';
 import type { NewPanItemInput } from '../services/panService';
+import type { VanityItem } from '../../../types';
 
 interface AddPanItemModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (input: NewPanItemInput) => Promise<void>;
+  initialItem?: VanityItem;
 }
 
 interface FormFieldProps extends TextInputProps {
@@ -122,6 +124,7 @@ export function AddPanItemModal({
   visible,
   onClose,
   onSave,
+  initialItem,
 }: AddPanItemModalProps) {
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -143,6 +146,7 @@ export function AddPanItemModal({
   const [dateMonth, setDateMonth] = useState(() => getToday().slice(5, 7));
   const [dateDay, setDateDay] = useState(() => getToday().slice(8, 10));
   const [progress, setProgress] = useState(0);
+  const [rating, setRating] = useState(0);
   const [saving, setSaving] = useState(false);
   const [cancelConfirmationVisible, setCancelConfirmationVisible] =
     useState(false);
@@ -158,24 +162,29 @@ export function AddPanItemModal({
   const categoryShake = useRef(new Animated.Value(0)).current;
   const priceShake = useRef(new Animated.Value(0)).current;
 
-  function resetForm() {
-    setName('');
-    setBrand('');
-    setVariant('');
-    setCategory('');
+  function resetForm(item?: VanityItem) {
+    const acquiredDate = item?.acquired_on.slice(0, 10) ?? getToday();
+    const [year, month, day] = acquiredDate.split('-');
+    setName(item?.name ?? '');
+    setBrand(item?.brand ?? '');
+    setVariant(item?.variant ?? '');
+    setCategory(item?.category ?? '');
     setCategoryPickerVisible(false);
     setDatePickerVisible(false);
     setCustomCategoryMode(false);
     setCustomCategory('');
-    setPrice('');
-    setAcquisitionType('bought');
-    setAcquiredOn(getToday());
-    setDateYear(getToday().slice(0, 4));
-    setDateMonth(getToday().slice(5, 7));
-    setDateDay(getToday().slice(8, 10));
-    const today = new Date();
-    setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1));
-    setProgress(0);
+    setPrice(item?.price?.toString() ?? '');
+    setAcquisitionType(item?.acquisition_type ?? 'bought');
+    setAcquiredOn(acquiredDate);
+    setDateYear(year);
+    setDateMonth(month);
+    setDateDay(day);
+    const selectedDate = parseDate(acquiredDate);
+    setCalendarMonth(
+      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+    );
+    setProgress(item?.current_progress ?? 0);
+    setRating(item?.rating ?? 0);
     setError(null);
     setFieldErrors({});
     nameShake.setValue(0);
@@ -186,8 +195,8 @@ export function AddPanItemModal({
 
   useEffect(() => {
     if (!visible) return;
-    resetForm();
-  }, [visible]);
+    resetForm(initialItem);
+  }, [initialItem, visible]);
 
   function selectCategory(value: string) {
     setCategory(value);
@@ -334,6 +343,20 @@ export function AddPanItemModal({
   }
 
   function hasUnsavedChanges() {
+    if (initialItem) {
+      return (
+        name.trim() !== initialItem.name ||
+        brand.trim() !== initialItem.brand ||
+        variant.trim() !== (initialItem.variant ?? '') ||
+        category !== initialItem.category ||
+        price.trim() !== (initialItem.price?.toString() ?? '') ||
+        acquisitionType !== initialItem.acquisition_type ||
+        acquiredOn !== initialItem.acquired_on.slice(0, 10) ||
+        progress !== initialItem.current_progress ||
+        rating !== (initialItem.rating ?? 0)
+      );
+    }
+
     return Boolean(
       name.trim() ||
         brand.trim() ||
@@ -409,6 +432,17 @@ export function AddPanItemModal({
         acquisition_type: acquisitionType,
         acquired_on: acquiredOn,
         current_progress: parsedProgress,
+        rating,
+        ...(initialItem
+          ? {
+              status:
+                initialItem.status === 'decluttered'
+                  ? 'decluttered'
+                  : parsedProgress === 100
+                    ? 'finished'
+                    : 'active',
+            }
+          : {}),
       });
       onClose();
     } catch (cause) {
@@ -464,11 +498,17 @@ export function AddPanItemModal({
           <SafeAreaView edges={['bottom']} style={styles.sheet}>
             <View style={styles.heading}>
               <View>
-                <Text style={styles.title}>Add a product</Text>
-                <Text style={styles.subtitle}>Start tracking your progress.</Text>
+                <Text style={styles.title}>
+                  {initialItem ? 'Edit product' : 'Add a product'}
+                </Text>
+                <Text style={styles.subtitle}>
+                  {initialItem
+                    ? 'Update your product details.'
+                    : 'Start tracking your progress.'}
+                </Text>
               </View>
               <Pressable
-                accessibilityLabel="Close add product form"
+                accessibilityLabel={`Close ${initialItem ? 'edit' : 'add'} product form`}
                 accessibilityRole="button"
                 disabled={saving}
                 onPress={cancelForm}
@@ -686,6 +726,29 @@ export function AddPanItemModal({
                   </Pressable>
                 </View>
               )}
+              {initialItem ? (
+                <View style={styles.ratingField}>
+                  <Text style={styles.fieldLabel}>Star rating</Text>
+                  <View style={styles.ratingChoices}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Pressable
+                        accessibilityLabel={`Set rating to ${star} out of 5`}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: rating === star }}
+                        key={star}
+                        onPress={() => setRating(star)}
+                        hitSlop={6}
+                      >
+                        <Ionicons
+                          color={star <= rating ? '#E3B532' : colors.border}
+                          name={star <= rating ? 'star' : 'star-outline'}
+                          size={24}
+                        />
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
               <View style={styles.field}>
                 <View style={styles.progressCard}>
                   <View style={styles.progressHeading}>
@@ -699,7 +762,7 @@ export function AddPanItemModal({
                       </View>
                       <View>
                         <Text style={styles.progressTitle}>
-                          Initial progress
+                          {initialItem ? 'Current progress' : 'Initial progress'}
                         </Text>
                         <Text style={styles.progressHint}>
                           How much have you used?
@@ -752,7 +815,9 @@ export function AddPanItemModal({
                   {saving ? (
                     <ActivityIndicator color={colors.cream} />
                   ) : (
-                    <Text style={styles.saveText}>Save product</Text>
+                    <Text style={styles.saveText}>
+                      {initialItem ? 'Save changes' : 'Save product'}
+                    </Text>
                   )}
                 </Pressable>
               </View>
@@ -1142,10 +1207,12 @@ export function AddPanItemModal({
                 />
               </View>
               <Text style={styles.confirmationTitle}>
-                Cancel Product Setup
+                {initialItem ? 'Discard Changes' : 'Cancel Product Setup'}
               </Text>
               <Text style={styles.confirmationMessage}>
-                Are you sure you want to cancel? All details will not be saved.
+                {initialItem
+                  ? 'Are you sure you want to discard your changes?'
+                  : 'Are you sure you want to cancel? All details will not be saved.'}
               </Text>
               <View style={styles.confirmationActions}>
                 <Pressable
@@ -1309,6 +1376,13 @@ const styles = StyleSheet.create({
   },
   field: {
     marginBottom: spacing.sm,
+  },
+  ratingField: {
+    marginBottom: spacing.sm,
+  },
+  ratingChoices: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   compactField: {
     flex: 1,

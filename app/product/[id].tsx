@@ -20,11 +20,13 @@ import { LogProgressModal } from '../../src/modules/project-pan/components/LogPr
 import {
   deletePanItem,
   getPanItemById,
+  updatePanItem,
   updatePanItemRating,
 } from '../../src/modules/project-pan/services/panService';
 import { createProgressLog } from '../../src/modules/project-pan/services/progressLogService';
 import { useProgressLogs } from '../../src/modules/project-pan/hooks/useProgressLogs';
 import type { VanityItem } from '../../src/types';
+import { AddPanItemModal } from '../../src/modules/project-pan/components/AddPanItemModal';
 
 export default function ProductDetailsScreen() {
   const router = useRouter();
@@ -34,6 +36,7 @@ export default function ProductDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [savingRating, setSavingRating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editVisible, setEditVisible] = useState(false);
   const [logProgressVisible, setLogProgressVisible] = useState(false);
   const {
     logs,
@@ -122,6 +125,17 @@ export default function ProductDetailsScreen() {
     await refreshLogs();
   }
 
+  async function saveProductChanges(
+    input: Parameters<typeof updatePanItem>[1],
+  ) {
+    if (!item) {
+      throw new Error('This product could not be found.');
+    }
+
+    const updatedItem = await updatePanItem(item.id, input);
+    setItem(updatedItem);
+  }
+
   return (
     <>
       <SafeAreaView edges={['top']} style={styles.screen}>
@@ -162,6 +176,21 @@ export default function ProductDetailsScreen() {
         ) : item ? (
           <ScrollView contentContainerStyle={styles.content}>
             <View style={styles.productCard}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setEditVisible(true)}
+                style={({ pressed }) => [
+                  styles.editButton,
+                  pressed && styles.logProgressButtonPressed,
+                ]}
+              >
+                <Ionicons
+                  color={colors.burgundy}
+                  name="create-outline"
+                  size={16}
+                />
+                <Text style={styles.editButtonText}>Edit</Text>
+              </Pressable>
               <View style={styles.metadata}>
                 <Text style={styles.metadataLabel}>Name</Text>
                 <Text style={styles.metadataValue}>{item.name}</Text>
@@ -189,7 +218,7 @@ export default function ProductDetailsScreen() {
                   <Text style={styles.badge}>Gift</Text>
                 ) : null}
                 <Text style={styles.badge}>{item.category}</Text>
-                {item.price !== undefined ? (
+                {typeof item.price === 'number' ? (
                   <Text style={styles.badge}>₱{item.price}</Text>
                 ) : null}
               </View>
@@ -272,6 +301,12 @@ export default function ProductDetailsScreen() {
         onSave={saveProgress}
         visible={logProgressVisible}
       />
+      <AddPanItemModal
+        initialItem={item ?? undefined}
+        onClose={() => setEditVisible(false)}
+        onSave={saveProductChanges}
+        visible={editVisible}
+      />
     </>
   );
 }
@@ -317,6 +352,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     gap: spacing.sm,
+  },
+  editButton: {
+    minHeight: 32,
+    alignSelf: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: '#F4E5E3',
+    borderRadius: 12,
+  },
+  editButtonText: {
+    color: colors.burgundy,
+    fontSize: 12,
+    fontWeight: '700',
   },
   metadata: {
     display: 'flex',

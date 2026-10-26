@@ -66,7 +66,7 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
         <View style={styles.tags}>
           {item.acquisition_type === 'gifted' ? (
             <Text style={[styles.pill, styles.giftPill]}>Gift</Text>
-          ) : item.price !== undefined ? (
+          ) : typeof item.price === 'number' ? (
             <Text style={[styles.pill, styles.pricePill]}>
               ₱{item.price.toLocaleString()}
             </Text>
@@ -92,7 +92,7 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    padding: 10,
+    padding: 12,
     marginBottom: spacing.md,
     backgroundColor: '#FFF0F0',
     borderColor: '#F1D3D5',
@@ -113,25 +113,24 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   image: {
-    width: 76,
-    height: 128,
-    borderRadius: 14,
+    width: 72,
+    height: 96,
+    borderRadius: 12,
     backgroundColor: colors.border,
   },
   imagePlaceholder: {
-    width: 76,
-    height: 128,
+    width: 72,
+    height: 96,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F1E5E1',
-    borderRadius: 14,
+    borderRadius: 12,
   },
   details: {
     flex: 1,
     minWidth: 0,
-    justifyContent: 'space-between',
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.xs,
+    justifyContent: 'center',
+    gap: 2,
   },
   name: {
     color: colors.text,
@@ -151,15 +150,13 @@ const styles = StyleSheet.create({
   tags: {
     width: 84,
     alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
     gap: spacing.xs,
   },
   pill: {
     maxWidth: '100%',
     overflow: 'hidden',
     paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 14,
     textAlign: 'center',
     fontSize: 10,
@@ -191,7 +188,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginTop: spacing.sm,
+    marginTop: 2,
   },
   progressBar: {
     flex: 1,
