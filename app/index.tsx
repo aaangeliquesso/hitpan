@@ -26,7 +26,7 @@ export default function SplashScreenComponent() {
         // Hide splash screen after delay
         await hideAsync().catch(() => {});
 
-        router.replace(data.session ? '/(tabs)' : '/auth/login');
+        router.replace(data.session ? '/(tabs)/home' : '/auth/login');
       } catch (cause) {
         if (mounted) {
           await hideAsync().catch(() => {});

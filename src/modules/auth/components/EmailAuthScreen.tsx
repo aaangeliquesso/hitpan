@@ -145,7 +145,7 @@ export function EmailAuthScreen({ initialMode }: EmailAuthScreenProps) {
         });
         if (error) throw error;
         if (data.session) {
-          router.replace('/(tabs)');
+          router.replace('/(tabs)/home');
           return;
         }
         setFeedback({
@@ -161,7 +161,7 @@ export function EmailAuthScreen({ initialMode }: EmailAuthScreenProps) {
         password: values.password,
       });
       if (error) throw error;
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/home');
     } catch (error) {
       if (values.mode === 'signup') {
         console.error('SignUp Error:', error);
