@@ -15,6 +15,13 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "HitPan uses your camera to take product photos.",
+          "microphonePermission": false
+        }
+      ],
       "expo-secure-store",
       "expo-web-browser",
       [
