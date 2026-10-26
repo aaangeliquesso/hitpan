@@ -19,7 +19,7 @@ interface AuthLayoutProps {
 export function AuthLayout({ children, backButton }: AuthLayoutProps) {
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor={colors.burgundy} />
+      <StatusBar barStyle="light-content" />
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
         <View style={styles.hero}>
           <View style={styles.backButton}>{backButton}</View>

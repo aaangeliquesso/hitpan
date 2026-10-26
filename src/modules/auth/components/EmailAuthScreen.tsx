@@ -318,7 +318,7 @@ export function EmailAuthScreen({ initialMode }: EmailAuthScreenProps) {
       <Pressable
         accessibilityRole="button"
         disabled={loading}
-        onPress={handleSubmit(submit)}
+        onPress={() => void handleSubmit(submit)()}
         style={[styles.submitButton, loading && styles.disabled]}
       >
         {isSubmitting ? (

@@ -1,6 +1,14 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../../lib/supabase';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
 import { Header } from '../../shared/components/Header';
 import { colors, spacing } from '../../shared/ui/theme';
@@ -8,9 +16,12 @@ import { ProfileSummary } from './components/ProfileSummary';
 import { getCurrentUser } from './services/profileService';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const signOutInProgress = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -39,6 +50,44 @@ export default function ProfileScreen() {
     };
   }, []);
 
+  const handleLogout = async () => {
+    if (signOutInProgress.current) {
+      return;
+    }
+
+    signOutInProgress.current = true;
+    setSigningOut(true);
+
+    try {
+      const { error: signOutError } = await supabase.auth.signOut();
+
+      if (signOutError) {
+        throw signOutError;
+      }
+    } catch (cause) {
+      signOutInProgress.current = false;
+      setSigningOut(false);
+      Alert.alert(
+        'Unable to log out',
+        cause instanceof Error ? cause.message : 'Please try again.',
+      );
+      return;
+    }
+
+    router.replace('/auth/login');
+  };
+
+  const confirmLogout = () => {
+    Alert.alert('Log Out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log Out',
+        style: 'destructive',
+        onPress: () => void handleLogout(),
+      },
+    ]);
+  };
+
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.content}>
@@ -51,7 +100,11 @@ export default function ProfileScreen() {
         ) : error ? (
           <Text style={styles.error}>{error}</Text>
         ) : (
-          <ProfileSummary email={email} />
+          <ProfileSummary
+            email={email}
+            onLogout={confirmLogout}
+            signingOut={signingOut}
+          />
         )}
       </View>
     </SafeAreaView>

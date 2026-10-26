@@ -5,7 +5,7 @@ import { colors } from '../src/shared/ui/theme';
 export default function RootLayout() {
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.cream} />
+      <StatusBar barStyle="dark-content" />
       <Stack
         screenOptions={{
           headerShown: false,

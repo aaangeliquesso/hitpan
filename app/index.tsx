@@ -48,10 +48,7 @@ export default function SplashScreenComponent() {
   return createElement(
     View,
     { style: styles.container },
-    createElement(
-      StatusBar,
-      { barStyle: 'light-content', backgroundColor: '#641616' },
-    ),
+    createElement(StatusBar, { barStyle: 'light-content' }),
     createElement(Image, {
       accessibilityLabel: 'Brand mark',
       resizeMode: 'contain',
