@@ -3,6 +3,7 @@ import { Alert, Image, StatusBar, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { hideAsync } from 'expo-splash-screen';
 import { supabase } from '../src/lib/supabase';
+import { colors } from '../src/shared/ui/theme';
 
 export default function SplashScreenComponent() {
   const router = useRouter();
@@ -48,11 +49,11 @@ export default function SplashScreenComponent() {
   return createElement(
     View,
     { style: styles.container },
-    createElement(StatusBar, { barStyle: 'light-content' }),
+    createElement(StatusBar, { barStyle: 'dark-content' }),
     createElement(Image, {
       accessibilityLabel: 'Brand mark',
       resizeMode: 'contain',
-      source: require('../logo/white-secondary-logo.png'),
+      source: require('../logo/burgundy-secondary-logo.png'),
       style: styles.logo,
     }),
   );
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#641616',
+    backgroundColor: colors.backgroundPrimary,
   },
   logo: {
     width: 120,

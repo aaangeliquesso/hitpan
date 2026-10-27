@@ -308,7 +308,7 @@ export function EmailAuthScreen({ initialMode }: EmailAuthScreenProps) {
           style={styles.forgot}
         >
           {resetLoading ? (
-            <ActivityIndicator color={colors.burgundy} size="small" />
+            <ActivityIndicator color={colors.neutralIcon} size="small" />
           ) : (
             <Text style={styles.forgotLabel}>Forgot password?</Text>
           )}
@@ -322,7 +322,7 @@ export function EmailAuthScreen({ initialMode }: EmailAuthScreenProps) {
         style={[styles.submitButton, loading && styles.disabled]}
       >
         {isSubmitting ? (
-          <ActivityIndicator color={colors.warmWhite} />
+          <ActivityIndicator color={colors.backgroundPrimary} />
         ) : (
           <Text style={styles.submitLabel}>
             {isSignup ? 'Create account' : 'Log In'}
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: spacing.lg,
     padding: 4,
-    backgroundColor: '#F1E5E1',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 14,
   },
   modeTab: {
@@ -355,15 +355,15 @@ const styles = StyleSheet.create({
     borderRadius: 11,
   },
   modeTabSelected: {
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
   },
   modeTabLabel: {
-    color: colors.burgundy,
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
   },
   modeTabLabelSelected: {
-    color: colors.warmWhite,
+    color: colors.backgroundPrimary,
   },
   feedback: {
     marginBottom: spacing.md,
@@ -374,11 +374,11 @@ const styles = StyleSheet.create({
   },
   successFeedback: {
     color: colors.success,
-    backgroundColor: '#EAF3EA',
+    backgroundColor: colors.backgroundSecondary,
   },
   errorFeedback: {
-    color: colors.burgundy,
-    backgroundColor: '#F8E2E0',
+    color: colors.error,
+    backgroundColor: colors.errorSurface,
   },
   forgot: {
     minHeight: 30,
@@ -397,14 +397,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.xs,
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
     borderRadius: 13,
   },
   disabled: {
     opacity: 0.65,
   },
   submitLabel: {
-    color: colors.warmWhite,
+    color: colors.backgroundPrimary,
     fontSize: 14,
     fontWeight: '700',
   },

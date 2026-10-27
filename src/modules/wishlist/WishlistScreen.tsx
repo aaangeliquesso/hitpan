@@ -114,7 +114,7 @@ export default function WishlistScreen() {
           <RefreshControl
             onRefresh={() => void refresh()}
             refreshing={loading}
-            tintColor={colors.burgundy}
+            tintColor={colors.neutralIcon}
           />
         }
       >
@@ -123,11 +123,11 @@ export default function WishlistScreen() {
         </View>
         <View style={styles.titleRow}>
           <Text style={styles.title}>My Wishlist</Text>
-          <Ionicons color={colors.burgundy} name="filter" size={17} />
+          <Ionicons color={colors.neutralIcon} name="filter" size={17} />
         </View>
 
         {loading && !items.length ? (
-          <ActivityIndicator color={colors.burgundy} style={styles.loader} />
+          <ActivityIndicator color={colors.neutralIcon} style={styles.loader} />
         ) : error ? (
           <Text style={styles.error}>{error.message}</Text>
         ) : (
@@ -146,7 +146,7 @@ export default function WishlistScreen() {
                   <Text style={styles.yearLabel}>{group.year}</Text>
                   <Text style={styles.countBadge}>{group.items.length}</Text>
                   <Ionicons
-                    color={colors.burgundy}
+                    color={colors.neutralIcon}
                     name={isYearOpen ? 'chevron-up' : 'chevron-down'}
                     size={17}
                   />
@@ -211,7 +211,7 @@ export default function WishlistScreen() {
           })
         )}
         {loading && items.length ? (
-          <ActivityIndicator color={colors.burgundy} style={styles.refreshing} />
+          <ActivityIndicator color={colors.neutralIcon} style={styles.refreshing} />
         ) : null}
         {!loading ? (
           <Pressable
@@ -219,13 +219,13 @@ export default function WishlistScreen() {
             onPress={() => void refresh()}
             style={styles.refreshButton}
           >
-            <Ionicons color={colors.burgundy} name="refresh" size={15} />
+            <Ionicons color={colors.neutralIcon} name="refresh" size={15} />
             <Text style={styles.refreshText}>Refresh wishlist</Text>
           </Pressable>
         ) : null}
       </ScrollView>
       <View accessibilityElementsHidden style={styles.fab}>
-        <Ionicons color={colors.burgundy} name="add" size={27} />
+        <Ionicons color={colors.backgroundPrimary} name="add" size={27} />
       </View>
     </SafeAreaView>
   );
@@ -262,8 +262,10 @@ const styles = StyleSheet.create({
     marginTop: 80,
   },
   error: {
-    color: colors.burgundy,
+    color: colors.error,
     padding: spacing.md,
+    backgroundColor: colors.errorSurface,
+    borderRadius: 12,
   },
   yearCard: {
     marginBottom: spacing.sm,
@@ -281,7 +283,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   yearLabel: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 15,
     fontWeight: '800',
   },
@@ -291,7 +293,7 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     overflow: 'hidden',
     color: colors.mutedText,
-    backgroundColor: '#EEE9E5',
+    backgroundColor: colors.backgroundPrimary,
     borderRadius: 5,
     fontSize: 10,
     textAlign: 'center',
@@ -309,7 +311,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   monthLabel: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -318,7 +320,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
     overflow: 'hidden',
     color: colors.mutedText,
-    backgroundColor: '#EEE9E5',
+    backgroundColor: colors.backgroundPrimary,
     borderRadius: 4,
     fontSize: 9,
     textAlign: 'center',
@@ -343,7 +345,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   refreshText: {
-    color: colors.burgundy,
+    color: colors.neutralIcon,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -355,7 +357,7 @@ const styles = StyleSheet.create({
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.cyan,
+    backgroundColor: colors.brand,
     borderRadius: 27,
   },
 });

@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   filled: {
-    color: colors.accent,
+    color: colors.textSecondary,
     fontSize: 14,
   },
   empty: {

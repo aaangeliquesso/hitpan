@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 28,
     fontWeight: '700',
   },

@@ -45,8 +45,12 @@ function FormField({
   error,
   shakeValue,
   containerStyle,
+  onBlur,
+  onFocus,
   ...inputProps
 }: FormFieldProps) {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <View style={[styles.field, containerStyle]}>
       <Text style={styles.fieldLabel}>
@@ -59,8 +63,20 @@ function FormField({
         ]}
       >
         <TextInput
+          onBlur={(event) => {
+            setIsFocused(false);
+            onBlur?.(event);
+          }}
+          onFocus={(event) => {
+            setIsFocused(true);
+            onFocus?.(event);
+          }}
           placeholderTextColor={colors.mutedText}
-          style={[styles.input, error ? styles.invalidInput : undefined]}
+          style={[
+            styles.input,
+            isFocused && styles.inputFocused,
+            error && styles.invalidInput,
+          ]}
           {...inputProps}
         />
       </Animated.View>
@@ -148,6 +164,12 @@ export function AddPanItemModal({
   const [progress, setProgress] = useState(0);
   const [rating, setRating] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [priceInputFocused, setPriceInputFocused] = useState(false);
+  const [customCategoryInputFocused, setCustomCategoryInputFocused] =
+    useState(false);
+  const [focusedDatePart, setFocusedDatePart] = useState<
+    'year' | 'month' | 'day' | null
+  >(null);
   const [cancelConfirmationVisible, setCancelConfirmationVisible] =
     useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -514,7 +536,7 @@ export function AddPanItemModal({
                 onPress={cancelForm}
                 style={styles.closeButton}
               >
-                <Ionicons color={colors.burgundy} name="close" size={23} />
+                <Ionicons color={colors.neutralIcon} name="close" size={23} />
               </Pressable>
             </View>
             <ScrollView
@@ -604,7 +626,7 @@ export function AddPanItemModal({
                         {category || 'Select Category'}
                       </Text>
                       <Ionicons
-                        color={colors.burgundy}
+                        color={colors.neutralIcon}
                         name="chevron-down"
                         size={18}
                       />
@@ -661,6 +683,7 @@ export function AddPanItemModal({
                     >
                       <TextInput
                         keyboardType="decimal-pad"
+                        onBlur={() => setPriceInputFocused(false)}
                         onChangeText={(value) => {
                           setPrice(value);
                           if (
@@ -674,10 +697,12 @@ export function AddPanItemModal({
                             }));
                           }
                         }}
+                        onFocus={() => setPriceInputFocused(true)}
                         placeholder="0.00"
                         placeholderTextColor={colors.mutedText}
                         style={[
                           styles.input,
+                          priceInputFocused && styles.inputFocused,
                           fieldErrors.price && styles.invalidInput,
                         ]}
                         value={price}
@@ -699,7 +724,7 @@ export function AddPanItemModal({
                         {formatDate(acquiredOn)}
                       </Text>
                       <Ionicons
-                        color={colors.burgundy}
+                        color={colors.neutralIcon}
                         name="calendar-outline"
                         size={18}
                       />
@@ -719,7 +744,7 @@ export function AddPanItemModal({
                       {formatDate(acquiredOn)}
                     </Text>
                     <Ionicons
-                      color={colors.burgundy}
+                      color={colors.neutralIcon}
                       name="calendar-outline"
                       size={18}
                     />
@@ -740,7 +765,11 @@ export function AddPanItemModal({
                         hitSlop={6}
                       >
                         <Ionicons
-                          color={star <= rating ? '#E3B532' : colors.border}
+                          color={
+                            star <= rating
+                              ? colors.textSecondary
+                              : colors.border
+                          }
                           name={star <= rating ? 'star' : 'star-outline'}
                           size={24}
                         />
@@ -755,7 +784,7 @@ export function AddPanItemModal({
                     <View style={styles.progressTitleGroup}>
                       <View style={styles.progressIcon}>
                         <Ionicons
-                          color={colors.burgundy}
+                          color={colors.neutralIcon}
                           name="pie-chart-outline"
                           size={17}
                         />
@@ -845,7 +874,7 @@ export function AddPanItemModal({
                   onPress={() => setCategoryPickerVisible(false)}
                   style={styles.closeButton}
                 >
-                  <Ionicons color={colors.burgundy} name="close" size={23} />
+                  <Ionicons color={colors.neutralIcon} name="close" size={23} />
                 </Pressable>
               </View>
               <ScrollView
@@ -893,7 +922,7 @@ export function AddPanItemModal({
                       style={styles.customCategoryOption}
                     >
                       <Ionicons
-                        color={colors.burgundy}
+                        color={colors.neutralIcon}
                         name="add"
                         size={18}
                       />
@@ -906,11 +935,16 @@ export function AddPanItemModal({
                       <TextInput
                         accessibilityLabel="Custom category name"
                         autoCapitalize="words"
+                        onBlur={() => setCustomCategoryInputFocused(false)}
                         onChangeText={setCustomCategory}
+                        onFocus={() => setCustomCategoryInputFocused(true)}
                         placeholder="Enter a custom category"
                         placeholderTextColor={colors.mutedText}
                         returnKeyType="done"
-                        style={styles.input}
+                        style={[
+                          styles.input,
+                          customCategoryInputFocused && styles.inputFocused,
+                        ]}
                         value={customCategory}
                       />
                       <Pressable
@@ -962,13 +996,13 @@ export function AddPanItemModal({
                   onPress={cancelDatePicker}
                   style={styles.closeButton}
                 >
-                  <Ionicons color={colors.burgundy} name="close" size={23} />
+                  <Ionicons color={colors.neutralIcon} name="close" size={23} />
                 </Pressable>
               </View>
               <View style={styles.dateEntryCard}>
                 <View style={styles.dateEntryHeading}>
                   <Ionicons
-                    color={colors.burgundy}
+                    color={colors.neutralIcon}
                     name="create-outline"
                     size={17}
                   />
@@ -990,13 +1024,16 @@ export function AddPanItemModal({
                       autoCorrect={false}
                       keyboardType="number-pad"
                       maxLength={4}
+                      onBlur={() => setFocusedDatePart(null)}
                       onChangeText={(value) => changeDatePart('year', value)}
+                      onFocus={() => setFocusedDatePart('year')}
                       placeholder="YYYY"
                       placeholderTextColor={colors.mutedText}
                       returnKeyType="next"
                       selectTextOnFocus
                       style={[
                         styles.datePartInput,
+                        focusedDatePart === 'year' && styles.inputFocused,
                         hasDateInput &&
                           dateYear.length > 0 &&
                           dateYear.length !== 4 &&
@@ -1014,13 +1051,16 @@ export function AddPanItemModal({
                       autoCorrect={false}
                       keyboardType="number-pad"
                       maxLength={2}
+                      onBlur={() => setFocusedDatePart(null)}
                       onChangeText={(value) => changeDatePart('month', value)}
+                      onFocus={() => setFocusedDatePart('month')}
                       placeholder="MM"
                       placeholderTextColor={colors.mutedText}
                       returnKeyType="next"
                       selectTextOnFocus
                       style={[
                         styles.datePartInput,
+                        focusedDatePart === 'month' && styles.inputFocused,
                         dateMonth.length > 0 &&
                           (Number(dateMonth) < 1 || Number(dateMonth) > 12) &&
                           styles.invalidDateEntryInput,
@@ -1037,13 +1077,16 @@ export function AddPanItemModal({
                       autoCorrect={false}
                       keyboardType="number-pad"
                       maxLength={2}
+                      onBlur={() => setFocusedDatePart(null)}
                       onChangeText={(value) => changeDatePart('day', value)}
+                      onFocus={() => setFocusedDatePart('day')}
                       placeholder="DD"
                       placeholderTextColor={colors.mutedText}
                       returnKeyType="done"
                       selectTextOnFocus
                       style={[
                         styles.datePartInput,
+                        focusedDatePart === 'day' && styles.inputFocused,
                         dateInput.length > 0 &&
                           !hasValidDateInput &&
                           styles.invalidDateEntryInput,
@@ -1078,7 +1121,7 @@ export function AddPanItemModal({
                   style={styles.calendarArrow}
                 >
                   <Ionicons
-                    color={colors.burgundy}
+                    color={colors.neutralIcon}
                     name="chevron-back"
                     size={20}
                   />
@@ -1098,7 +1141,7 @@ export function AddPanItemModal({
                   ]}
                 >
                   <Ionicons
-                    color={colors.burgundy}
+                    color={colors.neutralIcon}
                     name="chevron-forward"
                     size={20}
                   />
@@ -1201,7 +1244,7 @@ export function AddPanItemModal({
             >
               <View style={styles.confirmationIcon}>
                 <Ionicons
-                  color={colors.burgundy}
+                  color={colors.error}
                   name="alert-circle-outline"
                   size={27}
                 />
@@ -1248,7 +1291,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(35, 18, 18, 0.45)',
+    backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   confirmationOverlay: {
     position: 'absolute',
@@ -1259,7 +1302,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    backgroundColor: 'rgba(35, 18, 18, 0.58)',
+    backgroundColor: 'rgba(18, 18, 18, 0.58)',
     zIndex: 10,
   },
   confirmationDialog: {
@@ -1271,7 +1314,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 24,
-    shadowColor: '#241010',
+    shadowColor: colors.textPrimary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
@@ -1283,11 +1326,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
-    backgroundColor: '#F4E5E3',
+    backgroundColor: colors.brandSurface,
     borderRadius: 28,
   },
   confirmationTitle: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 19,
     fontWeight: '700',
     textAlign: 'center',
@@ -1311,20 +1354,20 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   keepEditingButton: {
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
   },
   keepEditingText: {
-    color: colors.cream,
+    color: colors.backgroundPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
   discardButton: {
-    backgroundColor: '#F4E5E3',
-    borderColor: '#E8C9CB',
+    backgroundColor: colors.errorSurface,
+    borderColor: colors.error,
     borderWidth: 1,
   },
   discardText: {
-    color: colors.burgundy,
+    color: colors.error,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -1347,7 +1390,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 21,
     fontWeight: '700',
   },
@@ -1362,7 +1405,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 19,
-    backgroundColor: '#F0E4DA',
+    backgroundColor: colors.backgroundSecondary,
   },
   form: {
     paddingBottom: spacing.md,
@@ -1403,11 +1446,14 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   requiredMark: {
-    color: '#FF4D4D',
+    color: colors.error,
     fontWeight: '700',
   },
   fieldError: {
-    color: '#FF4D4D',
+    color: colors.error,
+    padding: spacing.xs,
+    backgroundColor: colors.errorSurface,
+    borderRadius: 6,
     fontSize: 11,
     marginTop: 4,
   },
@@ -1416,15 +1462,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 9,
     color: colors.text,
-    backgroundColor: colors.warmWhite,
+    backgroundColor: colors.backgroundPrimary,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 11,
     fontSize: 14,
   },
+  inputFocused: {
+    borderColor: colors.textPrimary,
+  },
   invalidInput: {
-    borderColor: '#FF4D4D',
+    borderColor: colors.error,
     borderWidth: 1.5,
+    backgroundColor: colors.errorSurface,
   },
   dateSelector: {
     minHeight: 44,
@@ -1446,7 +1496,7 @@ const styles = StyleSheet.create({
   calendarOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(35, 18, 18, 0.45)',
+    backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   calendarKeyboardArea: {
     justifyContent: 'flex-end',
@@ -1469,7 +1519,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   calendarTitle: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 19,
     fontWeight: '700',
   },
@@ -1501,11 +1551,11 @@ const styles = StyleSheet.create({
   todayButton: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    backgroundColor: '#F4E5E3',
+    backgroundColor: colors.neutralSurface,
     borderRadius: 11,
   },
   todayButtonText: {
-    color: colors.burgundy,
+    color: colors.neutralIcon,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -1532,7 +1582,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 6,
     color: colors.text,
-    backgroundColor: colors.cream,
+    backgroundColor: colors.backgroundPrimary,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 12,
@@ -1547,7 +1597,8 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   invalidDateEntryInput: {
-    borderColor: colors.burgundy,
+    borderColor: colors.error,
+    backgroundColor: colors.errorSurface,
   },
   dateEntryHint: {
     color: colors.mutedText,
@@ -1555,7 +1606,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   invalidDateEntryHint: {
-    color: colors.burgundy,
+    color: colors.error,
+    padding: spacing.xs,
+    backgroundColor: colors.errorSurface,
+    borderRadius: 6,
   },
   calendarMonthRow: {
     flexDirection: 'row',
@@ -1573,7 +1627,7 @@ const styles = StyleSheet.create({
     height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0E4DA',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 19,
   },
   disabledCalendarControl: {
@@ -1600,10 +1654,10 @@ const styles = StyleSheet.create({
     borderRadius: 21,
   },
   disabledCalendarDay: {
-    backgroundColor: '#F1EBE7',
+    backgroundColor: colors.backgroundSecondary,
   },
   disabledCalendarDayText: {
-    color: '#B9AAA4',
+    color: colors.textSecondary,
   },
   calendarActions: {
     flexDirection: 'row',
@@ -1618,18 +1672,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   calendarCancelAction: {
-    backgroundColor: '#EDE2D8',
+    backgroundColor: colors.neutralSurface,
   },
   calendarCancelText: {
-    color: colors.burgundy,
+    color: colors.neutralIcon,
     fontSize: 14,
     fontWeight: '700',
   },
   calendarConfirmAction: {
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
   },
   calendarConfirmText: {
-    color: colors.cream,
+    color: colors.backgroundPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -1638,19 +1692,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   todayCalendarDay: {
-    borderColor: '#D6A9AC',
+    borderColor: colors.border,
     borderWidth: 1,
   },
   todayCalendarDayText: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontWeight: '700',
   },
   selectedCalendarDay: {
-    backgroundColor: colors.burgundy,
-    borderColor: colors.burgundy,
+    backgroundColor: colors.brand,
+    borderColor: colors.brand,
   },
   selectedCalendarDayText: {
-    color: colors.cream,
+    color: colors.backgroundPrimary,
     fontWeight: '700',
   },
   progressCard: {
@@ -1677,7 +1731,7 @@ const styles = StyleSheet.create({
     height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F4E5E3',
+    backgroundColor: colors.brandSurface,
     borderRadius: 17,
   },
   progressTitle: {
@@ -1695,11 +1749,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: '#F4E5E3',
+    backgroundColor: colors.brandSurface,
     borderRadius: 13,
   },
   progressValue: {
-    color: colors.burgundy,
+    color: colors.brand,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -1713,7 +1767,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   activeProgressEndpoint: {
-    color: colors.burgundy,
+    color: colors.brand,
     fontWeight: '700',
   },
   categorySelector: {
@@ -1739,7 +1793,7 @@ const styles = StyleSheet.create({
   categoryOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(35, 18, 18, 0.45)',
+    backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   categorySheet: {
     maxHeight: '82%',
@@ -1757,7 +1811,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   categoryTitle: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 19,
     fontWeight: '700',
   },
@@ -1773,7 +1827,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   categoryGroupTitle: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 13,
     fontWeight: '700',
     marginBottom: spacing.xs,
@@ -1792,15 +1846,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   selectedCategoryOption: {
-    backgroundColor: '#F4E0E1',
-    borderColor: colors.burgundy,
+    backgroundColor: colors.brandSurface,
+    borderColor: colors.brand,
   },
   categoryOptionText: {
     color: colors.mutedText,
     fontSize: 12,
   },
   selectedCategoryOptionText: {
-    color: colors.burgundy,
+    color: colors.brand,
     fontWeight: '600',
   },
   customCategorySection: {
@@ -1815,13 +1869,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    backgroundColor: '#F4E0E1',
-    borderColor: '#E8C9CB',
+    backgroundColor: colors.backgroundSecondary,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 12,
   },
   customCategoryOptionText: {
-    color: colors.burgundy,
+    color: colors.neutralIcon,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1829,11 +1883,11 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
     borderRadius: 12,
   },
   customCategoryButtonText: {
-    color: colors.cream,
+    color: colors.backgroundPrimary,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -1852,8 +1906,8 @@ const styles = StyleSheet.create({
     borderRadius: 11,
   },
   selectedChoice: {
-    backgroundColor: '#F4E0E1',
-    borderColor: colors.burgundy,
+    backgroundColor: colors.brandSurface,
+    borderColor: colors.brand,
   },
   choiceText: {
     color: colors.mutedText,
@@ -1861,10 +1915,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   selectedChoiceText: {
-    color: colors.burgundy,
+    color: colors.brand,
   },
   error: {
-    color: colors.burgundy,
+    color: colors.error,
+    padding: spacing.sm,
+    backgroundColor: colors.errorSurface,
+    borderRadius: 8,
     fontSize: 13,
     marginBottom: spacing.sm,
   },
@@ -1881,18 +1938,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   dismissButton: {
-    backgroundColor: '#EDE2D8',
+    backgroundColor: colors.neutralSurface,
   },
   dismissText: {
-    color: colors.burgundy,
+    color: colors.neutralIcon,
     fontSize: 14,
     fontWeight: '700',
   },
   saveButton: {
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
   },
   saveText: {
-    color: colors.cream,
+    color: colors.backgroundPrimary,
     fontSize: 14,
     fontWeight: '700',
   },

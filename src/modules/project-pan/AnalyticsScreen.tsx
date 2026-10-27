@@ -14,7 +14,7 @@ export default function AnalyticsScreen() {
         <Text style={styles.title}>Home</Text>
         <View style={styles.card}>
           <View style={styles.icon}>
-            <Ionicons color={colors.burgundy} name="bar-chart-outline" size={28} />
+            <Ionicons color={colors.neutralIcon} name="bar-chart-outline" size={28} />
           </View>
           <Text style={styles.cardTitle}>Your pan, at a glance</Text>
           <Text style={styles.description}>
@@ -62,12 +62,12 @@ const styles = StyleSheet.create({
     height: 58,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F4E0E1',
+    backgroundColor: colors.brandSurface,
     borderRadius: 29,
     marginBottom: spacing.md,
   },
   cardTitle: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 17,
     fontWeight: '700',
     marginBottom: spacing.xs,
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   comingSoon: {
-    color: colors.burgundy,
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '700',
     marginTop: spacing.md,

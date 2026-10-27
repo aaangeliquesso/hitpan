@@ -19,7 +19,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   label: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },

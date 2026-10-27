@@ -95,7 +95,7 @@ export default function ProfileScreen() {
           </View>
           <Header title="Profile" subtitle="Your HitPan account." />
           {loading ? (
-            <ActivityIndicator color={colors.burgundy} />
+            <ActivityIndicator color={colors.neutralIcon} />
           ) : error ? (
             <Text style={styles.error}>{error}</Text>
           ) : (
@@ -120,7 +120,7 @@ export default function ProfileScreen() {
           >
             <View style={styles.confirmationIcon}>
               <Ionicons
-                color={colors.burgundy}
+                color={colors.neutralIcon}
                 name="log-out-outline"
                 size={24}
               />
@@ -177,14 +177,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   error: {
-    color: colors.burgundy,
+    color: colors.error,
+    padding: spacing.md,
+    backgroundColor: colors.errorSurface,
+    borderRadius: 12,
   },
   modalBackdrop: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
-    backgroundColor: 'rgba(43, 32, 32, 0.55)',
+    backgroundColor: 'rgba(18, 18, 18, 0.55)',
   },
   confirmationCard: {
     width: '100%',
@@ -194,7 +197,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 22,
-    backgroundColor: colors.warmWhite,
+    backgroundColor: colors.backgroundPrimary,
   },
   confirmationIcon: {
     width: 48,
@@ -203,10 +206,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 24,
-    backgroundColor: colors.cream,
+    backgroundColor: colors.backgroundSecondary,
   },
   confirmationTitle: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 21,
     fontWeight: '700',
   },
@@ -244,12 +247,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
   },
   confirmLogoutButtonText: {
-    color: colors.warmWhite,
+    color: colors.backgroundPrimary,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   confirmationButtonPressed: {
     opacity: 0.8,

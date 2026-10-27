@@ -42,6 +42,7 @@ export function LogProgressModal({
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notesFocused, setNotesFocused] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -139,7 +140,7 @@ export function LogProgressModal({
                 onPress={onClose}
                 style={styles.closeButton}
               >
-                <Ionicons color={colors.burgundy} name="close" size={22} />
+                <Ionicons color={colors.neutralIcon} name="close" size={22} />
               </Pressable>
             </View>
 
@@ -191,7 +192,7 @@ export function LogProgressModal({
                         style={styles.secondaryButton}
                       >
                         <Ionicons
-                          color={colors.burgundy}
+                          color={colors.neutralIcon}
                           name="camera-outline"
                           size={17}
                         />
@@ -204,7 +205,7 @@ export function LogProgressModal({
                         style={styles.secondaryButton}
                       >
                         <Ionicons
-                          color={colors.burgundy}
+                          color={colors.neutralIcon}
                           name="trash-outline"
                           size={17}
                         />
@@ -223,7 +224,7 @@ export function LogProgressModal({
                     ]}
                   >
                     <Ionicons
-                      color={colors.burgundy}
+                      color={colors.neutralIcon}
                       name="camera-outline"
                       size={22}
                     />
@@ -243,10 +244,15 @@ export function LogProgressModal({
                   editable={!saving}
                   maxLength={500}
                   multiline
+                  onBlur={() => setNotesFocused(false)}
                   onChangeText={setNotes}
+                  onFocus={() => setNotesFocused(true)}
                   placeholder="Add a note about your progress..."
                   placeholderTextColor={colors.mutedText}
-                  style={styles.notesInput}
+                  style={[
+                    styles.notesInput,
+                    notesFocused && styles.notesInputFocused,
+                  ]}
                   textAlignVertical="top"
                   value={notes}
                 />
@@ -278,7 +284,7 @@ export function LogProgressModal({
                   ]}
                 >
                   {saving ? (
-                    <ActivityIndicator color={colors.warmWhite} />
+                    <ActivityIndicator color={colors.backgroundPrimary} />
                   ) : (
                     <Text style={styles.saveText}>Save update</Text>
                   )}
@@ -296,7 +302,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(35, 18, 18, 0.45)',
+    backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   keyboardArea: {
     maxHeight: '92%',
@@ -306,7 +312,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.cream,
+    backgroundColor: colors.backgroundPrimary,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
   },
@@ -321,7 +327,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   title: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 21,
     fontWeight: '700',
   },
@@ -336,7 +342,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 19,
-    backgroundColor: '#F0E4DA',
+    backgroundColor: colors.backgroundSecondary,
   },
   content: {
     gap: spacing.md,
@@ -356,7 +362,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   progressValue: {
-    color: colors.burgundy,
+    color: colors.brand,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -369,7 +375,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   activeProgressLabel: {
-    color: colors.burgundy,
+    color: colors.brand,
     fontWeight: '700',
   },
   takePhotoButton: {
@@ -385,7 +391,7 @@ const styles = StyleSheet.create({
   },
   takePhotoText: {
     flex: 1,
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -424,10 +430,10 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
     borderRadius: 9,
-    backgroundColor: colors.cream,
+    backgroundColor: colors.backgroundSecondary,
   },
   secondaryButtonText: {
-    color: colors.burgundy,
+    color: colors.neutralIcon,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -437,12 +443,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
-    backgroundColor: colors.warmWhite,
+    backgroundColor: colors.backgroundPrimary,
     color: colors.text,
     fontSize: 14,
   },
+  notesInputFocused: {
+    borderColor: colors.textPrimary,
+  },
   error: {
-    color: colors.burgundy,
+    color: colors.error,
+    padding: spacing.sm,
+    backgroundColor: colors.errorSurface,
+    borderRadius: 8,
     fontSize: 12,
   },
   actions: {
@@ -468,10 +480,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
   },
   saveText: {
-    color: colors.warmWhite,
+    color: colors.backgroundPrimary,
     fontSize: 14,
     fontWeight: '700',
   },

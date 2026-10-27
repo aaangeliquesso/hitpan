@@ -201,7 +201,7 @@ export default function ProjectPanScreen() {
           <RefreshControl
             onRefresh={() => void handleRefresh()}
             refreshing={loading}
-            tintColor={colors.burgundy}
+            tintColor={colors.neutralIcon}
           />
         }
       >
@@ -216,7 +216,7 @@ export default function ProjectPanScreen() {
             onPress={openCategoryFilter}
             style={styles.filterButton}
           >
-            <Ionicons color={colors.burgundy} name="options-outline" size={20} />
+            <Ionicons color={colors.neutralIcon} name="options-outline" size={20} />
           </Pressable>
         </View>
         {selectedCategories.size > 0 ? (
@@ -240,7 +240,7 @@ export default function ProjectPanScreen() {
           </Text>
         ) : null}
         {loading && items.length === 0 ? (
-          <ActivityIndicator color={colors.burgundy} style={styles.loader} />
+          <ActivityIndicator color={colors.neutralIcon} style={styles.loader} />
         ) : error ? (
           <Text style={styles.error}>{error.message}</Text>
         ) : filteredItems.length ? (
@@ -259,7 +259,7 @@ export default function ProjectPanScreen() {
           </>
         ) : (
           <View style={styles.empty}>
-            <Ionicons color={colors.mutedBurgundy} name="sparkles-outline" size={30} />
+            <Ionicons color={colors.textSecondary} name="sparkles-outline" size={30} />
             <Text style={styles.emptyTitle}>Your project pan starts here</Text>
             <Text style={styles.emptyText}>
               Add a product you own and track its progress over time.
@@ -267,7 +267,7 @@ export default function ProjectPanScreen() {
           </View>
         )}
         {loading && items.length > 0 ? (
-          <ActivityIndicator color={colors.burgundy} style={styles.refreshing} />
+          <ActivityIndicator color={colors.neutralIcon} style={styles.refreshing} />
         ) : null}
         <Pressable
           accessibilityLabel="Refresh products"
@@ -275,7 +275,7 @@ export default function ProjectPanScreen() {
           onPress={() => void handleRefresh()}
           style={styles.refreshButton}
         >
-          <Ionicons color={colors.burgundy} name="refresh" size={16} />
+          <Ionicons color={colors.neutralIcon} name="refresh" size={16} />
           <Text style={styles.refreshText}>Refresh</Text>
         </Pressable>
       </ScrollView>
@@ -289,7 +289,7 @@ export default function ProjectPanScreen() {
           pressed && styles.fabPressed,
         ]}
       >
-        <Ionicons color={colors.burgundy} name="add" size={30} />
+        <Ionicons color={colors.backgroundPrimary} name="add" size={30} />
       </Pressable>
       <Modal
         animationType="slide"
@@ -313,7 +313,7 @@ export default function ProjectPanScreen() {
                 onPress={() => setFilterModalVisible(false)}
                 style={styles.filterCloseButton}
               >
-                <Ionicons color={colors.burgundy} name="close" size={22} />
+                <Ionicons color={colors.neutralIcon} name="close" size={22} />
               </Pressable>
             </View>
             <ScrollView
@@ -340,7 +340,7 @@ export default function ProjectPanScreen() {
                       </View>
                       <Ionicons
                         color={
-                          groupSelected ? colors.burgundy : colors.mutedText
+                          groupSelected ? colors.brand : colors.mutedText
                         }
                         name={
                           groupSelected
@@ -374,7 +374,7 @@ export default function ProjectPanScreen() {
                             </Text>
                             {checked ? (
                               <Ionicons
-                                color={colors.burgundy}
+                                color={colors.brand}
                                 name="checkmark"
                                 size={15}
                               />
@@ -461,31 +461,31 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   activeFilterText: {
-    color: colors.burgundy,
+    color: colors.brand,
     fontSize: 11,
     fontWeight: '600',
   },
   clearFiltersButton: {
     paddingHorizontal: 9,
     paddingVertical: 5,
-    backgroundColor: '#F2DDDA',
+    backgroundColor: colors.neutralSurface,
     borderRadius: 12,
   },
   clearFiltersText: {
-    color: colors.burgundy,
+    color: colors.neutralIcon,
     fontSize: 11,
     fontWeight: '600',
   },
   filterOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(35, 18, 18, 0.45)',
+    backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   filterSheet: {
     maxHeight: '84%',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.cream,
+    backgroundColor: colors.backgroundPrimary,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
   },
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   filterTitle: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 20,
     fontWeight: '700',
   },
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 19,
-    backgroundColor: '#F0E4DA',
+    backgroundColor: colors.backgroundSecondary,
   },
   filterList: {
     paddingBottom: spacing.md,
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   filterGroupTitle: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     overflow: 'hidden',
     color: colors.mutedText,
-    backgroundColor: '#EEE9E5',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 8,
     fontSize: 10,
     textAlign: 'center',
@@ -567,15 +567,15 @@ const styles = StyleSheet.create({
     borderRadius: 17,
   },
   selectedFilterOption: {
-    backgroundColor: '#F4E0E1',
-    borderColor: '#D6A9AC',
+    backgroundColor: colors.brandSurface,
+    borderColor: colors.brand,
   },
   filterOptionText: {
     color: colors.mutedText,
     fontSize: 11,
   },
   selectedFilterOptionText: {
-    color: colors.burgundy,
+    color: colors.brand,
     fontWeight: '600',
   },
   filterActions: {
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
-    backgroundColor: colors.cream,
+    backgroundColor: colors.backgroundPrimary,
   },
   filterAction: {
     minHeight: 46,
@@ -593,19 +593,19 @@ const styles = StyleSheet.create({
   },
   resetFilterAction: {
     width: 84,
-    backgroundColor: '#EDE2D8',
+    backgroundColor: colors.neutralSurface,
   },
   resetFilterText: {
-    color: colors.burgundy,
+    color: colors.neutralIcon,
     fontSize: 13,
     fontWeight: '600',
   },
   applyFilterAction: {
     flex: 1,
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
   },
   applyFilterText: {
-    color: colors.cream,
+    color: colors.backgroundPrimary,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -627,8 +627,10 @@ const styles = StyleSheet.create({
     marginTop: 80,
   },
   error: {
-    color: colors.burgundy,
+    color: colors.error,
     padding: spacing.md,
+    backgroundColor: colors.errorSurface,
+    borderRadius: 12,
   },
   empty: {
     alignItems: 'center',
@@ -636,7 +638,7 @@ const styles = StyleSheet.create({
     paddingTop: 76,
   },
   emptyTitle: {
-    color: colors.burgundy,
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
     marginTop: spacing.md,
@@ -659,7 +661,7 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   refreshText: {
-    color: colors.burgundy,
+    color: colors.neutralIcon,
     fontSize: 12,
     fontWeight: '600',
   },
@@ -670,9 +672,9 @@ const styles = StyleSheet.create({
     height: 58,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.cyan,
+    backgroundColor: colors.brand,
     borderRadius: 29,
-    shadowColor: '#301A1A',
+    shadowColor: colors.textPrimary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 5,

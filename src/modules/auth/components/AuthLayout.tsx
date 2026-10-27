@@ -19,11 +19,11 @@ interface AuthLayoutProps {
 export function AuthLayout({ children, backButton }: AuthLayoutProps) {
   return (
     <>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
         <View style={styles.hero}>
           <View style={styles.backButton}>{backButton}</View>
-          <BrandWordmark color="white" width={220} />
+          <BrandWordmark color="burgundy" width={220} />
         </View>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -45,7 +45,7 @@ export function AuthLayout({ children, backButton }: AuthLayoutProps) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.backgroundPrimary,
   },
   keyboard: {
     flex: 1,
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     height: 168,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.backgroundPrimary,
   },
   backButton: {
     position: 'absolute',
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   sheet: {
     flex: 1.1,
     marginTop: -24,
-    backgroundColor: colors.warmWhite,
+    backgroundColor: colors.backgroundPrimary,
     borderTopLeftRadius: 40,
     borderTopRightRadius: 40,
   },

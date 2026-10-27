@@ -35,10 +35,10 @@ export function ProfileSummary({
         ]}
       >
         {signingOut ? (
-          <ActivityIndicator color={colors.warmWhite} />
+          <ActivityIndicator color={colors.backgroundPrimary} />
         ) : (
           <Ionicons
-            color={colors.warmWhite}
+            color={colors.backgroundPrimary}
             name="log-out-outline"
             size={20}
           />
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     borderRadius: 12,
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
   },
   logoutButtonPressed: {
     opacity: 0.85,
@@ -86,8 +86,8 @@ const styles = StyleSheet.create({
     opacity: 0.65,
   },
   logoutButtonText: {
-    color: colors.warmWhite,
+    color: colors.backgroundPrimary,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

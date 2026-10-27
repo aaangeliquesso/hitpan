@@ -147,12 +147,12 @@ export default function ProductDetailsScreen() {
             onPress={() => router.back()}
             style={styles.backButton}
           >
-            <Ionicons color={colors.burgundy} name="arrow-back" size={22} />
+            <Ionicons color={colors.neutralIcon} name="arrow-back" size={22} />
           </Pressable>
           <BrandWordmark width={112} />
         </View>
         {loading ? (
-          <ActivityIndicator color={colors.burgundy} style={styles.loader} />
+          <ActivityIndicator color={colors.neutralIcon} style={styles.loader} />
         ) : error ? (
           <Text style={styles.error}>{error}</Text>
         ) : item ? (
@@ -173,7 +173,7 @@ export default function ProductDetailsScreen() {
                     ]}
                   >
                     <Ionicons
-                      color={colors.burgundy}
+                      color={colors.neutralIcon}
                       name="create-outline"
                       size={18}
                     />
@@ -189,10 +189,10 @@ export default function ProductDetailsScreen() {
                     ]}
                   >
                     {deleting ? (
-                      <ActivityIndicator color={colors.burgundy} size="small" />
+                      <ActivityIndicator color={colors.neutralIcon} size="small" />
                     ) : (
                       <Ionicons
-                        color={colors.burgundy}
+                        color={colors.neutralIcon}
                         name="trash-outline"
                         size={18}
                       />
@@ -264,7 +264,7 @@ export default function ProductDetailsScreen() {
                 ]}
               >
                 <Ionicons
-                  color={colors.warmWhite}
+                  color={colors.backgroundPrimary}
                   name="camera-outline"
                   size={18}
                 />
@@ -278,7 +278,7 @@ export default function ProductDetailsScreen() {
               <View style={styles.rule} />
             </View>
             {logsLoading ? (
-              <ActivityIndicator color={colors.burgundy} />
+              <ActivityIndicator color={colors.neutralIcon} />
             ) : logsError ? (
               <Text style={styles.error}>{logsError.message}</Text>
             ) : logs.length ? (
@@ -316,14 +316,14 @@ export default function ProductDetailsScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.cream,
+    backgroundColor: colors.backgroundPrimary,
   },
   header: {
     height: 66,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: spacing.xs,
-    backgroundColor: colors.cream,
+    backgroundColor: colors.backgroundPrimary,
   },
   backButton: {
     position: 'absolute',
@@ -341,11 +341,11 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(244, 229, 227, 0.75)',
+    backgroundColor: colors.neutralSurface,
     borderRadius: 18,
   },
   cardActionPressed: {
-    backgroundColor: '#F4E5E3',
+    backgroundColor: colors.neutralSurface,
   },
   loader: {
     flex: 1,
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   },
   productCard: {
     padding: spacing.md,
-    backgroundColor: colors.warmWhite,
+    backgroundColor: colors.backgroundPrimary,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 16,
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   productSubtitle: {
-    color: colors.text,
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: '500',
     marginTop: -spacing.xs,
@@ -398,17 +398,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   categoryBadge: {
-    color: colors.burgundy,
-    backgroundColor: '#F5E6E4',
+    color: colors.brand,
+    backgroundColor: colors.brandSurface,
   },
   priceBadge: {
-    color: colors.burgundy,
-    backgroundColor: '#F8E2E0',
+    color: colors.brand,
+    backgroundColor: colors.brandSurface,
     fontWeight: '700',
   },
   giftBadge: {
     color: colors.success,
-    backgroundColor: '#E5EFE4',
+    backgroundColor: colors.backgroundSecondary,
   },
   ratingRow: {
     flexDirection: 'row',
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     fontSize: 19,
   },
   filledStar: {
-    color: '#E3B532',
+    color: colors.textSecondary,
   },
   progressRow: {
     flexDirection: 'row',
@@ -452,10 +452,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.xs,
     borderRadius: 12,
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
   },
   logProgressButtonText: {
-    color: colors.warmWhite,
+    color: colors.backgroundPrimary,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -487,8 +487,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   error: {
-    color: colors.burgundy,
+    color: colors.error,
     padding: spacing.md,
+    backgroundColor: colors.errorSurface,
+    borderRadius: 12,
     textAlign: 'center',
   },
 });

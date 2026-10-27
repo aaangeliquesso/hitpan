@@ -41,8 +41,8 @@ export function WishlistItemRow({
           accessibilityLabel={`Mark ${item.item_name} as a need`}
           disabled={saving}
           onValueChange={onToggleNeed}
-          trackColor={{ false: '#E4D8D0', true: '#9CCBC7' }}
-          thumbColor={item.is_need ? colors.success : '#FFFDF9'}
+          trackColor={{ false: colors.border, true: colors.brand }}
+          thumbColor={colors.backgroundPrimary}
           value={item.is_need}
           style={styles.switch}
         />
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 6,
     paddingVertical: 7,
-    backgroundColor: '#EDE5DF',
+    backgroundColor: colors.backgroundSecondary,
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
   },
@@ -84,12 +84,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 6,
-    backgroundColor: colors.warmWhite,
+    backgroundColor: colors.backgroundPrimary,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
   alternate: {
-    backgroundColor: '#F5E7E8',
+    backgroundColor: colors.backgroundSecondary,
   },
   index: {
     width: '8%',
@@ -125,8 +125,8 @@ const styles = StyleSheet.create({
   },
   checked: {
     color: colors.success,
-    backgroundColor: '#E6F1E6',
-    borderColor: '#B7CFB6',
+    backgroundColor: colors.backgroundSecondary,
+    borderColor: colors.border,
   },
   need: {
     width: '16%',

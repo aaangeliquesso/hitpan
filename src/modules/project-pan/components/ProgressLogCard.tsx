@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   percentage: {
-    color: colors.burgundy,
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },

@@ -31,17 +31,26 @@ export function AuthField({
   textContentType,
 }: AuthFieldProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   return (
     <View style={styles.container}>
-      <View style={[styles.inputContainer, error && styles.inputError]}>
+      <View
+        style={[
+          styles.inputContainer,
+          isFocused && styles.inputFocused,
+          error && styles.inputError,
+        ]}
+      >
         <TextInput
           accessibilityLabel={label}
           accessibilityHint={error}
           autoCapitalize={autoCapitalize}
           autoCorrect={false}
           keyboardType={keyboardType}
+          onBlur={() => setIsFocused(false)}
           onChangeText={onChangeText}
+          onFocus={() => setIsFocused(true)}
           placeholder={label}
           placeholderTextColor={colors.accessibleMutedText}
           secureTextEntry={secureTextEntry && !isPasswordVisible}
@@ -81,8 +90,8 @@ const styles = StyleSheet.create({
     minHeight: 46,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.warmWhite,
-    borderColor: colors.mutedBurgundy,
+    backgroundColor: colors.backgroundPrimary,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 13,
   },
@@ -100,11 +109,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   inputError: {
-    borderColor: colors.burgundy,
+    borderColor: colors.error,
+    backgroundColor: colors.errorSurface,
+  },
+  inputFocused: {
+    borderColor: colors.textPrimary,
   },
   error: {
     marginTop: spacing.xs,
-    color: colors.burgundy,
+    padding: spacing.sm,
+    color: colors.error,
+    backgroundColor: colors.errorSurface,
+    borderRadius: 8,
     fontSize: 12,
   },
 });

@@ -38,11 +38,7 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
           />
         ) : (
           <View style={styles.imagePlaceholder}>
-            <Ionicons
-              color={colors.mutedBurgundy}
-              name="image-outline"
-              size={30}
-            />
+            <Ionicons color={colors.textSecondary} name="image-outline" size={30} />
           </View>
         )}
 
@@ -92,11 +88,11 @@ const styles = StyleSheet.create({
   card: {
     padding: 12,
     marginBottom: spacing.md,
-    backgroundColor: '#FFF0F0',
-    borderColor: '#F1D3D5',
+    backgroundColor: colors.backgroundPrimary,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 18,
-    shadowColor: '#392424',
+    shadowColor: colors.textPrimary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.07,
     shadowRadius: 8,
@@ -121,7 +117,7 @@ const styles = StyleSheet.create({
     height: 96,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1E5E1',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: 12,
   },
   details: {
@@ -137,7 +133,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   brand: {
-    color: colors.text,
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -161,18 +157,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pricePill: {
-    color: colors.burgundy,
-    backgroundColor: '#F8E2E0',
+    color: colors.brand,
+    backgroundColor: colors.brandSurface,
     fontSize: 13,
     fontWeight: '700',
   },
   giftPill: {
     color: colors.success,
-    backgroundColor: '#E5EFE4',
+    backgroundColor: colors.backgroundSecondary,
   },
   categoryPill: {
-    color: colors.burgundy,
-    backgroundColor: '#F7E9E7',
+    color: colors.brand,
+    backgroundColor: colors.brandSurface,
   },
   rating: {
     alignSelf: 'flex-end',
@@ -193,7 +189,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     minWidth: 38,
-    color: colors.burgundy,
+    color: colors.brand,
     fontSize: 12,
     fontWeight: '700',
     textAlign: 'right',

@@ -31,14 +31,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.burgundy,
+    backgroundColor: colors.brand,
     borderRadius: 26,
   },
   pressed: {
     opacity: 0.82,
   },
   label: {
-    color: colors.cream,
+    color: colors.backgroundPrimary,
     fontSize: 16,
     fontWeight: '700',
   },

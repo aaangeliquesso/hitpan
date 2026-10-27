@@ -10,7 +10,7 @@
       "icon": "./logo/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./logo/icon.png",
-        "backgroundColor": "#641616"
+        "backgroundColor": "#FFFFFF"
       }
     },
     "plugins": [
@@ -27,8 +27,8 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#641616",
-          "image": "./logo/white-secondary-logo.png",
+          "backgroundColor": "#FFFFFF",
+          "image": "./logo/burgundy-secondary-logo.png",
           "resizeMode": "contain"
         }
       ]

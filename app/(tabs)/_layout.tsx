@@ -7,9 +7,8 @@ import {
   getNavbarSafePadding,
   NAVBAR_HEIGHT,
 } from '../../src/shared/ui/navigation';
+import { colors } from '../../src/shared/ui/theme';
 
-const BURGUNDY = '#4A121A';
-const CREAM = '#F7F0E5';
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
 function TabIcon({
@@ -23,7 +22,11 @@ function TabIcon({
 }) {
   return (
     <View style={[styles.tabIcon, focused && styles.activeTabPill]}>
-      <Ionicons color={focused ? CREAM : color} name={name} size={22} />
+      <Ionicons
+        color={focused ? colors.brand : color}
+        name={name}
+        size={22}
+      />
     </View>
   );
 }
@@ -46,8 +49,8 @@ export default function TabLayout() {
         ],
         tabBarItemStyle: styles.tabBarItem,
         tabBarShowLabel: false,
-        tabBarActiveTintColor: CREAM,
-        tabBarInactiveTintColor: '#D9BDB2',
+        tabBarActiveTintColor: colors.brand,
+        tabBarInactiveTintColor: colors.textSecondary,
       }}
     >
       <Tabs.Screen
@@ -117,8 +120,9 @@ const styles = StyleSheet.create({
     height: NAVBAR_HEIGHT,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: BURGUNDY,
-    borderTopWidth: 0,
+    backgroundColor: colors.backgroundPrimary,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderBottomLeftRadius: 0,
@@ -138,6 +142,6 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -6 }],
   },
   activeTabPill: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: colors.brandSurface,
   },
 });

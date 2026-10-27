@@ -1,14 +1,24 @@
+const palette = {
+  backgroundPrimary: '#FFFFFF',
+  backgroundSecondary: '#F9F9FB',
+  textPrimary: '#121212',
+  textSecondary: '#666666',
+  border: '#E5E5E5',
+  brand: '#7A2033',
+  brandSurface: 'rgba(122, 32, 51, 0.08)',
+  error: '#E53935',
+  errorSurface: '#FFEBEE',
+  neutralIcon: '#4A4A4A',
+  neutralSurface: 'rgba(0, 0, 0, 0.05)',
+} as const;
+
 export const colors = {
-  burgundy: '#641616',
-  cream: '#F7F0E5',
-  warmWhite: '#FFF9F7',
-  mutedBurgundy: '#D9BDB2',
-  cyan: '#67E8F9',
-  text: '#2B2020',
-  mutedText: '#776767',
-  accessibleMutedText: '#5F4B4B',
-  border: '#E8DCD0',
-  accent: '#A66A58',
+  ...palette,
+  cream: palette.backgroundPrimary,
+  warmWhite: palette.backgroundSecondary,
+  text: palette.textPrimary,
+  mutedText: palette.textSecondary,
+  accessibleMutedText: palette.textSecondary,
   success: '#54775A',
 } as const;
 

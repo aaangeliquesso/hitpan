@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
   },
   fill: {
     height: '100%',
-    backgroundColor: '#D9829A',
+    backgroundColor: colors.brand,
     borderRadius: 4,
   },
   finishedFill: {
