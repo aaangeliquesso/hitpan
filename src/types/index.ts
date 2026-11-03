@@ -11,6 +11,12 @@ export interface VanityItem {
   acquired_on: string;
   status: 'active' | 'finished' | 'decluttered';
   current_progress: number;
+  progress_percentage?: number | null;
+  image_url?: string | null;
+  progress_logs?: Pick<
+    ProgressLog,
+    'photo_url' | 'logged_at' | 'progress_percentage'
+  >[];
   created_at: string;
   updated_at: string;
 }

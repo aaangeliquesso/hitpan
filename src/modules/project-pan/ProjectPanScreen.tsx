@@ -25,19 +25,16 @@ import { AddPanItemModal } from './components/AddPanItemModal';
 import { ProductCard } from './components/ProductCard';
 import { getCategoryGroup, PRODUCT_CATEGORIES } from './categories';
 import { usePanItems } from './hooks/usePanItems';
-import { useProgressLogs } from './hooks/useProgressLogs';
 import { createPanItem } from './services/panService';
 import type { VanityItem } from '../../types';
 
 function ProductSection({
   title,
   items,
-  photoByItem,
   onSelect,
 }: {
   title?: string;
   items: VanityItem[];
-  photoByItem: Map<string, string>;
   onSelect: (item: VanityItem) => void;
 }) {
   if (!items.length) {
@@ -55,7 +52,9 @@ function ProductSection({
       ) : null}
       {items.map((item) => (
         <ProductCard
-          imageUrl={photoByItem.get(item.id)}
+          imageUrl={
+            item.progress_logs?.[0]?.photo_url ?? item.image_url ?? undefined
+          }
           item={item}
           key={item.id}
           onPress={() => onSelect(item)}
@@ -90,11 +89,6 @@ export default function ProjectPanScreen() {
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
   const { items, loading, error, refresh, addItem } = usePanItems();
   const hasFocusedProjectPan = useRef(false);
-  const {
-    logs,
-    error: logsError,
-    refresh: refreshLogs,
-  } = useProgressLogs();
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
     () => new Set(),
   );
@@ -149,16 +143,6 @@ export default function ProjectPanScreen() {
       ).length,
     [customCategories, draftCategories, items],
   );
-  const photoByItem = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const log of logs) {
-      if (!map.has(log.vanity_item_id)) {
-        map.set(log.vanity_item_id, log.photo_url);
-      }
-    }
-    return map;
-  }, [logs]);
-
   function openCategoryFilter() {
     setDraftCategories(new Set(selectedCategories));
     setFilterModalVisible(true);
@@ -177,7 +161,7 @@ export default function ProjectPanScreen() {
   }
 
   async function handleRefresh() {
-    await Promise.all([refresh(), refreshLogs()]);
+    await refresh();
   }
 
   function openDetails(item: VanityItem) {
@@ -234,11 +218,6 @@ export default function ProjectPanScreen() {
             </Pressable>
           </View>
         ) : null}
-        {logsError ? (
-          <Text style={styles.error}>
-            Progress photos could not be loaded: {logsError.message}
-          </Text>
-        ) : null}
         {loading && items.length === 0 ? (
           <ActivityIndicator color={colors.neutralIcon} style={styles.loader} />
         ) : error ? (
@@ -248,13 +227,11 @@ export default function ProjectPanScreen() {
             <ProductSection
               items={activeItems}
               onSelect={openDetails}
-              photoByItem={photoByItem}
             />
             <ProductSection
               title="Finished"
               items={finishedItems}
               onSelect={openDetails}
-              photoByItem={photoByItem}
             />
           </>
         ) : (

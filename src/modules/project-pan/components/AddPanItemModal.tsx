@@ -205,7 +205,7 @@ export function AddPanItemModal({
     setCalendarMonth(
       new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
     );
-    setProgress(item?.current_progress ?? 0);
+    setProgress(0);
     setRating(item?.rating ?? 0);
     setError(null);
     setFieldErrors({});
@@ -374,7 +374,6 @@ export function AddPanItemModal({
         price.trim() !== (initialItem.price?.toString() ?? '') ||
         acquisitionType !== initialItem.acquisition_type ||
         acquiredOn !== initialItem.acquired_on.slice(0, 10) ||
-        progress !== initialItem.current_progress ||
         rating !== (initialItem.rating ?? 0)
       );
     }
@@ -414,7 +413,7 @@ export function AddPanItemModal({
     const normalizedName = name.trim();
     const normalizedBrand = brand.trim();
     const normalizedCategory = category.trim();
-    const parsedProgress = progress;
+    const parsedProgress = initialItem?.current_progress ?? progress;
     const parsedPrice = Number(price);
 
     const nextFieldErrors = {
@@ -457,12 +456,7 @@ export function AddPanItemModal({
         rating,
         ...(initialItem
           ? {
-              status:
-                initialItem.status === 'decluttered'
-                  ? 'decluttered'
-                  : parsedProgress === 100
-                    ? 'finished'
-                    : 'active',
+              status: initialItem.status,
             }
           : {}),
       });
@@ -778,49 +772,52 @@ export function AddPanItemModal({
                   </View>
                 </View>
               ) : null}
-              <View style={styles.field}>
-                <View style={styles.progressCard}>
-                  <View style={styles.progressHeading}>
-                    <View style={styles.progressTitleGroup}>
-                      <View style={styles.progressIcon}>
-                        <Ionicons
-                          color={colors.neutralIcon}
-                          name="pie-chart-outline"
-                          size={17}
-                        />
+              {!initialItem ? (
+                <View style={styles.field}>
+                  <View style={styles.progressCard}>
+                    <View style={styles.progressHeading}>
+                      <View style={styles.progressTitleGroup}>
+                        <View style={styles.progressIcon}>
+                          <Ionicons
+                            color={colors.neutralIcon}
+                            name="pie-chart-outline"
+                            size={17}
+                          />
+                        </View>
+                        <View>
+                          <Text style={styles.progressTitle}>
+                            Initial progress
+                          </Text>
+                          <Text style={styles.progressHint}>
+                            How much have you used?
+                          </Text>
+                        </View>
                       </View>
-                      <View>
-                        <Text style={styles.progressTitle}>
-                          {initialItem ? 'Current progress' : 'Initial progress'}
-                        </Text>
-                        <Text style={styles.progressHint}>
-                          How much have you used?
-                        </Text>
+                      <View style={styles.progressBadge}>
+                        <Text style={styles.progressValue}>{progress}%</Text>
                       </View>
                     </View>
-                    <View style={styles.progressBadge}>
-                      <Text style={styles.progressValue}>{progress}%</Text>
+                    <ProgressSlider
+                      onValueChange={setProgress}
+                      value={progress}
+                    />
+                    <View style={styles.progressLabels}>
+                      {[0, 25, 50, 75, 100].map((value) => (
+                        <Text
+                          key={value}
+                          style={[
+                            styles.progressEndpoint,
+                            progress === value &&
+                              styles.activeProgressEndpoint,
+                          ]}
+                        >
+                          {value}%
+                        </Text>
+                      ))}
                     </View>
-                  </View>
-                  <ProgressSlider
-                    onValueChange={setProgress}
-                    value={progress}
-                  />
-                  <View style={styles.progressLabels}>
-                    {[0, 25, 50, 75, 100].map((value) => (
-                      <Text
-                        key={value}
-                        style={[
-                          styles.progressEndpoint,
-                          progress === value && styles.activeProgressEndpoint,
-                        ]}
-                      >
-                        {value}%
-                      </Text>
-                    ))}
                   </View>
                 </View>
-              </View>
+              ) : null}
 
               {error ? (
                 <Text accessibilityRole="alert" style={styles.error}>

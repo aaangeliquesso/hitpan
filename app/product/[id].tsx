@@ -25,6 +25,7 @@ import {
   updatePanItemRating,
 } from '../../src/modules/project-pan/services/panService';
 import { createProgressLog } from '../../src/modules/project-pan/services/progressLogService';
+import { getCurrentProgressPercentage } from '../../src/modules/project-pan/progress';
 import { useProgressLogs } from '../../src/modules/project-pan/hooks/useProgressLogs';
 import type { VanityItem } from '../../src/types';
 import { AddPanItemModal } from '../../src/modules/project-pan/components/AddPanItemModal';
@@ -47,6 +48,9 @@ export default function ProductDetailsScreen() {
     error: logsError,
     refresh: refreshLogs,
   } = useProgressLogs(id);
+  const progressPercentage = item
+    ? getCurrentProgressPercentage(item, logs[0])
+    : 0;
 
   const loadItem = useCallback(async () => {
     setLoading(true);
@@ -240,10 +244,10 @@ export default function ProductDetailsScreen() {
               </View>
               <View style={styles.progressRow}>
                 <Text style={styles.progressValue}>
-                  {item.current_progress}%
+                  {progressPercentage}%
                 </Text>
                 <View style={styles.progressBar}>
-                  <ProgressBar progress={item.current_progress} />
+                  <ProgressBar progress={progressPercentage} />
                 </View>
               </View>
               <Pressable
@@ -265,7 +269,7 @@ export default function ProductDetailsScreen() {
 
             <View style={styles.sectionHeading}>
               <View style={styles.rule} />
-              <Text style={styles.sectionTitle}>Pictures</Text>
+              <Text style={styles.sectionTitle}>Progress</Text>
               <View style={styles.rule} />
             </View>
             {logsLoading ? (
@@ -287,7 +291,7 @@ export default function ProductDetailsScreen() {
         ) : null}
       </SafeAreaView>
       <LogProgressModal
-        currentProgress={item?.current_progress ?? 0}
+        currentProgress={progressPercentage}
         itemId={item?.id ?? id}
         itemName={item?.name ?? 'Product'}
         onClose={() => setLogProgressVisible(false)}
