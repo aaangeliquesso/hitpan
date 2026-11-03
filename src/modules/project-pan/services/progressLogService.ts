@@ -1,3 +1,5 @@
+import { decode } from 'base64-arraybuffer';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '../../../lib/supabase';
 import type { ProgressLog } from '../../../types';
 
@@ -15,47 +17,54 @@ export async function uploadProgressPhoto(
   userId: string,
   vanityItemId: string,
 ): Promise<{ path: string; publicUrl: string }> {
-  const response = await fetch(imageUri);
-  if (!response.ok) {
-    throw new Error('Unable to read the captured photo.');
-  }
-  const imageData = await response.arrayBuffer();
-  if (imageData.byteLength === 0) {
-    throw new Error('The captured photo is empty.');
-  }
-
-  const filename = `${Date.now().toString(36)}-${Math.random()
-    .toString(36)
-    .slice(2)}.jpg`;
-  const path = `${userId}/${vanityItemId}/${filename}`;
-  const { error } = await supabase.storage
-    .from(PROGRESS_PHOTOS_BUCKET)
-    .upload(path, imageData, {
-      contentType: 'image/jpeg',
-      upsert: false,
+  try {
+    const base64 = await FileSystem.readAsStringAsync(imageUri, {
+      encoding: FileSystem.EncodingType.Base64,
     });
+    const imageData = decode(base64);
+    if (imageData.byteLength === 0) {
+      throw new Error('The captured photo is empty.');
+    }
 
-  if (error) {
+    const filename = `${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2)}.jpg`;
+    const path = `${userId}/${vanityItemId}/${filename}`;
+    const { error } = await supabase.storage
+      .from(PROGRESS_PHOTOS_BUCKET)
+      .upload(path, imageData, {
+        contentType: 'image/jpeg',
+        upsert: false,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    const { data } = supabase.storage
+      .from(PROGRESS_PHOTOS_BUCKET)
+      .getPublicUrl(path);
+
+    if (!data.publicUrl) {
+      const { error: removeError } = await supabase.storage
+        .from(PROGRESS_PHOTOS_BUCKET)
+        .remove([path]);
+      if (removeError) {
+        throw new Error(
+          `The uploaded photo URL was unavailable, and cleanup failed: ${removeError.message}`,
+        );
+      }
+      throw new Error('Unable to create a public URL for the uploaded photo.');
+    }
+
+    return { path, publicUrl: data.publicUrl };
+  } catch (error) {
+    console.error(
+      'Unable to read or upload progress photo:',
+      error instanceof Error ? error.message : error,
+    );
     throw error;
   }
-
-  const { data } = supabase.storage
-    .from(PROGRESS_PHOTOS_BUCKET)
-    .getPublicUrl(path);
-
-  if (!data.publicUrl) {
-    const { error: removeError } = await supabase.storage
-      .from(PROGRESS_PHOTOS_BUCKET)
-      .remove([path]);
-    if (removeError) {
-      throw new Error(
-        `The uploaded photo URL was unavailable, and cleanup failed: ${removeError.message}`,
-      );
-    }
-    throw new Error('Unable to create a public URL for the uploaded photo.');
-  }
-
-  return { path, publicUrl: data.publicUrl };
 }
 
 export async function createProgressLog(
