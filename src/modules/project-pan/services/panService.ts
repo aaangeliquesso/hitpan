@@ -17,8 +17,13 @@ export interface NewPanItemInput {
 export async function getPanItems(): Promise<VanityItem[]> {
   const { data, error } = await supabase
     .from('vanity_items')
-    .select('*')
+    .select('*, progress_logs(photo_url, logged_at)')
     .order('created_at', { ascending: false })
+    .order('logged_at', {
+      ascending: false,
+      referencedTable: 'progress_logs',
+    })
+    .limit(1, { referencedTable: 'progress_logs' })
     .returns<VanityItem[]>();
 
   if (error) {
