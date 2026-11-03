@@ -12,6 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
+import {
+  AccountDeletedSignOutError,
+  deleteUserAccount,
+} from '../auth/services/authService';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
 import { Header } from '../../shared/components/Header';
 import { colors, spacing } from '../../shared/ui/theme';
@@ -24,9 +28,10 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [logoutConfirmationVisible, setLogoutConfirmationVisible] =
     useState(false);
-  const signOutInProgress = useRef(false);
+  const accountActionInProgress = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -56,11 +61,11 @@ export default function ProfileScreen() {
   }, []);
 
   const handleLogout = async () => {
-    if (signOutInProgress.current) {
+    if (accountActionInProgress.current) {
       return;
     }
 
-    signOutInProgress.current = true;
+    accountActionInProgress.current = true;
     setSigningOut(true);
 
     try {
@@ -70,7 +75,7 @@ export default function ProfileScreen() {
         throw signOutError;
       }
     } catch (cause) {
-      signOutInProgress.current = false;
+      accountActionInProgress.current = false;
       setSigningOut(false);
       Alert.alert(
         'Unable to log out',
@@ -84,6 +89,53 @@ export default function ProfileScreen() {
 
   const confirmLogout = () => {
     setLogoutConfirmationVisible(true);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (accountActionInProgress.current) {
+      return;
+    }
+
+    accountActionInProgress.current = true;
+    setDeletingAccount(true);
+
+    try {
+      await deleteUserAccount();
+    } catch (cause) {
+      accountActionInProgress.current = false;
+      setDeletingAccount(false);
+
+      if (cause instanceof AccountDeletedSignOutError) {
+        router.replace('/auth/login');
+        Alert.alert('Account deleted', cause.message);
+        return;
+      }
+
+      Alert.alert(
+        'Unable to delete account',
+        cause instanceof Error ? cause.message : 'Please try again.',
+      );
+      return;
+    }
+
+    router.replace('/auth/login');
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account?',
+      'This action is permanent. All your tracked vanity items, progress photos, and profile data will be permanently deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            void handleDeleteAccount();
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -100,7 +152,9 @@ export default function ProfileScreen() {
             <Text style={styles.error}>{error}</Text>
           ) : (
             <ProfileSummary
+              deletingAccount={deletingAccount}
               email={email}
+              onDeleteAccount={confirmDeleteAccount}
               onLogout={confirmLogout}
               signingOut={signingOut}
             />

@@ -11,27 +11,33 @@ import { colors, spacing } from '../../../shared/ui/theme';
 interface ProfileSummaryProps {
   email: string | null;
   onLogout: () => void;
+  onDeleteAccount: () => void;
   signingOut: boolean;
+  deletingAccount: boolean;
 }
 
 export function ProfileSummary({
   email,
   onLogout,
+  onDeleteAccount,
   signingOut,
+  deletingAccount,
 }: ProfileSummaryProps) {
+  const actionInProgress = signingOut || deletingAccount;
+
   return (
     <View style={styles.card}>
       <Text style={styles.label}>Signed in as</Text>
       <Text style={styles.email}>{email ?? 'Email unavailable'}</Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled: signingOut }}
-        disabled={signingOut}
+        accessibilityState={{ disabled: actionInProgress }}
+        disabled={actionInProgress}
         onPress={onLogout}
         style={({ pressed }) => [
           styles.logoutButton,
-          pressed && !signingOut && styles.logoutButtonPressed,
-          signingOut && styles.logoutButtonDisabled,
+          pressed && !actionInProgress && styles.logoutButtonPressed,
+          actionInProgress && styles.logoutButtonDisabled,
         ]}
       >
         {signingOut ? (
@@ -45,6 +51,26 @@ export function ProfileSummary({
         )}
         <Text style={styles.logoutButtonText}>
           {signingOut ? 'Logging out...' : 'Log Out'}
+        </Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ disabled: actionInProgress }}
+        disabled={actionInProgress}
+        onPress={onDeleteAccount}
+        style={({ pressed }) => [
+          styles.deleteAccountButton,
+          pressed && !actionInProgress && styles.deleteAccountButtonPressed,
+          actionInProgress && styles.logoutButtonDisabled,
+        ]}
+      >
+        {deletingAccount ? (
+          <ActivityIndicator color={colors.error} />
+        ) : (
+          <Ionicons color={colors.error} name="trash-outline" size={20} />
+        )}
+        <Text style={styles.deleteAccountButtonText}>
+          {deletingAccount ? 'Deleting account...' : 'Delete Account'}
         </Text>
       </Pressable>
     </View>
@@ -87,6 +113,26 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: colors.backgroundPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  deleteAccountButton: {
+    minHeight: 48,
+    marginTop: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.error,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+  },
+  deleteAccountButtonPressed: {
+    backgroundColor: colors.errorSurface,
+  },
+  deleteAccountButtonText: {
+    color: colors.error,
     fontSize: 16,
     fontWeight: '700',
   },
