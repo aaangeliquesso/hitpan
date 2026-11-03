@@ -4,6 +4,7 @@ import type { VanityItem } from '../../../types';
 import { StarRating } from '../../../shared/components/StarRating';
 import { colors, spacing } from '../../../shared/ui/theme';
 import { ProgressBar } from './ProgressBar';
+import { getCurrentProgressPercentage } from '../progress';
 
 interface ProductCardProps {
   item: VanityItem;
@@ -12,6 +13,10 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
+  const progressPercentage = getCurrentProgressPercentage(
+    item,
+    item.progress_logs?.[0],
+  );
   const acquiredLabel =
     item.acquisition_type === 'gifted' ? 'Received on' : 'Bought on';
   const acquiredDate = new Date(
@@ -76,9 +81,9 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
       </View>
       <View style={styles.progressRow}>
         <View style={styles.progressBar}>
-          <ProgressBar progress={item.current_progress} />
+          <ProgressBar progress={progressPercentage} />
         </View>
-        <Text style={styles.progressText}>{item.current_progress}%</Text>
+        <Text style={styles.progressText}>{progressPercentage}%</Text>
       </View>
     </Pressable>
   );

@@ -17,7 +17,7 @@ export interface NewPanItemInput {
 export async function getPanItems(): Promise<VanityItem[]> {
   const { data, error } = await supabase
     .from('vanity_items')
-    .select('*, progress_logs(photo_url, logged_at)')
+    .select('*, progress_logs(photo_url, logged_at, progress_percentage)')
     .order('created_at', { ascending: false })
     .order('logged_at', {
       ascending: false,
