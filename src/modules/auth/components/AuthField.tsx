@@ -10,7 +10,8 @@ import {
 import { colors, spacing } from '../../../shared/ui/theme';
 
 interface AuthFieldProps {
-  label: string;
+  label?: string;
+  placeholder: string;
   value: string;
   onChangeText: (value: string) => void;
   error?: string;
@@ -22,6 +23,7 @@ interface AuthFieldProps {
 
 export function AuthField({
   label,
+  placeholder,
   value,
   onChangeText,
   error,
@@ -31,27 +33,24 @@ export function AuthField({
   textContentType,
 }: AuthFieldProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
 
   return (
     <View style={styles.container}>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
       <View
         style={[
           styles.inputContainer,
-          isFocused && styles.inputFocused,
           error && styles.inputError,
         ]}
       >
         <TextInput
-          accessibilityLabel={label}
+          accessibilityLabel={label ?? placeholder}
           accessibilityHint={error}
           autoCapitalize={autoCapitalize}
           autoCorrect={false}
           keyboardType={keyboardType}
-          onBlur={() => setIsFocused(false)}
           onChangeText={onChangeText}
-          onFocus={() => setIsFocused(true)}
-          placeholder={label}
+          placeholder={placeholder}
           placeholderTextColor={colors.accessibleMutedText}
           secureTextEntry={secureTextEntry && !isPasswordVisible}
           style={styles.input}
@@ -86,6 +85,12 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: spacing.md,
   },
+  label: {
+    marginBottom: 6,
+    color: '#121212',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   inputContainer: {
     minHeight: 46,
     flexDirection: 'row',
@@ -110,10 +115,6 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: colors.error,
-    backgroundColor: colors.errorSurface,
-  },
-  inputFocused: {
-    borderColor: colors.textPrimary,
   },
   error: {
     marginTop: spacing.xs,

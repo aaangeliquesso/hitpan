@@ -260,6 +260,7 @@ export function EmailAuthScreen({ initialMode }: EmailAuthScreenProps) {
               setResetEmailError(null);
               setFeedback(null);
             }}
+            placeholder="name@example.com"
             textContentType="emailAddress"
             value={field.value}
           />
@@ -276,6 +277,7 @@ export function EmailAuthScreen({ initialMode }: EmailAuthScreenProps) {
               field.onChange(text);
               setFeedback(null);
             }}
+            placeholder="Enter your password"
             secureTextEntry={true}
             textContentType={isSignup ? 'newPassword' : 'password'}
             value={field.value}
@@ -294,6 +296,7 @@ export function EmailAuthScreen({ initialMode }: EmailAuthScreenProps) {
                 field.onChange(text);
                 setFeedback(null);
               }}
+              placeholder="Re-enter password to confirm"
               secureTextEntry={true}
               textContentType="newPassword"
               value={field.value ?? ''}
