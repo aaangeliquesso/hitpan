@@ -269,7 +269,7 @@ export default function ProductDetailsScreen() {
 
             <View style={styles.sectionHeading}>
               <View style={styles.rule} />
-              <Text style={styles.sectionTitle}>Pictures</Text>
+              <Text style={styles.sectionTitle}>Progress</Text>
               <View style={styles.rule} />
             </View>
             {logsLoading ? (
