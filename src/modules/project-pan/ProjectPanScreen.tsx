@@ -5,6 +5,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  SectionList,
   StyleSheet,
   Text,
   View,
@@ -26,43 +27,8 @@ import { ProductCard } from './components/ProductCard';
 import { getCategoryGroup, PRODUCT_CATEGORIES } from './categories';
 import { usePanItems } from './hooks/usePanItems';
 import { createPanItem } from './services/panService';
+import { getCurrentProgressPercentage } from './progress';
 import type { VanityItem } from '../../types';
-
-function ProductSection({
-  title,
-  items,
-  onSelect,
-}: {
-  title?: string;
-  items: VanityItem[];
-  onSelect: (item: VanityItem) => void;
-}) {
-  if (!items.length) {
-    return null;
-  }
-
-  return (
-    <View>
-      {title ? (
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}> {title} </Text>
-          <View style={styles.dividerLine} />
-        </View>
-      ) : null}
-      {items.map((item) => (
-        <ProductCard
-          imageUrl={
-            item.progress_logs?.[0]?.photo_url ?? item.image_url ?? undefined
-          }
-          item={item}
-          key={item.id}
-          onPress={() => onSelect(item)}
-        />
-      ))}
-    </View>
-  );
-}
 
 function matchesCategoryFilters(
   item: VanityItem,
@@ -172,15 +138,111 @@ export default function ProjectPanScreen() {
     addItem(await createPanItem(input));
   }
 
-  const activeItems = filteredItems.filter((item) => item.status === 'active');
-  const finishedItems = filteredItems.filter(
-    (item) => item.status === 'finished',
-  );
+  const productSections = useMemo(() => {
+    const activeItems = filteredItems.filter(
+      (item) =>
+        getCurrentProgressPercentage(item, item.progress_logs?.[0]) < 100,
+    );
+    const finishedItems = filteredItems.filter(
+      (item) =>
+        getCurrentProgressPercentage(item, item.progress_logs?.[0]) === 100,
+    );
+
+    return [
+      ...(activeItems.length
+        ? [{ title: 'In Progress', data: activeItems }]
+        : []),
+      ...(finishedItems.length
+        ? [{ title: 'Finished', data: finishedItems }]
+        : []),
+    ];
+  }, [filteredItems]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
-      <ScrollView
+      <SectionList
         contentContainerStyle={styles.content}
+        keyExtractor={(item) => item.id}
+        ListEmptyComponent={
+          !loading && !error ? (
+            <View style={styles.empty}>
+              <Ionicons
+                color={colors.textSecondary}
+                name="sparkles-outline"
+                size={30}
+              />
+              <Text style={styles.emptyTitle}>
+                Your project pan starts here
+              </Text>
+              <Text style={styles.emptyText}>
+                Add a product you own and track its progress over time.
+              </Text>
+            </View>
+          ) : undefined
+        }
+        ListFooterComponent={
+          <>
+            {loading && items.length > 0 && !error ? (
+              <ActivityIndicator
+                color={colors.neutralIcon}
+                style={styles.refreshing}
+              />
+            ) : null}
+            <Pressable
+              accessibilityLabel="Refresh products"
+              accessibilityRole="button"
+              onPress={() => void handleRefresh()}
+              style={styles.refreshButton}
+            >
+              <Ionicons color={colors.neutralIcon} name="refresh" size={16} />
+              <Text style={styles.refreshText}>Refresh</Text>
+            </Pressable>
+          </>
+        }
+        ListHeaderComponent={
+          <>
+            <View style={styles.brandHeader}>
+              <BrandWordmark width={116} />
+            </View>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>My Project Pan</Text>
+              <Pressable
+                accessibilityLabel="Filter products by category"
+                accessibilityRole="button"
+                onPress={openCategoryFilter}
+                style={styles.filterButton}
+              >
+                <Ionicons
+                  color={colors.neutralIcon}
+                  name="options-outline"
+                  size={20}
+                />
+              </Pressable>
+            </View>
+            {selectedCategories.size > 0 ? (
+              <View style={styles.activeFilterRow}>
+                <Text style={styles.activeFilterText}>
+                  {selectedCategories.size} filter
+                  {selectedCategories.size === 1 ? '' : 's'} selected
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setSelectedCategories(new Set())}
+                  style={styles.clearFiltersButton}
+                >
+                  <Text style={styles.clearFiltersText}>Clear all</Text>
+                </Pressable>
+              </View>
+            ) : null}
+            {loading && items.length === 0 ? (
+              <ActivityIndicator
+                color={colors.neutralIcon}
+                style={styles.loader}
+              />
+            ) : null}
+            {error ? <Text style={styles.error}>{error.message}</Text> : null}
+          </>
+        }
         refreshControl={
           <RefreshControl
             onRefresh={() => void handleRefresh()}
@@ -188,74 +250,25 @@ export default function ProjectPanScreen() {
             tintColor={colors.neutralIcon}
           />
         }
-      >
-        <View style={styles.brandHeader}>
-          <BrandWordmark width={116} />
-        </View>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>My Project Pan</Text>
-          <Pressable
-            accessibilityLabel="Filter products by category"
-            accessibilityRole="button"
-            onPress={openCategoryFilter}
-            style={styles.filterButton}
-          >
-            <Ionicons color={colors.neutralIcon} name="options-outline" size={20} />
-          </Pressable>
-        </View>
-        {selectedCategories.size > 0 ? (
-          <View style={styles.activeFilterRow}>
-            <Text style={styles.activeFilterText}>
-              {selectedCategories.size} filter
-              {selectedCategories.size === 1 ? '' : 's'} selected
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setSelectedCategories(new Set())}
-              style={styles.clearFiltersButton}
-            >
-              <Text style={styles.clearFiltersText}>Clear all</Text>
-            </Pressable>
-          </View>
-        ) : null}
-        {loading && items.length === 0 ? (
-          <ActivityIndicator color={colors.neutralIcon} style={styles.loader} />
-        ) : error ? (
-          <Text style={styles.error}>{error.message}</Text>
-        ) : filteredItems.length ? (
-          <>
-            <ProductSection
-              items={activeItems}
-              onSelect={openDetails}
-            />
-            <ProductSection
-              title="Finished"
-              items={finishedItems}
-              onSelect={openDetails}
-            />
-          </>
-        ) : (
-          <View style={styles.empty}>
-            <Ionicons color={colors.textSecondary} name="sparkles-outline" size={30} />
-            <Text style={styles.emptyTitle}>Your project pan starts here</Text>
-            <Text style={styles.emptyText}>
-              Add a product you own and track its progress over time.
-            </Text>
+        renderItem={({ item }) => (
+          <ProductCard
+            imageUrl={
+              item.progress_logs?.[0]?.photo_url ?? item.image_url ?? undefined
+            }
+            item={item}
+            onPress={() => openDetails(item)}
+          />
+        )}
+        renderSectionHeader={({ section }) => (
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>{section.title}</Text>
+            <View style={styles.dividerLine} />
           </View>
         )}
-        {loading && items.length > 0 ? (
-          <ActivityIndicator color={colors.neutralIcon} style={styles.refreshing} />
-        ) : null}
-        <Pressable
-          accessibilityLabel="Refresh products"
-          accessibilityRole="button"
-          onPress={() => void handleRefresh()}
-          style={styles.refreshButton}
-        >
-          <Ionicons color={colors.neutralIcon} name="refresh" size={16} />
-          <Text style={styles.refreshText}>Refresh</Text>
-        </Pressable>
-      </ScrollView>
+        sections={error ? [] : productSections}
+        stickySectionHeadersEnabled={false}
+      />
       <Pressable
         accessibilityLabel="Add product"
         accessibilityRole="button"
@@ -597,8 +610,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   dividerText: {
+    marginHorizontal: spacing.sm,
     color: colors.mutedText,
     fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.4,
   },
   loader: {
     marginTop: 80,

@@ -1,13 +1,32 @@
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
 import { colors } from '../../../shared/ui/theme';
 
 interface ProgressBarProps {
   progress: number;
-  finished?: boolean;
 }
 
-export function ProgressBar({ progress, finished = false }: ProgressBarProps) {
+export function ProgressBar({ progress }: ProgressBarProps) {
   const boundedProgress = Math.max(0, Math.min(100, progress));
+  const animatedProgress = useRef(
+    new Animated.Value(boundedProgress),
+  ).current;
+  const fillColor = animatedProgress.interpolate({
+    inputRange: [99, 100],
+    outputRange: [colors.brand, '#3a6546'],
+    extrapolate: 'clamp',
+  });
+
+  useEffect(() => {
+    const animation = Animated.timing(animatedProgress, {
+      toValue: boundedProgress,
+      duration: 220,
+      useNativeDriver: false,
+    });
+    animation.start();
+
+    return () => animation.stop();
+  }, [animatedProgress, boundedProgress]);
 
   return (
     <View
@@ -15,10 +34,10 @@ export function ProgressBar({ progress, finished = false }: ProgressBarProps) {
       accessibilityValue={{ min: 0, max: 100, now: boundedProgress }}
       style={styles.track}
     >
-      <View
+      <Animated.View
         style={[
           styles.fill,
-          finished && styles.finishedFill,
+          { backgroundColor: fillColor },
           { width: `${boundedProgress}%` },
         ]}
       />
@@ -35,10 +54,6 @@ const styles = StyleSheet.create({
   },
   fill: {
     height: '100%',
-    backgroundColor: colors.brand,
     borderRadius: 4,
-  },
-  finishedFill: {
-    backgroundColor: colors.success,
   },
 });
