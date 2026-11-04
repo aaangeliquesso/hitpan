@@ -50,6 +50,34 @@ interface YearGroup {
   boughtCount: number;
 }
 
+function CounterBadge({
+  type,
+  count,
+}: {
+  type: 'total' | 'bought';
+  count: number;
+}) {
+  return (
+    <View
+      style={[
+        styles.counterBadge,
+        type === 'bought' ? styles.boughtCounterBadge : styles.totalCounterBadge,
+      ]}
+    >
+      <Text
+        style={[
+          styles.counterBadgeText,
+          type === 'bought'
+            ? styles.boughtCounterBadgeText
+            : styles.totalCounterBadgeText,
+        ]}
+      >
+        {type === 'bought' ? `✓ ${count} bought` : `${count} total`}
+      </Text>
+    </View>
+  );
+}
+
 const monthOrder = [
   'january',
   'february',
@@ -216,16 +244,13 @@ export default function WishlistScreen() {
                   style={styles.yearHeader}
                 >
                   <Text style={styles.yearLabel}>{group.year}</Text>
-                  <Text style={styles.countBadge}>
-                    {group.totalCount} total
-                  </Text>
-                  <Text style={styles.boughtCountBadge}>
-                    ✓ {group.boughtCount} bought
-                  </Text>
+                  <CounterBadge count={group.totalCount} type="total" />
+                  <CounterBadge count={group.boughtCount} type="bought" />
                   <Ionicons
                     color={colors.neutralIcon}
                     name={isYearOpen ? 'chevron-up' : 'chevron-down'}
                     size={17}
+                    style={styles.headerChevron}
                   />
                 </Pressable>
                 {isYearOpen ? (
@@ -243,16 +268,19 @@ export default function WishlistScreen() {
                               style={styles.monthHeader}
                             >
                               <Text style={styles.monthLabel}>{month.name}</Text>
-                              <Text style={styles.monthCount}>
-                                {month.totalCount} total
-                              </Text>
-                              <Text style={styles.boughtCountBadge}>
-                                ✓ {month.boughtCount}
-                              </Text>
+                              <CounterBadge
+                                count={month.totalCount}
+                                type="total"
+                              />
+                              <CounterBadge
+                                count={month.boughtCount}
+                                type="bought"
+                              />
                               <Ionicons
                                 color={colors.mutedText}
                                 name={isMonthOpen ? 'chevron-up' : 'chevron-down'}
                                 size={13}
+                                style={styles.headerChevron}
                               />
                             </Pressable>
                             {isMonthOpen ? (
@@ -403,26 +431,31 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
   },
-  countBadge: {
-    paddingHorizontal: 6,
+  counterBadge: {
+    paddingHorizontal: 8,
     paddingVertical: 3,
     overflow: 'hidden',
-    color: colors.mutedText,
-    backgroundColor: colors.backgroundPrimary,
-    borderRadius: 8,
-    fontSize: 10,
-    textAlign: 'center',
+    borderRadius: 10,
   },
-  boughtCountBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    overflow: 'hidden',
-    color: colors.success,
-    backgroundColor: colors.backgroundPrimary,
-    borderRadius: 8,
-    fontSize: 10,
+  counterBadgeText: {
+    fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  totalCounterBadge: {
+    backgroundColor: '#F2F2F7',
+  },
+  totalCounterBadgeText: {
+    color: '#666666',
+  },
+  boughtCounterBadge: {
+    backgroundColor: '#FDF2F4',
+  },
+  boughtCounterBadgeText: {
+    color: colors.brand,
+  },
+  headerChevron: {
+    marginLeft: 'auto',
   },
   months: {
     paddingTop: spacing.xs,
@@ -440,16 +473,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontSize: 12,
     fontWeight: '700',
-  },
-  monthCount: {
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    overflow: 'hidden',
-    color: colors.mutedText,
-    backgroundColor: colors.backgroundPrimary,
-    borderRadius: 7,
-    fontSize: 10,
-    textAlign: 'center',
   },
   table: {
     overflow: 'hidden',
