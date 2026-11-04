@@ -8,9 +8,16 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
+import {
+  getNavbarSafePadding,
+  NAVBAR_HEIGHT,
+} from '../../shared/ui/navigation';
 import { colors, spacing } from '../../shared/ui/theme';
 import type { WishlistItem } from '../../types';
 import { useWishlist } from './hooks/useWishlist';
@@ -87,6 +94,8 @@ function createGroups(items: WishlistItem[]): YearGroup[] {
 }
 
 export default function WishlistScreen() {
+  const insets = useSafeAreaInsets();
+  const navbarSafePadding = getNavbarSafePadding(insets.bottom);
   const { items, loading, error, refresh, updateItem, savingIds } = useWishlist();
   const [expandedYear, setExpandedYear] = useState<number | null>(2026);
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(
@@ -123,7 +132,13 @@ export default function WishlistScreen() {
         </View>
         <View style={styles.titleRow}>
           <Text style={styles.title}>My Wishlist</Text>
-          <Ionicons color={colors.neutralIcon} name="filter" size={17} />
+          <View style={styles.filterButton}>
+            <Ionicons
+              color={colors.neutralIcon}
+              name="options-outline"
+              size={20}
+            />
+          </View>
         </View>
 
         {loading && !items.length ? (
@@ -224,8 +239,14 @@ export default function WishlistScreen() {
           </Pressable>
         ) : null}
       </ScrollView>
-      <View accessibilityElementsHidden style={styles.fab}>
-        <Ionicons color={colors.backgroundPrimary} name="add" size={27} />
+      <View
+        accessibilityElementsHidden
+        style={[
+          styles.fab,
+          { bottom: navbarSafePadding + NAVBAR_HEIGHT + 16 },
+        ]}
+      >
+        <Ionicons color={colors.backgroundPrimary} name="add" size={30} />
       </View>
     </SafeAreaView>
   );
@@ -240,7 +261,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
-    paddingBottom: 110,
+    paddingBottom: 150,
   },
   brandHeader: {
     alignItems: 'center',
@@ -257,6 +278,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 18,
     fontWeight: '700',
+  },
+  filterButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loader: {
     marginTop: 80,
@@ -351,13 +378,18 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    right: 22,
-    bottom: 91,
-    width: 54,
-    height: 54,
+    right: 24,
+    width: 58,
+    height: 58,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.brand,
-    borderRadius: 27,
+    borderRadius: 29,
+    shadowColor: colors.textPrimary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
+    zIndex: 999,
   },
 });
