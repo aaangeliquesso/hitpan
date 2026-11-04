@@ -4,6 +4,7 @@ import type { VanityItem } from '../../../types';
 import { StarRating } from '../../../shared/components/StarRating';
 import { colors, spacing } from '../../../shared/ui/theme';
 import { ProgressBar } from './ProgressBar';
+import { ProductTagBadge } from './ProductTagBadge';
 import { getCurrentProgressPercentage } from '../progress';
 
 interface ProductCardProps {
@@ -65,11 +66,12 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
         </View>
         <View style={styles.tags}>
           {item.acquisition_type === 'gifted' ? (
-            <Text style={[styles.pill, styles.giftPill]}>Gift</Text>
+            <ProductTagBadge label="Gift" type="gift" />
           ) : typeof item.price === 'number' ? (
-            <Text style={[styles.pill, styles.pricePill]}>
-              ₱{item.price.toLocaleString()}
-            </Text>
+            <ProductTagBadge
+              label={`₱${item.price.toLocaleString()}`}
+              type="price"
+            />
           ) : null}
           <Text numberOfLines={2} style={[styles.pill, styles.categoryPill]}>
             {item.category}
@@ -160,16 +162,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 10,
     fontWeight: '600',
-  },
-  pricePill: {
-    color: colors.brand,
-    backgroundColor: colors.brandSurface,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  giftPill: {
-    color: colors.success,
-    backgroundColor: colors.backgroundSecondary,
   },
   categoryPill: {
     color: colors.brand,
