@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing } from '../../../shared/ui/theme';
+import { colors } from '../../../shared/ui/theme';
 
-type ProductTagBadgeType = 'price' | 'gift';
+type ProductTagBadgeType = 'price' | 'gift' | 'category';
 
 interface ProductTagBadgeProps {
   type: ProductTagBadgeType;
@@ -13,14 +13,14 @@ export function ProductTagBadge({ type, label }: ProductTagBadgeProps) {
     <View
       style={[
         styles.badge,
-        type === 'price' ? styles.priceBadge : styles.giftBadge,
+        type === 'gift' ? styles.giftBadge : styles.priceBadge,
       ]}
     >
       <Text
         numberOfLines={1}
         style={[
           styles.label,
-          type === 'price' ? styles.priceLabel : styles.giftLabel,
+          type === 'gift' ? styles.giftLabel : styles.priceLabel,
         ]}
       >
         {label}
@@ -31,18 +31,18 @@ export function ProductTagBadge({ type, label }: ProductTagBadgeProps) {
 
 const styles = StyleSheet.create({
   badge: {
-    width: '100%',
-    minHeight: 27,
+    maxWidth: '100%',
+    alignSelf: 'flex-end',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
     textAlign: 'center',
   },
   priceBadge: {

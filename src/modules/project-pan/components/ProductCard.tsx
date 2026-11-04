@@ -49,7 +49,7 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
         )}
 
         <View style={styles.details}>
-          <Text numberOfLines={2} style={styles.name}>
+          <Text numberOfLines={1} style={styles.name}>
             {item.name}
           </Text>
           <Text numberOfLines={1} style={styles.brand}>
@@ -73,9 +73,7 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
               type="price"
             />
           ) : null}
-          <Text numberOfLines={2} style={[styles.pill, styles.categoryPill]}>
-            {item.category}
-          </Text>
+          <ProductTagBadge label={item.category} type="category" />
           <View style={styles.rating}>
             <StarRating rating={item.rating ?? 0} />
           </View>
@@ -132,6 +130,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     justifyContent: 'center',
     gap: 2,
+    marginRight: spacing.xs,
   },
   name: {
     color: colors.text,
@@ -151,21 +150,7 @@ const styles = StyleSheet.create({
   tags: {
     width: 84,
     alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
-  pill: {
-    maxWidth: '100%',
-    overflow: 'hidden',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 14,
-    textAlign: 'center',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  categoryPill: {
-    color: colors.brand,
-    backgroundColor: colors.brandSurface,
+    gap: 4,
   },
   rating: {
     alignSelf: 'flex-end',
