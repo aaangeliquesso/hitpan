@@ -822,7 +822,7 @@ export function AddPanItemModal({
                     <ActivityIndicator color={colors.cream} />
                   ) : (
                     <Text style={styles.saveText}>
-                      {initialItem ? 'Save changes' : 'Save product'}
+                      {initialItem ? 'Save changes' : 'Add product'}
                     </Text>
                   )}
                 </Pressable>
