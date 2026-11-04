@@ -104,37 +104,38 @@ export function AddWishlistItemModal({
           />
 
           <View style={styles.toggleRow}>
-            <View style={styles.toggleText}>
-              <Text style={styles.toggleTitle}>Bought</Text>
-              <Text style={styles.toggleHint}>
-                {isBought ? '✓ Bought' : '× Not bought'}
-              </Text>
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleText}>
+                <Text style={styles.toggleTitle}>Bought</Text>
+                <Text style={styles.toggleHint}>
+                  {isBought ? '✓ Bought' : '× Not bought'}
+                </Text>
+              </View>
+              <Switch
+                accessibilityLabel="Mark item as bought"
+                disabled={saving}
+                onValueChange={setIsBought}
+                thumbColor={colors.backgroundPrimary}
+                trackColor={{ false: colors.border, true: colors.brand }}
+                value={isBought}
+              />
             </View>
-            <Switch
-              accessibilityLabel="Mark item as bought"
-              disabled={saving}
-              onValueChange={setIsBought}
-              thumbColor={colors.backgroundPrimary}
-              trackColor={{ false: colors.border, true: colors.brand }}
-              value={isBought}
-            />
-          </View>
-
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleText}>
-              <Text style={styles.toggleTitle}>Need</Text>
-              <Text style={styles.toggleHint}>
-                {isNeed ? '✓ Need' : '× Not a need'}
-              </Text>
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleText}>
+                <Text style={styles.toggleTitle}>Need</Text>
+                <Text style={styles.toggleHint}>
+                  {isNeed ? '✓ Need' : '× Not a need'}
+                </Text>
+              </View>
+              <Switch
+                accessibilityLabel="Mark item as a need"
+                disabled={saving}
+                onValueChange={setIsNeed}
+                thumbColor={colors.backgroundPrimary}
+                trackColor={{ false: colors.border, true: colors.brand }}
+                value={isNeed}
+              />
             </View>
-            <Switch
-              accessibilityLabel="Mark item as a need"
-              disabled={saving}
-              onValueChange={setIsNeed}
-              thumbColor={colors.backgroundPrimary}
-              trackColor={{ false: colors.border, true: colors.brand }}
-              value={isNeed}
-            />
           </View>
 
           {error ? (
@@ -143,14 +144,6 @@ export function AddWishlistItemModal({
             </Text>
           ) : null}
           <View style={styles.actions}>
-            <Pressable
-              accessibilityRole="button"
-              disabled={saving}
-              onPress={onClose}
-              style={[styles.actionButton, styles.cancelButton]}
-            >
-              <Text style={styles.cancelText}>Cancel</Text>
-            </Pressable>
             <Pressable
               accessibilityRole="button"
               disabled={saving}
@@ -226,14 +219,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   toggleRow: {
-    minHeight: 56,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  toggleItem: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    backgroundColor: colors.warmWhite,
   },
   toggleText: {
+    flexShrink: 1,
     gap: 2,
   },
   toggleTitle: {
@@ -251,8 +257,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   actions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
+    flexDirection: 'column',
     marginTop: spacing.lg,
   },
   actionButton: {
@@ -261,17 +266,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 13,
   },
-  cancelButton: {
-    width: 84,
-    backgroundColor: colors.neutralSurface,
-  },
-  cancelText: {
-    color: colors.neutralIcon,
-    fontSize: 13,
-    fontWeight: '600',
-  },
   saveButton: {
-    flex: 1,
+    width: '100%',
     backgroundColor: colors.brand,
   },
   saveText: {
