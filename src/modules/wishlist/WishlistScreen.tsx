@@ -14,6 +14,7 @@ import {
 } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
+import { AddWishlistItemModal } from './components/AddWishlistItemModal';
 import {
   getNavbarSafePadding,
   NAVBAR_HEIGHT,
@@ -29,18 +30,24 @@ import { WishlistYearFilter } from './components/WishlistYearFilter';
 import {
   filterWishlistByYear,
   getAvailableWishlistYears,
+  getWishlistCounts,
   getWishlistItemYear,
+  getWishlistItemMonth,
 } from './years';
 
 interface MonthGroup {
   name: string;
   items: WishlistItem[];
+  totalCount: number;
+  boughtCount: number;
 }
 
 interface YearGroup {
   year: number;
   items: WishlistItem[];
   months: MonthGroup[];
+  totalCount: number;
+  boughtCount: number;
 }
 
 const monthOrder = [
@@ -73,9 +80,10 @@ function createGroups(items: WishlistItem[]): YearGroup[] {
       const yearItems = byYear.get(year) ?? [];
       const byMonth = new Map<string, WishlistItem[]>();
       for (const item of yearItems) {
-        const monthItems = byMonth.get(item.month_name) ?? [];
+        const month = getWishlistItemMonth(item);
+        const monthItems = byMonth.get(month) ?? [];
         monthItems.push(item);
-        byMonth.set(item.month_name, monthItems);
+        byMonth.set(month, monthItems);
       }
 
       const months = [...byMonth.entries()]
@@ -83,19 +91,32 @@ function createGroups(items: WishlistItem[]): YearGroup[] {
           const leftOrder = monthOrder.indexOf(left.toLowerCase());
           const rightOrder = monthOrder.indexOf(right.toLowerCase());
           return (
-            (leftOrder < 0 ? monthOrder.length : leftOrder) -
-            (rightOrder < 0 ? monthOrder.length : rightOrder)
+            (rightOrder < 0 ? monthOrder.length : rightOrder) -
+            (leftOrder < 0 ? monthOrder.length : leftOrder)
           );
         })
-        .map(([name, monthItems]) => ({
-          name,
-          items: monthItems.sort(
+        .map(([name, monthItems]) => {
+          const sortedItems = monthItems.sort(
             (a, b) =>
-              (a.row_number ?? a.day) - (b.row_number ?? b.day),
-          ),
-        }));
+              Date.parse(b.created_at) - Date.parse(a.created_at),
+          );
+          const counts = getWishlistCounts(sortedItems);
+          return {
+            name,
+            items: sortedItems,
+            totalCount: counts.total,
+            boughtCount: counts.bought,
+          };
+        });
 
-      return { year, items: yearItems, months };
+      const counts = getWishlistCounts(yearItems);
+      return {
+        year,
+        items: yearItems,
+        months,
+        totalCount: counts.total,
+        boughtCount: counts.bought,
+      };
     });
 }
 
@@ -108,15 +129,18 @@ export default function WishlistScreen() {
     loading,
     error,
     refresh,
+    addItem,
     updateItem,
     savingIds,
   } = useWishlist();
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().toLocaleString(undefined, {
+  const currentYear = new Date().getUTCFullYear();
+  const currentMonth = new Date().toLocaleString('en-US', {
     month: 'long',
+    timeZone: 'UTC',
   });
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [yearFilterVisible, setYearFilterVisible] = useState(false);
+  const [addModalVisible, setAddModalVisible] = useState(false);
   const [expandedYear, setExpandedYear] = useState<number | null>(currentYear);
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(
     () => new Set([`${currentYear}-${currentMonth}`]),
@@ -192,7 +216,12 @@ export default function WishlistScreen() {
                   style={styles.yearHeader}
                 >
                   <Text style={styles.yearLabel}>{group.year}</Text>
-                  <Text style={styles.countBadge}>{group.items.length}</Text>
+                  <Text style={styles.countBadge}>
+                    {group.totalCount} total
+                  </Text>
+                  <Text style={styles.boughtCountBadge}>
+                    ✓ {group.boughtCount} bought
+                  </Text>
                   <Ionicons
                     color={colors.neutralIcon}
                     name={isYearOpen ? 'chevron-up' : 'chevron-down'}
@@ -215,7 +244,10 @@ export default function WishlistScreen() {
                             >
                               <Text style={styles.monthLabel}>{month.name}</Text>
                               <Text style={styles.monthCount}>
-                                {month.items.length}
+                                {month.totalCount} total
+                              </Text>
+                              <Text style={styles.boughtCountBadge}>
+                                ✓ {month.boughtCount}
                               </Text>
                               <Ionicons
                                 color={colors.mutedText}
@@ -272,15 +304,29 @@ export default function WishlistScreen() {
           </Pressable>
         ) : null}
       </ScrollView>
-      <View
-        accessibilityElementsHidden
+      <Pressable
+        accessibilityLabel="Add wishlist item"
+        accessibilityRole="button"
+        onPress={() => setAddModalVisible(true)}
         style={[
           styles.fab,
           { bottom: navbarSafePadding + NAVBAR_HEIGHT + 16 },
         ]}
       >
         <Ionicons color={colors.backgroundPrimary} name="add" size={30} />
-      </View>
+      </Pressable>
+      <AddWishlistItemModal
+        onClose={() => setAddModalVisible(false)}
+        onSave={async (input) => {
+          await addItem(input);
+          setSelectedYear(null);
+          setExpandedYear(currentYear);
+          setExpandedMonths((current) =>
+            new Set([...current, `${currentYear}-${currentMonth}`]),
+          );
+        }}
+        visible={addModalVisible}
+      />
       <WishlistYearFilter
         onClose={() => setYearFilterVisible(false)}
         onSelect={(year) => {
@@ -358,14 +404,24 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   countBadge: {
-    minWidth: 18,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     overflow: 'hidden',
     color: colors.mutedText,
     backgroundColor: colors.backgroundPrimary,
-    borderRadius: 5,
+    borderRadius: 8,
     fontSize: 10,
+    textAlign: 'center',
+  },
+  boughtCountBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    overflow: 'hidden',
+    color: colors.success,
+    backgroundColor: colors.backgroundPrimary,
+    borderRadius: 8,
+    fontSize: 10,
+    fontWeight: '600',
     textAlign: 'center',
   },
   months: {
@@ -386,13 +442,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   monthCount: {
-    minWidth: 16,
-    paddingHorizontal: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
     overflow: 'hidden',
     color: colors.mutedText,
     backgroundColor: colors.backgroundPrimary,
-    borderRadius: 4,
-    fontSize: 9,
+    borderRadius: 7,
+    fontSize: 10,
     textAlign: 'center',
   },
   table: {

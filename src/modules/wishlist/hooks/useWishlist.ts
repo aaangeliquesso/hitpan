@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  createWishlistItem,
   getWishlistAccountCreatedAt,
   getWishlist,
   updateWishlistItem,
 } from '../services/wishlistService';
 import type { WishlistItem } from '../../../types';
+import type { CreateWishlistItemInput } from '../services/wishlistService';
+import { sortWishlistByCreatedAt } from '../years';
 
 export function useWishlist() {
   const [items, setItems] = useState<WishlistItem[]>([]);
@@ -22,7 +25,7 @@ export function useWishlist() {
         getWishlist(),
         getWishlistAccountCreatedAt(),
       ]);
-      setItems(wishlist);
+      setItems(sortWishlistByCreatedAt(wishlist));
       setAccountCreatedAt(accountCreationDate);
     } catch (cause) {
       setError(
@@ -68,6 +71,12 @@ export function useWishlist() {
     [items, savingIds],
   );
 
+  const addItem = useCallback(async (input: CreateWishlistItemInput) => {
+    setError(null);
+    const item = await createWishlistItem(input);
+    setItems((current) => sortWishlistByCreatedAt([item, ...current]));
+  }, []);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -78,6 +87,7 @@ export function useWishlist() {
     loading,
     error,
     refresh,
+    addItem,
     updateItem,
     savingIds,
   };

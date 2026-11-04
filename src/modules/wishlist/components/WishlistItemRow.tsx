@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import type { WishlistItem } from '../../../types';
 import { colors } from '../../../shared/ui/theme';
+import { getWishlistItemDay } from '../years';
 
 interface WishlistItemRowProps {
   item: WishlistItem;
@@ -20,7 +21,7 @@ export function WishlistItemRow({
   return (
     <View style={[styles.row, rowNumber % 2 === 0 && styles.alternate]}>
       <Text style={styles.index}>{item.row_number ?? rowNumber}</Text>
-      <Text style={styles.day}>{item.day}</Text>
+      <Text style={styles.day}>{getWishlistItemDay(item)}</Text>
       <Text numberOfLines={1} style={styles.item}>
         {item.item_name}
       </Text>
@@ -33,7 +34,7 @@ export function WishlistItemRow({
         style={styles.bought}
       >
         <Text style={[styles.checkmark, item.is_bought && styles.checked]}>
-          {item.is_bought ? '✓' : ''}
+          {item.is_bought ? '✓' : '×'}
         </Text>
       </Pressable>
       <View style={styles.need}>
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
   checkmark: {
     width: 18,
     height: 18,
-    color: 'transparent',
+    color: colors.mutedText,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 5,

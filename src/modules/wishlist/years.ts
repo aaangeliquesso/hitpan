@@ -12,6 +12,39 @@ export function getWishlistItemYear(item: WishlistItem): number | null {
   return getYearFromDate(item.created_at);
 }
 
+export function getWishlistItemMonth(item: WishlistItem): string {
+  const timestamp = Date.parse(item.created_at);
+  if (Number.isFinite(timestamp)) {
+    return new Date(timestamp).toLocaleString('en-US', {
+      month: 'long',
+      timeZone: 'UTC',
+    });
+  }
+  return item.month_name;
+}
+
+export function getWishlistItemDay(item: WishlistItem): number {
+  const timestamp = Date.parse(item.created_at);
+  if (Number.isFinite(timestamp)) {
+    return new Date(timestamp).getUTCDate();
+  }
+  return item.day;
+}
+
+export function getWishlistCounts(items: WishlistItem[]) {
+  return {
+    total: items.length,
+    bought: items.filter((item) => item.is_bought).length,
+  };
+}
+
+export function sortWishlistByCreatedAt(items: WishlistItem[]): WishlistItem[] {
+  return [...items].sort(
+    (left, right) =>
+      Date.parse(right.created_at) - Date.parse(left.created_at),
+  );
+}
+
 export function getAvailableWishlistYears(
   items: WishlistItem[],
   accountCreatedAt: string | null,
