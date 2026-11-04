@@ -6,6 +6,8 @@ const palette = {
   border: '#E5E5E5',
   brand: '#7A2033',
   brandSurface: 'rgba(122, 32, 51, 0.08)',
+  ratingStar: '#E6B800',
+  ratingStarEmpty: '#D1D1D6',
   error: '#E53935',
   errorSurface: '#FFEBEE',
   neutralIcon: '#4A4A4A',

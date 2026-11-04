@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, useWatch } from 'react-hook-form';
+import { StarRatingInput } from '../../../shared/components/StarRating';
 import { colors, spacing } from '../../../shared/ui/theme';
 import { PRODUCT_CATEGORIES } from '../categories';
 import { ProgressInput } from './ProgressInput';
@@ -756,26 +757,11 @@ export function AddPanItemModal({
                 <View style={styles.ratingField}>
                   <Text style={styles.fieldLabel}>Star rating</Text>
                   <View style={styles.ratingChoices}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Pressable
-                        accessibilityLabel={`Set rating to ${star} out of 5`}
-                        accessibilityRole="radio"
-                        accessibilityState={{ checked: rating === star }}
-                        key={star}
-                        onPress={() => setRating(star)}
-                        hitSlop={6}
-                      >
-                        <Ionicons
-                          color={
-                            star <= rating
-                              ? colors.textSecondary
-                              : colors.border
-                          }
-                          name={star <= rating ? 'star' : 'star-outline'}
-                          size={24}
-                        />
-                      </Pressable>
-                    ))}
+                    <StarRatingInput
+                      onRatingChange={setRating}
+                      rating={rating}
+                      disabled={saving}
+                    />
                   </View>
                 </View>
               ) : null}
