@@ -15,6 +15,16 @@ export async function getWishlist(): Promise<WishlistItem[]> {
   return data;
 }
 
+export async function getWishlistAccountCreatedAt(): Promise<string | null> {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    throw error;
+  }
+
+  return data.user?.created_at ?? null;
+}
+
 export async function updateWishlistItem(
   id: string,
   update: Partial<Pick<WishlistItem, 'is_bought' | 'is_need'>>,

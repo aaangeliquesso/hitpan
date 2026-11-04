@@ -25,6 +25,12 @@ import {
   WishlistItemRow,
   WishlistTableHeader,
 } from './components/WishlistItemRow';
+import { WishlistYearFilter } from './components/WishlistYearFilter';
+import {
+  filterWishlistByYear,
+  getAvailableWishlistYears,
+  getWishlistItemYear,
+} from './years';
 
 interface MonthGroup {
   name: string;
@@ -55,13 +61,13 @@ const monthOrder = [
 function createGroups(items: WishlistItem[]): YearGroup[] {
   const byYear = new Map<number, WishlistItem[]>();
   for (const item of items) {
-    const yearItems = byYear.get(item.year) ?? [];
+    const year = getWishlistItemYear(item) ?? item.year;
+    const yearItems = byYear.get(year) ?? [];
     yearItems.push(item);
-    byYear.set(item.year, yearItems);
+    byYear.set(year, yearItems);
   }
 
-  const years = new Set([2026, 2025, 2024, ...byYear.keys()]);
-  return [...years]
+  return [...byYear.keys()]
     .sort((a, b) => b - a)
     .map((year) => {
       const yearItems = byYear.get(year) ?? [];
@@ -96,12 +102,34 @@ function createGroups(items: WishlistItem[]): YearGroup[] {
 export default function WishlistScreen() {
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
-  const { items, loading, error, refresh, updateItem, savingIds } = useWishlist();
-  const [expandedYear, setExpandedYear] = useState<number | null>(2026);
+  const {
+    items,
+    accountCreatedAt,
+    loading,
+    error,
+    refresh,
+    updateItem,
+    savingIds,
+  } = useWishlist();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().toLocaleString(undefined, {
+    month: 'long',
+  });
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [yearFilterVisible, setYearFilterVisible] = useState(false);
+  const [expandedYear, setExpandedYear] = useState<number | null>(currentYear);
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(
-    () => new Set(['2026-January']),
+    () => new Set([`${currentYear}-${currentMonth}`]),
   );
-  const groups = useMemo(() => createGroups(items), [items]);
+  const availableYears = useMemo(
+    () => getAvailableWishlistYears(items, accountCreatedAt, currentYear),
+    [accountCreatedAt, currentYear, items],
+  );
+  const filteredItems = useMemo(
+    () => filterWishlistByYear(items, selectedYear),
+    [items, selectedYear],
+  );
+  const groups = useMemo(() => createGroups(filteredItems), [filteredItems]);
 
   function toggleMonth(key: string) {
     setExpandedMonths((current) => {
@@ -132,13 +160,18 @@ export default function WishlistScreen() {
         </View>
         <View style={styles.titleRow}>
           <Text style={styles.title}>My Wishlist</Text>
-          <View style={styles.filterButton}>
+          <Pressable
+            accessibilityLabel="Filter wishlist by year"
+            accessibilityRole="button"
+            onPress={() => setYearFilterVisible(true)}
+            style={styles.filterButton}
+          >
             <Ionicons
               color={colors.neutralIcon}
               name="options-outline"
               size={20}
             />
-          </View>
+          </Pressable>
         </View>
 
         {loading && !items.length ? (
@@ -248,6 +281,16 @@ export default function WishlistScreen() {
       >
         <Ionicons color={colors.backgroundPrimary} name="add" size={30} />
       </View>
+      <WishlistYearFilter
+        onClose={() => setYearFilterVisible(false)}
+        onSelect={(year) => {
+          setSelectedYear(year);
+          setExpandedYear(year ?? currentYear);
+        }}
+        selectedYear={selectedYear}
+        visible={yearFilterVisible}
+        years={availableYears}
+      />
     </SafeAreaView>
   );
 }

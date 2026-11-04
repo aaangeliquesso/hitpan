@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  getWishlistAccountCreatedAt,
   getWishlist,
   updateWishlistItem,
 } from '../services/wishlistService';
@@ -7,6 +8,7 @@ import type { WishlistItem } from '../../../types';
 
 export function useWishlist() {
   const [items, setItems] = useState<WishlistItem[]>([]);
+  const [accountCreatedAt, setAccountCreatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [savingIds, setSavingIds] = useState<Set<string>>(() => new Set());
@@ -16,7 +18,12 @@ export function useWishlist() {
     setError(null);
 
     try {
-      setItems(await getWishlist());
+      const [wishlist, accountCreationDate] = await Promise.all([
+        getWishlist(),
+        getWishlistAccountCreatedAt(),
+      ]);
+      setItems(wishlist);
+      setAccountCreatedAt(accountCreationDate);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause : new Error('Unable to load wishlist.'),
@@ -65,5 +72,13 @@ export function useWishlist() {
     void refresh();
   }, [refresh]);
 
-  return { items, loading, error, refresh, updateItem, savingIds };
+  return {
+    items,
+    accountCreatedAt,
+    loading,
+    error,
+    refresh,
+    updateItem,
+    savingIds,
+  };
 }
