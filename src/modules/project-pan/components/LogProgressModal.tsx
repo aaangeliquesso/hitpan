@@ -16,8 +16,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useForm, useWatch } from 'react-hook-form';
 import { colors, spacing } from '../../../shared/ui/theme';
-import { ProgressSlider } from './ProgressSlider';
+import { clampProgressPercentage, ProgressInput } from './ProgressInput';
 import type { CreateProgressLogInput } from '../services/progressLogService';
 
 interface LogProgressModalProps {
@@ -37,7 +38,15 @@ export function LogProgressModal({
   onClose,
   onSave,
 }: LogProgressModalProps) {
-  const [progress, setProgress] = useState(currentProgress);
+  const progressForm = useForm<{ progress: number }>({
+    defaultValues: {
+      progress: clampProgressPercentage(currentProgress),
+    },
+  });
+  const progress = useWatch({
+    control: progressForm.control,
+    name: 'progress',
+  });
   const [notes, setNotes] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -46,7 +55,9 @@ export function LogProgressModal({
 
   useEffect(() => {
     if (visible) {
-      setProgress(currentProgress);
+      progressForm.reset({
+        progress: clampProgressPercentage(currentProgress),
+      });
       setNotes('');
       setImageUri(null);
       setError(null);
@@ -154,24 +165,11 @@ export function LogProgressModal({
                   <Text style={styles.label}>Progress after use</Text>
                   <Text style={styles.progressValue}>{progress}%</Text>
                 </View>
-                <ProgressSlider
+                <ProgressInput
                   accessibilityLabel="Progress after use"
-                  onValueChange={setProgress}
-                  value={progress}
+                  control={progressForm.control}
+                  name="progress"
                 />
-                <View style={styles.progressLabels}>
-                  {[0, 25, 50, 75, 100].map((value) => (
-                    <Text
-                      key={value}
-                      style={[
-                        styles.progressLabel,
-                        value === progress && styles.activeProgressLabel,
-                      ]}
-                    >
-                      {value}%
-                    </Text>
-                  ))}
-                </View>
               </View>
 
               <View style={styles.section}>
@@ -364,18 +362,6 @@ const styles = StyleSheet.create({
   progressValue: {
     color: colors.brand,
     fontSize: 16,
-    fontWeight: '700',
-  },
-  progressLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  progressLabel: {
-    color: colors.mutedText,
-    fontSize: 10,
-  },
-  activeProgressLabel: {
-    color: colors.brand,
     fontWeight: '700',
   },
   takePhotoButton: {

@@ -18,9 +18,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useForm, useWatch } from 'react-hook-form';
 import { colors, spacing } from '../../../shared/ui/theme';
 import { PRODUCT_CATEGORIES } from '../categories';
-import { ProgressSlider } from './ProgressSlider';
+import { ProgressInput } from './ProgressInput';
 import type { NewPanItemInput } from '../services/panService';
 import type { VanityItem } from '../../../types';
 
@@ -161,7 +162,13 @@ export function AddPanItemModal({
   const [dateYear, setDateYear] = useState(() => getToday().slice(0, 4));
   const [dateMonth, setDateMonth] = useState(() => getToday().slice(5, 7));
   const [dateDay, setDateDay] = useState(() => getToday().slice(8, 10));
-  const [progress, setProgress] = useState(0);
+  const progressForm = useForm<{ progress: number }>({
+    defaultValues: { progress: 0 },
+  });
+  const progress = useWatch({
+    control: progressForm.control,
+    name: 'progress',
+  });
   const [rating, setRating] = useState(0);
   const [saving, setSaving] = useState(false);
   const [priceInputFocused, setPriceInputFocused] = useState(false);
@@ -205,7 +212,7 @@ export function AddPanItemModal({
     setCalendarMonth(
       new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
     );
-    setProgress(0);
+    progressForm.reset({ progress: 0 });
     setRating(item?.rating ?? 0);
     setError(null);
     setFieldErrors({});
@@ -797,24 +804,11 @@ export function AddPanItemModal({
                         <Text style={styles.progressValue}>{progress}%</Text>
                       </View>
                     </View>
-                    <ProgressSlider
-                      onValueChange={setProgress}
-                      value={progress}
+                    <ProgressInput
+                      accessibilityLabel="Initial progress"
+                      control={progressForm.control}
+                      name="progress"
                     />
-                    <View style={styles.progressLabels}>
-                      {[0, 25, 50, 75, 100].map((value) => (
-                        <Text
-                          key={value}
-                          style={[
-                            styles.progressEndpoint,
-                            progress === value &&
-                              styles.activeProgressEndpoint,
-                          ]}
-                        >
-                          {value}%
-                        </Text>
-                      ))}
-                    </View>
                   </View>
                 </View>
               ) : null}
@@ -1752,19 +1746,6 @@ const styles = StyleSheet.create({
   progressValue: {
     color: colors.brand,
     fontSize: 13,
-    fontWeight: '700',
-  },
-  progressLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: -2,
-  },
-  progressEndpoint: {
-    color: colors.mutedText,
-    fontSize: 11,
-  },
-  activeProgressEndpoint: {
-    color: colors.brand,
     fontWeight: '700',
   },
   categorySelector: {
