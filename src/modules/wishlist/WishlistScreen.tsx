@@ -72,7 +72,7 @@ function CounterBadge({
             : styles.totalCounterBadgeText,
         ]}
       >
-        {type === 'bought' ? `✓ ${count} bought` : `${count} total`}
+        {type === 'bought' ? `${count} bought` : `${count} total`}
       </Text>
     </View>
   );
