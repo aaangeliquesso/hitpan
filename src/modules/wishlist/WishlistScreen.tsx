@@ -262,9 +262,9 @@ export default function WishlistScreen() {
                                   <WishlistItemRow
                                     item={item}
                                     key={item.id}
-                                    onToggleBought={() =>
+                                    onToggleBought={(value) =>
                                       void updateItem(item.id, {
-                                        is_bought: !item.is_bought,
+                                        is_bought: value,
                                       })
                                     }
                                     onToggleNeed={(value) =>

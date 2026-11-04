@@ -104,7 +104,12 @@ export function AddWishlistItemModal({
           />
 
           <View style={styles.toggleRow}>
-            <View style={styles.toggleItem}>
+            <View
+              style={[
+                styles.toggleItem,
+                isBought && styles.boughtToggleActive,
+              ]}
+            >
               <View style={styles.toggleText}>
                 <Text style={styles.toggleTitle}>Bought</Text>
                 <Text style={styles.toggleHint}>
@@ -115,12 +120,17 @@ export function AddWishlistItemModal({
                 accessibilityLabel="Mark item as bought"
                 disabled={saving}
                 onValueChange={setIsBought}
-                thumbColor={colors.backgroundPrimary}
-                trackColor={{ false: colors.border, true: colors.brand }}
+                thumbColor={colors.switchThumb}
+                trackColor={{
+                  false: colors.switchInactive,
+                  true: colors.wishlistBought,
+                }}
                 value={isBought}
               />
             </View>
-            <View style={styles.toggleItem}>
+            <View
+              style={[styles.toggleItem, isNeed && styles.needToggleActive]}
+            >
               <View style={styles.toggleText}>
                 <Text style={styles.toggleTitle}>Need</Text>
                 <Text style={styles.toggleHint}>
@@ -131,8 +141,11 @@ export function AddWishlistItemModal({
                 accessibilityLabel="Mark item as a need"
                 disabled={saving}
                 onValueChange={setIsNeed}
-                thumbColor={colors.backgroundPrimary}
-                trackColor={{ false: colors.border, true: colors.brand }}
+                thumbColor={colors.switchThumb}
+                trackColor={{
+                  false: colors.switchInactive,
+                  true: colors.wishlistNeed,
+                }}
                 value={isNeed}
               />
             </View>
@@ -237,6 +250,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     backgroundColor: colors.warmWhite,
+  },
+  boughtToggleActive: {
+    backgroundColor: colors.wishlistBoughtSurface,
+    borderColor: colors.wishlistBought,
+  },
+  needToggleActive: {
+    backgroundColor: colors.wishlistNeedSurface,
+    borderColor: colors.wishlistNeed,
   },
   toggleText: {
     flexShrink: 1,

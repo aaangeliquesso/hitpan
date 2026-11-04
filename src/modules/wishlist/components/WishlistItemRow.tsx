@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 import type { WishlistItem } from '../../../types';
 import { colors } from '../../../shared/ui/theme';
 import { getWishlistItemDay } from '../years';
@@ -7,7 +7,7 @@ interface WishlistItemRowProps {
   item: WishlistItem;
   rowNumber: number;
   saving: boolean;
-  onToggleBought: () => void;
+  onToggleBought: (value: boolean) => void;
   onToggleNeed: (value: boolean) => void;
 }
 
@@ -25,25 +25,40 @@ export function WishlistItemRow({
       <Text numberOfLines={1} style={styles.item}>
         {item.item_name}
       </Text>
-      <Pressable
-        accessibilityLabel={`${item.is_bought ? 'Mark' : 'Unmark'} ${item.item_name} as bought`}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: item.is_bought, disabled: saving }}
-        disabled={saving}
-        onPress={onToggleBought}
-        style={styles.bought}
+      <View
+        style={[
+          styles.toggleCell,
+          item.is_bought && styles.boughtActive,
+        ]}
       >
-        <Text style={[styles.checkmark, item.is_bought && styles.checked]}>
-          {item.is_bought ? '✓' : '×'}
-        </Text>
-      </Pressable>
-      <View style={styles.need}>
+        <Switch
+          accessibilityLabel={`Mark ${item.item_name} as bought`}
+          disabled={saving}
+          onValueChange={onToggleBought}
+          trackColor={{
+            false: colors.switchInactive,
+            true: colors.wishlistBought,
+          }}
+          thumbColor={colors.switchThumb}
+          value={item.is_bought}
+          style={styles.switch}
+        />
+      </View>
+      <View
+        style={[
+          styles.toggleCell,
+          item.is_need && styles.needActive,
+        ]}
+      >
         <Switch
           accessibilityLabel={`Mark ${item.item_name} as a need`}
           disabled={saving}
           onValueChange={onToggleNeed}
-          trackColor={{ false: colors.border, true: colors.brand }}
-          thumbColor={colors.backgroundPrimary}
+          trackColor={{
+            false: colors.switchInactive,
+            true: colors.wishlistNeed,
+          }}
+          thumbColor={colors.switchThumb}
           value={item.is_need}
           style={styles.switch}
         />
@@ -58,8 +73,8 @@ export function WishlistTableHeader() {
       <Text style={[styles.headerText, styles.index]}>#</Text>
       <Text style={[styles.headerText, styles.day]}>Day</Text>
       <Text style={[styles.headerText, styles.item]}>Item</Text>
-      <Text style={[styles.headerText, styles.bought]}>Bought</Text>
-      <Text style={[styles.headerText, styles.need]}>Need?</Text>
+      <Text style={[styles.headerText, styles.toggleCell]}>Bought</Text>
+      <Text style={[styles.headerText, styles.toggleCell]}>Need?</Text>
     </View>
   );
 }
@@ -106,33 +121,17 @@ const styles = StyleSheet.create({
     fontSize: 9,
     paddingHorizontal: 3,
   },
-  bought: {
-    width: '15%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkmark: {
-    width: 18,
-    height: 18,
-    color: colors.mutedText,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 5,
-    overflow: 'hidden',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  checked: {
-    color: colors.success,
-    backgroundColor: colors.backgroundSecondary,
-    borderColor: colors.border,
-  },
-  need: {
+  toggleCell: {
     width: '16%',
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 8,
+  },
+  boughtActive: {
+    backgroundColor: colors.wishlistBoughtSurface,
+  },
+  needActive: {
+    backgroundColor: colors.wishlistNeedSurface,
   },
   switch: {
     transform: [{ scaleX: 0.64 }, { scaleY: 0.64 }],
