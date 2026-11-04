@@ -30,6 +30,22 @@ import { createPanItem } from './services/panService';
 import { getCurrentProgressPercentage } from './progress';
 import type { VanityItem } from '../../types';
 
+type StatusFilter = 'all' | 'in_progress' | 'finished';
+
+interface FilterState {
+  categories: Set<string>;
+  status: StatusFilter;
+}
+
+const STATUS_FILTER_OPTIONS: Array<{
+  label: string;
+  value: StatusFilter;
+}> = [
+  { label: 'All', value: 'all' },
+  { label: 'In Progress', value: 'in_progress' },
+  { label: 'Finished', value: 'finished' },
+];
+
 function matchesCategoryFilters(
   item: VanityItem,
   selectedCategories: Set<string>,
@@ -49,18 +65,30 @@ function matchesCategoryFilters(
   );
 }
 
+function matchesStatusFilter(
+  item: VanityItem,
+  status: StatusFilter,
+): boolean {
+  if (status === 'all') return true;
+
+  const progress = getCurrentProgressPercentage(item, item.progress_logs?.[0]);
+  return status === 'finished' ? progress === 100 : progress < 100;
+}
+
 export default function ProjectPanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
   const { items, loading, error, refresh, addItem } = usePanItems();
   const hasFocusedProjectPan = useRef(false);
-  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [draftCategories, setDraftCategories] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [selectedFilters, setSelectedFilters] = useState<FilterState>(() => ({
+    categories: new Set(),
+    status: 'all',
+  }));
+  const [draftFilters, setDraftFilters] = useState<FilterState>(() => ({
+    categories: new Set(),
+    status: 'all',
+  }));
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
 
@@ -97,32 +125,49 @@ export default function ProjectPanScreen() {
   );
   const filteredItems = useMemo(
     () =>
-      items.filter((item) =>
-        matchesCategoryFilters(item, selectedCategories, customCategories),
+      items.filter(
+        (item) =>
+          matchesCategoryFilters(
+            item,
+            selectedFilters.categories,
+            customCategories,
+          ) && matchesStatusFilter(item, selectedFilters.status),
       ),
-    [customCategories, items, selectedCategories],
+    [customCategories, items, selectedFilters],
   );
   const draftFilteredCount = useMemo(
     () =>
-      items.filter((item) =>
-        matchesCategoryFilters(item, draftCategories, customCategories),
+      items.filter(
+        (item) =>
+          matchesCategoryFilters(
+            item,
+            draftFilters.categories,
+            customCategories,
+          ) && matchesStatusFilter(item, draftFilters.status),
       ).length,
-    [customCategories, draftCategories, items],
+    [customCategories, draftFilters, items],
   );
+  const activeFilterCount =
+    selectedFilters.categories.size +
+    (selectedFilters.status === 'all' ? 0 : 1);
+
   function openCategoryFilter() {
-    setDraftCategories(new Set(selectedCategories));
+    setDraftFilters({
+      categories: new Set(selectedFilters.categories),
+      status: selectedFilters.status,
+    });
     setFilterModalVisible(true);
   }
 
   function toggleDraftCategory(category: string) {
-    setDraftCategories((current) => {
-      const next = new Set(current);
-      if (next.has(category)) {
-        next.delete(category);
+    setDraftFilters((current) => {
+      const categories = new Set(current.categories);
+      if (categories.has(category)) {
+        categories.delete(category);
       } else {
-        next.add(category);
+        categories.add(category);
       }
-      return next;
+      return { ...current, categories };
     });
   }
 
@@ -219,15 +264,17 @@ export default function ProjectPanScreen() {
                 />
               </Pressable>
             </View>
-            {selectedCategories.size > 0 ? (
+            {activeFilterCount > 0 ? (
               <View style={styles.activeFilterRow}>
                 <Text style={styles.activeFilterText}>
-                  {selectedCategories.size} filter
-                  {selectedCategories.size === 1 ? '' : 's'} selected
+                  {activeFilterCount} filter
+                  {activeFilterCount === 1 ? '' : 's'} selected
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => setSelectedCategories(new Set())}
+                  onPress={() =>
+                    setSelectedFilters({ categories: new Set(), status: 'all' })
+                  }
                   style={styles.clearFiltersButton}
                 >
                   <Text style={styles.clearFiltersText}>Clear all</Text>
@@ -294,7 +341,7 @@ export default function ProjectPanScreen() {
               <View>
                 <Text style={styles.filterTitle}>Filter your pan</Text>
                 <Text style={styles.filterSubtitle}>
-                  Choose categories and product types.
+                  Choose progress status and product categories.
                 </Text>
               </View>
               <Pressable
@@ -310,8 +357,42 @@ export default function ProjectPanScreen() {
               contentContainerStyle={styles.filterList}
               showsVerticalScrollIndicator={false}
             >
+              <View style={styles.filterGroup}>
+                <Text style={styles.filterGroupTitle}>Status</Text>
+                <View style={styles.filterOptions}>
+                  {STATUS_FILTER_OPTIONS.map((option) => {
+                    const selected = draftFilters.status === option.value;
+                    return (
+                      <Pressable
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected }}
+                        key={option.value}
+                        onPress={() =>
+                          setDraftFilters((current) => ({
+                            ...current,
+                            status: option.value,
+                          }))
+                        }
+                        style={[
+                          styles.filterOption,
+                          selected && styles.selectedStatusOption,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.filterOptionText,
+                            selected && styles.selectedStatusOptionText,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
               {filterGroups.map((group) => {
-                const groupSelected = draftCategories.has(group.title);
+                const groupSelected = draftFilters.categories.has(group.title);
                 return (
                   <View key={group.title} style={styles.filterGroup}>
                     <Pressable
@@ -342,7 +423,8 @@ export default function ProjectPanScreen() {
                     </Pressable>
                     <View style={styles.filterOptions}>
                       {group.options.map((category) => {
-                        const checked = draftCategories.has(category);
+                        const checked =
+                          draftFilters.categories.has(category);
                         return (
                           <Pressable
                             accessibilityRole="checkbox"
@@ -380,7 +462,9 @@ export default function ProjectPanScreen() {
             <View style={styles.filterActions}>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => setDraftCategories(new Set())}
+                onPress={() =>
+                  setDraftFilters({ categories: new Set(), status: 'all' })
+                }
                 style={[styles.filterAction, styles.resetFilterAction]}
               >
                 <Text style={styles.resetFilterText}>Clear</Text>
@@ -388,7 +472,7 @@ export default function ProjectPanScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={() => {
-                  setSelectedCategories(new Set(draftCategories));
+                  setSelectedFilters(draftFilters);
                   setFilterModalVisible(false);
                 }}
                 style={[styles.filterAction, styles.applyFilterAction]}
@@ -563,6 +647,14 @@ const styles = StyleSheet.create({
   filterOptionText: {
     color: colors.mutedText,
     fontSize: 11,
+  },
+  selectedStatusOption: {
+    backgroundColor: colors.brand,
+    borderColor: colors.brand,
+  },
+  selectedStatusOptionText: {
+    color: colors.backgroundPrimary,
+    fontWeight: '600',
   },
   selectedFilterOptionText: {
     color: colors.brand,
