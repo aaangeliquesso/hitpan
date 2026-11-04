@@ -20,7 +20,7 @@ export function WishlistItemRow({
 }: WishlistItemRowProps) {
   return (
     <View style={[styles.row, rowNumber % 2 === 0 && styles.alternate]}>
-      <Text style={styles.index}>{item.row_number ?? rowNumber}</Text>
+      <Text style={styles.index}>{rowNumber}</Text>
       <Text style={styles.day}>{getWishlistItemDay(item)}</Text>
       <Text numberOfLines={1} style={styles.item}>
         {item.item_name}
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
   },
   index: {
-    width: '8%',
+    width: 24,
     textAlign: 'center',
   },
   day: {

@@ -300,7 +300,7 @@ export default function WishlistScreen() {
                                         is_need: value,
                                       })
                                     }
-                                    rowNumber={index + 1}
+                                    rowNumber={month.totalCount - index}
                                     saving={savingIds.has(item.id)}
                                   />
                                 ))}
