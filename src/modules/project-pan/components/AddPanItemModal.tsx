@@ -1902,6 +1902,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   dismissButton: {
+    flex: 1,
     backgroundColor: colors.neutralSurface,
   },
   dismissText: {
@@ -1910,6 +1911,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   saveButton: {
+    flex: 3,
     backgroundColor: colors.brand,
   },
   saveText: {
