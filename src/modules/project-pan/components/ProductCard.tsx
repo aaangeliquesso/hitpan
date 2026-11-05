@@ -5,7 +5,10 @@ import { StarRating } from '../../../shared/components/StarRating';
 import { colors, spacing } from '../../../shared/ui/theme';
 import { ProgressBar } from './ProgressBar';
 import { ProductTagBadge } from './ProductTagBadge';
-import { getCurrentProgressPercentage } from '../progress';
+import {
+  getCurrentProgressPercentage,
+  getProgressTextColor,
+} from '../progress';
 
 interface ProductCardProps {
   item: VanityItem;
@@ -83,7 +86,14 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
         <View style={styles.progressBar}>
           <ProgressBar progress={progressPercentage} />
         </View>
-        <Text style={styles.progressText}>{progressPercentage}%</Text>
+        <Text
+          style={[
+            styles.progressText,
+            { color: getProgressTextColor(progressPercentage) },
+          ]}
+        >
+          {progressPercentage}%
+        </Text>
       </View>
     </Pressable>
   );
@@ -171,7 +181,6 @@ const styles = StyleSheet.create({
   },
   progressText: {
     minWidth: 38,
-    color: colors.brand,
     fontSize: 12,
     fontWeight: '700',
     textAlign: 'right',

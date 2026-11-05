@@ -25,7 +25,10 @@ import {
   updatePanItemRating,
 } from '../../src/modules/project-pan/services/panService';
 import { createProgressLog } from '../../src/modules/project-pan/services/progressLogService';
-import { getCurrentProgressPercentage } from '../../src/modules/project-pan/progress';
+import {
+  getCurrentProgressPercentage,
+  getProgressTextColor,
+} from '../../src/modules/project-pan/progress';
 import { useProgressLogs } from '../../src/modules/project-pan/hooks/useProgressLogs';
 import type { VanityItem } from '../../src/types';
 import { AddPanItemModal } from '../../src/modules/project-pan/components/AddPanItemModal';
@@ -243,7 +246,12 @@ export default function ProductDetailsScreen() {
                 </View>
               </View>
               <View style={styles.progressRow}>
-                <Text style={styles.progressValue}>
+                <Text
+                  style={[
+                    styles.progressValue,
+                    { color: getProgressTextColor(progressPercentage) },
+                  ]}
+                >
                   {progressPercentage}%
                 </Text>
                 <View style={styles.progressBar}>
@@ -488,7 +496,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   progressValue: {
-    color: colors.success,
     fontSize: 13,
     fontWeight: '700',
   },

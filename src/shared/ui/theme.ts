@@ -8,6 +8,7 @@ const palette = {
   brandSurface: 'rgba(122, 32, 51, 0.08)',
   ratingStar: '#E6B800',
   ratingStarEmpty: '#D1D1D6',
+  progressComplete: '#1E4D2B',
   wishlistBought: '#7A2033',
   wishlistBoughtSurface: '#FDF2F4',
   wishlistNeed: '#1E4D2B',

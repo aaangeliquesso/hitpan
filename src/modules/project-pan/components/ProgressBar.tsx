@@ -13,7 +13,7 @@ export function ProgressBar({ progress }: ProgressBarProps) {
   ).current;
   const fillColor = animatedProgress.interpolate({
     inputRange: [99, 100],
-    outputRange: [colors.brand, '#3a6546'],
+    outputRange: [colors.brand, colors.progressComplete],
     extrapolate: 'clamp',
   });
 
