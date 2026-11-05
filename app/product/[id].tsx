@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     fontSize: 19,
   },
   filledStar: {
-    color: colors.textSecondary,
+    color: colors.ratingStar,
   },
   progressRow: {
     flexDirection: 'row',
