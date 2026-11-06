@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -27,6 +27,7 @@ import { WishlistYearFilter } from './components/WishlistYearFilter';
 import {
   filterWishlistByYear,
   getAvailableWishlistYears,
+  getWishlistItemYear,
 } from './years';
 
 interface DayGroup {
@@ -34,6 +35,11 @@ interface DayGroup {
   label: string;
   items: WishlistItem[];
   sortDate: number;
+}
+
+interface YearGroup {
+  year: number;
+  days: DayGroup[];
 }
 
 function getDayGroup(item: WishlistItem) {
@@ -86,6 +92,27 @@ function createGroups(items: WishlistItem[]): DayGroup[] {
     .sort((left, right) => right.sortDate - left.sortDate);
 }
 
+function getItemYear(item: WishlistItem): number {
+  return getWishlistItemYear(item) ?? item.year;
+}
+
+function createYearGroups(items: WishlistItem[]): YearGroup[] {
+  const itemsByYear = new Map<number, WishlistItem[]>();
+  for (const item of items) {
+    const year = getItemYear(item);
+    const yearItems = itemsByYear.get(year) ?? [];
+    yearItems.push(item);
+    itemsByYear.set(year, yearItems);
+  }
+
+  return [...itemsByYear.entries()]
+    .sort(([left], [right]) => right - left)
+    .map(([year, yearItems]) => ({
+      year,
+      days: createGroups(yearItems),
+    }));
+}
+
 export default function WishlistScreen() {
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
@@ -101,6 +128,8 @@ export default function WishlistScreen() {
   } = useWishlist();
   const currentYear = new Date().getUTCFullYear();
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [expandedYear, setExpandedYear] = useState<number | null>(null);
+  const initializedAccordion = useRef(false);
   const [yearFilterVisible, setYearFilterVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const availableYears = useMemo(
@@ -111,11 +140,30 @@ export default function WishlistScreen() {
     () => filterWishlistByYear(items, selectedYear),
     [items, selectedYear],
   );
-  const groups = useMemo(() => createGroups(filteredItems), [filteredItems]);
+  const yearGroups = useMemo(
+    () => createYearGroups(filteredItems),
+    [filteredItems],
+  );
+  const allYearGroups = useMemo(() => createYearGroups(items), [items]);
+  useEffect(() => {
+    if (!loading && !initializedAccordion.current) {
+      setExpandedYear(yearGroups[0]?.year ?? currentYear);
+      initializedAccordion.current = true;
+    }
+  }, [currentYear, loading, yearGroups]);
+  const activeYear =
+    selectedYear ??
+    expandedYear ??
+    yearGroups[0]?.year ??
+    currentYear;
+  const activeYearItems = useMemo(
+    () => filteredItems.filter((item) => getItemYear(item) === activeYear),
+    [activeYear, filteredItems],
+  );
   const wishlistSummary = useMemo(() => {
-    const total = filteredItems.length;
-    const need = filteredItems.filter((item) => item.is_need).length;
-    const bought = filteredItems.filter((item) => item.is_bought).length;
+    const total = activeYearItems.length;
+    const need = activeYearItems.filter((item) => item.is_need).length;
+    const bought = activeYearItems.filter((item) => item.is_bought).length;
     const needPercentage = total ? (need / total) * 100 : 0;
     const boughtPercentage = total ? (bought / total) * 100 : 0;
     const markedPercentage = needPercentage + boughtPercentage;
@@ -130,7 +178,7 @@ export default function WishlistScreen() {
       needBarPercentage: needPercentage * barScale,
       boughtBarPercentage: boughtPercentage * barScale,
     };
-  }, [filteredItems]);
+  }, [activeYearItems]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
@@ -165,7 +213,9 @@ export default function WishlistScreen() {
 
         <View style={styles.analyticsCard}>
           <View style={styles.analyticsHeader}>
-            <Text style={styles.analyticsTitle}>Mindful Spending Ratio</Text>
+            <Text style={styles.analyticsTitle}>
+              {activeYear} Mindful Spending Ratio
+            </Text>
             <Text style={styles.analyticsTotal}>
               {wishlistSummary.total}{' '}
               {wishlistSummary.total === 1 ? 'item' : 'items'}
@@ -205,36 +255,75 @@ export default function WishlistScreen() {
           <ActivityIndicator color={colors.neutralIcon} style={styles.loader} />
         ) : error ? (
           <Text style={styles.error}>{error.message}</Text>
-        ) : (
-          groups.map((group) => (
-            <View key={group.key} style={styles.dayCard}>
-              <View style={styles.dayHeader}>
-                <Text style={styles.dayLabel}>{group.label}</Text>
-                <View style={styles.itemCountBadge}>
-                  <Text style={styles.itemCountText}>
-                    {group.items.length}{' '}
-                    {group.items.length === 1 ? 'item' : 'items'}
+        ) : yearGroups.length ? (
+          yearGroups.map((yearGroup) => {
+            const isYearOpen = yearGroup.year === expandedYear;
+            const yearItemCount = yearGroup.days.reduce(
+              (count, day) => count + day.items.length,
+              0,
+            );
+
+            return (
+              <View key={yearGroup.year} style={styles.yearSection}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: isYearOpen }}
+                  onPress={() =>
+                    setExpandedYear(isYearOpen ? null : yearGroup.year)
+                  }
+                  style={styles.yearHeader}
+                >
+                  <Text style={styles.yearLabel}>{yearGroup.year}</Text>
+                  <Text style={styles.yearCount}>
+                    {yearItemCount}{' '}
+                    {yearItemCount === 1 ? 'item' : 'items'}
                   </Text>
-                </View>
-              </View>
-              <View style={styles.dayItems}>
-                {group.items.map((item, index) => (
-                  <WishlistItemRow
-                    item={item}
-                    key={item.id}
-                    onToggleBought={(value) =>
-                      void updateItem(item.id, { is_bought: value })
-                    }
-                    onToggleNeed={(value) =>
-                      void updateItem(item.id, { is_need: value })
-                    }
-                    rowNumber={group.items.length - index}
-                    saving={savingIds.has(item.id)}
+                  <Ionicons
+                    color={colors.mutedText}
+                    name={isYearOpen ? 'chevron-up' : 'chevron-down'}
+                    size={16}
                   />
-                ))}
+                </Pressable>
+                {isYearOpen
+                  ? yearGroup.days.map((group) => (
+                      <View key={group.key} style={styles.dayCard}>
+                        <View style={styles.dayHeader}>
+                          <Text style={styles.dayLabel}>{group.label}</Text>
+                          <View style={styles.itemCountBadge}>
+                            <Text style={styles.itemCountText}>
+                              {group.items.length}{' '}
+                              {group.items.length === 1 ? 'item' : 'items'}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.dayItems}>
+                          {group.items.map((item, index) => (
+                            <WishlistItemRow
+                              item={item}
+                              key={item.id}
+                              onToggleBought={(value) =>
+                                void updateItem(item.id, {
+                                  is_bought: value,
+                                })
+                              }
+                              onToggleNeed={(value) =>
+                                void updateItem(item.id, {
+                                  is_need: value,
+                                })
+                              }
+                              rowNumber={group.items.length - index}
+                              saving={savingIds.has(item.id)}
+                            />
+                          ))}
+                        </View>
+                      </View>
+                    ))
+                  : null}
               </View>
-            </View>
-          ))
+            );
+          })
+        ) : (
+          <Text style={styles.noItems}>No wishlist items yet.</Text>
         )}
         {loading && items.length ? (
           <ActivityIndicator color={colors.neutralIcon} style={styles.refreshing} />
@@ -266,6 +355,7 @@ export default function WishlistScreen() {
         onSave={async (input) => {
           await addItem(input);
           setSelectedYear(null);
+          setExpandedYear(currentYear);
         }}
         visible={addModalVisible}
       />
@@ -273,6 +363,7 @@ export default function WishlistScreen() {
         onClose={() => setYearFilterVisible(false)}
         onSelect={(year) => {
           setSelectedYear(year);
+          setExpandedYear(year ?? allYearGroups[0]?.year ?? null);
         }}
         selectedYear={selectedYear}
         visible={yearFilterVisible}
@@ -366,6 +457,34 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     textAlign: 'right',
+  },
+  yearSection: {
+    marginBottom: spacing.sm,
+  },
+  yearHeader: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  yearLabel: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  yearCount: {
+    color: colors.mutedText,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  noItems: {
+    paddingVertical: spacing.md,
+    color: colors.mutedText,
+    fontSize: 13,
+    textAlign: 'center',
   },
   filterButton: {
     width: 36,
