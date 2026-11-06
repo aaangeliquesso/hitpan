@@ -112,6 +112,25 @@ export default function WishlistScreen() {
     [items, selectedYear],
   );
   const groups = useMemo(() => createGroups(filteredItems), [filteredItems]);
+  const wishlistSummary = useMemo(() => {
+    const total = filteredItems.length;
+    const need = filteredItems.filter((item) => item.is_need).length;
+    const bought = filteredItems.filter((item) => item.is_bought).length;
+    const needPercentage = total ? (need / total) * 100 : 0;
+    const boughtPercentage = total ? (bought / total) * 100 : 0;
+    const markedPercentage = needPercentage + boughtPercentage;
+    const barScale = markedPercentage > 100 ? 100 / markedPercentage : 1;
+
+    return {
+      total,
+      need,
+      bought,
+      needPercentage,
+      boughtPercentage,
+      needBarPercentage: needPercentage * barScale,
+      boughtBarPercentage: boughtPercentage * barScale,
+    };
+  }, [filteredItems]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
@@ -142,6 +161,44 @@ export default function WishlistScreen() {
               size={20}
             />
           </Pressable>
+        </View>
+
+        <View style={styles.analyticsCard}>
+          <View style={styles.analyticsHeader}>
+            <Text style={styles.analyticsTitle}>Mindful Spending Ratio</Text>
+            <Text style={styles.analyticsTotal}>
+              {wishlistSummary.total}{' '}
+              {wishlistSummary.total === 1 ? 'item' : 'items'}
+            </Text>
+          </View>
+          <View
+            accessibilityLabel={`${wishlistSummary.needPercentage.toFixed(0)}% intentional, ${wishlistSummary.boughtPercentage.toFixed(0)}% purchased`}
+            accessibilityRole="progressbar"
+            style={styles.analyticsBar}
+          >
+            <View
+              style={[
+                styles.needBar,
+                { width: `${wishlistSummary.needBarPercentage}%` },
+              ]}
+            />
+            <View
+              style={[
+                styles.boughtBar,
+                { width: `${wishlistSummary.boughtBarPercentage}%` },
+              ]}
+            />
+          </View>
+          <View style={styles.analyticsMetrics}>
+            <Text style={styles.needMetric}>
+              {wishlistSummary.needPercentage.toFixed(0)}% Intentional (
+              {wishlistSummary.need})
+            </Text>
+            <Text style={styles.boughtMetric}>
+              {wishlistSummary.boughtPercentage.toFixed(0)}% Purchased (
+              {wishlistSummary.bought})
+            </Text>
+          </View>
         </View>
 
         {loading && !items.length ? (
@@ -251,6 +308,64 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 18,
     fontWeight: '700',
+  },
+  analyticsCard: {
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.backgroundPrimary,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+  },
+  analyticsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  analyticsTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  analyticsTotal: {
+    color: colors.mutedText,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  analyticsBar: {
+    height: 11,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    backgroundColor: '#E5E5EA',
+    borderRadius: 6,
+  },
+  needBar: {
+    height: '100%',
+    backgroundColor: colors.wishlistNeed,
+  },
+  boughtBar: {
+    height: '100%',
+    backgroundColor: colors.wishlistBought,
+  },
+  analyticsMetrics: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  needMetric: {
+    flex: 1,
+    color: colors.wishlistNeed,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  boughtMetric: {
+    flex: 1,
+    color: colors.wishlistBought,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'right',
   },
   filterButton: {
     width: 36,
