@@ -26,12 +26,7 @@ export function WishlistItemRow({
         </Text>
       </View>
       <View style={styles.toggleControls}>
-        <View
-          style={[
-            styles.toggleGroup,
-            item.is_bought && styles.boughtActive,
-          ]}
-        >
+        <View style={styles.toggleGroup}>
           <Text
             style={[
               styles.toggleLabel,
@@ -53,12 +48,7 @@ export function WishlistItemRow({
             style={styles.switch}
           />
         </View>
-        <View
-          style={[
-            styles.toggleGroup,
-            item.is_need && styles.needActive,
-          ]}
-        >
+        <View style={styles.toggleGroup}>
           <Text
             style={[
               styles.toggleLabel,
@@ -93,8 +83,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
     paddingVertical: 7,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   itemDetails: {
     flex: 1,
@@ -132,9 +122,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
   },
   toggleLabel: {
     marginBottom: 1,
@@ -147,12 +134,6 @@ const styles = StyleSheet.create({
   },
   needLabelActive: {
     color: colors.wishlistNeed,
-  },
-  boughtActive: {
-    borderColor: colors.wishlistBought,
-  },
-  needActive: {
-    borderColor: colors.wishlistNeed,
   },
   switch: {
     transform: [{ scaleX: 0.68 }, { scaleY: 0.68 }],
