@@ -22,130 +22,68 @@ import {
 import { colors, spacing } from '../../shared/ui/theme';
 import type { WishlistItem } from '../../types';
 import { useWishlist } from './hooks/useWishlist';
-import {
-  WishlistItemRow,
-  WishlistTableHeader,
-} from './components/WishlistItemRow';
+import { WishlistItemRow } from './components/WishlistItemRow';
 import { WishlistYearFilter } from './components/WishlistYearFilter';
 import {
   filterWishlistByYear,
   getAvailableWishlistYears,
-  getWishlistCounts,
-  getWishlistItemYear,
-  getWishlistItemMonth,
 } from './years';
 
-interface MonthGroup {
-  name: string;
+interface DayGroup {
+  key: string;
+  label: string;
   items: WishlistItem[];
-  totalCount: number;
-  boughtCount: number;
+  sortDate: number;
 }
 
-interface YearGroup {
-  year: number;
-  items: WishlistItem[];
-  months: MonthGroup[];
-  totalCount: number;
-  boughtCount: number;
-}
-
-function CounterBadge({
-  type,
-  count,
-}: {
-  type: 'total' | 'bought';
-  count: number;
-}) {
-  return (
-    <View
-      style={[
-        styles.counterBadge,
-        type === 'bought' ? styles.boughtCounterBadge : styles.totalCounterBadge,
-      ]}
-    >
-      <Text
-        style={[
-          styles.counterBadgeText,
-          type === 'bought'
-            ? styles.boughtCounterBadgeText
-            : styles.totalCounterBadgeText,
-        ]}
-      >
-        {type === 'bought' ? `${count} bought` : `${count} total`}
-      </Text>
-    </View>
-  );
-}
-
-const monthOrder = [
-  'january',
-  'february',
-  'march',
-  'april',
-  'may',
-  'june',
-  'july',
-  'august',
-  'september',
-  'october',
-  'november',
-  'december',
-];
-
-function createGroups(items: WishlistItem[]): YearGroup[] {
-  const byYear = new Map<number, WishlistItem[]>();
-  for (const item of items) {
-    const year = getWishlistItemYear(item) ?? item.year;
-    const yearItems = byYear.get(year) ?? [];
-    yearItems.push(item);
-    byYear.set(year, yearItems);
+function getDayGroup(item: WishlistItem) {
+  const timestamp = Date.parse(item.created_at);
+  if (Number.isFinite(timestamp)) {
+    const date = new Date(timestamp);
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+    const day = date.getUTCDate();
+    return {
+      key: `${year}-${month + 1}-${day}`,
+      label: date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }),
+      sortDate: Date.UTC(year, month, day),
+    };
   }
 
-  return [...byYear.keys()]
-    .sort((a, b) => b - a)
-    .map((year) => {
-      const yearItems = byYear.get(year) ?? [];
-      const byMonth = new Map<string, WishlistItem[]>();
-      for (const item of yearItems) {
-        const month = getWishlistItemMonth(item);
-        const monthItems = byMonth.get(month) ?? [];
-        monthItems.push(item);
-        byMonth.set(month, monthItems);
-      }
+  const monthIndex = new Date(`${item.month_name} 1, ${item.year}`).getMonth();
+  const sortDate = Number.isFinite(monthIndex)
+    ? Date.UTC(item.year, monthIndex, item.day)
+    : 0;
+  return {
+    key: `${item.year}-${item.month_name}-${item.day}`,
+    label: `${item.month_name} ${item.day}, ${item.year}`,
+    sortDate,
+  };
+}
 
-      const months = [...byMonth.entries()]
-        .sort(([left], [right]) => {
-          const leftOrder = monthOrder.indexOf(left.toLowerCase());
-          const rightOrder = monthOrder.indexOf(right.toLowerCase());
-          return (
-            (rightOrder < 0 ? monthOrder.length : rightOrder) -
-            (leftOrder < 0 ? monthOrder.length : leftOrder)
-          );
-        })
-        .map(([name, monthItems]) => {
-          const sortedItems = monthItems.sort(
-            (a, b) =>
-              Date.parse(b.created_at) - Date.parse(a.created_at),
-          );
-          const counts = getWishlistCounts(sortedItems);
-          return {
-            name,
-            items: sortedItems,
-            totalCount: counts.total,
-            boughtCount: counts.bought,
-          };
-        });
+function createGroups(items: WishlistItem[]): DayGroup[] {
+  const byDate = new Map<string, DayGroup>();
+  for (const item of items) {
+    const date = getDayGroup(item);
+    const group = byDate.get(date.key) ?? { ...date, items: [] };
+    group.items.push(item);
+    byDate.set(date.key, group);
+  }
 
-      const counts = getWishlistCounts(yearItems);
-      return {
-        year,
-        items: yearItems,
-        months,
-        totalCount: counts.total,
-        boughtCount: counts.bought,
-      };
-    });
+  return [...byDate.values()]
+    .map((group) => ({
+      ...group,
+      items: group.items.sort(
+        (left, right) =>
+          Date.parse(right.created_at) - Date.parse(left.created_at),
+      ),
+    }))
+    .sort((left, right) => right.sortDate - left.sortDate);
 }
 
 export default function WishlistScreen() {
@@ -162,17 +100,9 @@ export default function WishlistScreen() {
     savingIds,
   } = useWishlist();
   const currentYear = new Date().getUTCFullYear();
-  const currentMonth = new Date().toLocaleString('en-US', {
-    month: 'long',
-    timeZone: 'UTC',
-  });
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [yearFilterVisible, setYearFilterVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
-  const [expandedYear, setExpandedYear] = useState<number | null>(currentYear);
-  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(
-    () => new Set([`${currentYear}-${currentMonth}`]),
-  );
   const availableYears = useMemo(
     () => getAvailableWishlistYears(items, accountCreatedAt, currentYear),
     [accountCreatedAt, currentYear, items],
@@ -182,18 +112,6 @@ export default function WishlistScreen() {
     [items, selectedYear],
   );
   const groups = useMemo(() => createGroups(filteredItems), [filteredItems]);
-
-  function toggleMonth(key: string) {
-    setExpandedMonths((current) => {
-      const next = new Set(current);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  }
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
@@ -231,92 +149,35 @@ export default function WishlistScreen() {
         ) : error ? (
           <Text style={styles.error}>{error.message}</Text>
         ) : (
-          groups.map((group) => {
-            const isYearOpen = expandedYear === group.year;
-            return (
-              <View key={group.year} style={styles.yearCard}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: isYearOpen }}
-                  onPress={() =>
-                    setExpandedYear(isYearOpen ? null : group.year)
-                  }
-                  style={styles.yearHeader}
-                >
-                  <Text style={styles.yearLabel}>{group.year}</Text>
-                  <CounterBadge count={group.totalCount} type="total" />
-                  <CounterBadge count={group.boughtCount} type="bought" />
-                  <Ionicons
-                    color={colors.neutralIcon}
-                    name={isYearOpen ? 'chevron-up' : 'chevron-down'}
-                    size={17}
-                    style={styles.headerChevron}
-                  />
-                </Pressable>
-                {isYearOpen ? (
-                  <View style={styles.months}>
-                    {group.months.length ? (
-                      group.months.map((month) => {
-                        const monthKey = `${group.year}-${month.name}`;
-                        const isMonthOpen = expandedMonths.has(monthKey);
-                        return (
-                          <View key={monthKey} style={styles.monthBlock}>
-                            <Pressable
-                              accessibilityRole="button"
-                              accessibilityState={{ expanded: isMonthOpen }}
-                              onPress={() => toggleMonth(monthKey)}
-                              style={styles.monthHeader}
-                            >
-                              <Text style={styles.monthLabel}>{month.name}</Text>
-                              <CounterBadge
-                                count={month.totalCount}
-                                type="total"
-                              />
-                              <CounterBadge
-                                count={month.boughtCount}
-                                type="bought"
-                              />
-                              <Ionicons
-                                color={colors.mutedText}
-                                name={isMonthOpen ? 'chevron-up' : 'chevron-down'}
-                                size={13}
-                                style={styles.headerChevron}
-                              />
-                            </Pressable>
-                            {isMonthOpen ? (
-                              <View style={styles.table}>
-                                <WishlistTableHeader />
-                                {month.items.map((item, index) => (
-                                  <WishlistItemRow
-                                    item={item}
-                                    key={item.id}
-                                    onToggleBought={(value) =>
-                                      void updateItem(item.id, {
-                                        is_bought: value,
-                                      })
-                                    }
-                                    onToggleNeed={(value) =>
-                                      void updateItem(item.id, {
-                                        is_need: value,
-                                      })
-                                    }
-                                    rowNumber={month.totalCount - index}
-                                    saving={savingIds.has(item.id)}
-                                  />
-                                ))}
-                              </View>
-                            ) : null}
-                          </View>
-                        );
-                      })
-                    ) : (
-                      <Text style={styles.noItems}>No wishlist items yet.</Text>
-                    )}
-                  </View>
-                ) : null}
+          groups.map((group) => (
+            <View key={group.key} style={styles.dayCard}>
+              <View style={styles.dayHeader}>
+                <Text style={styles.dayLabel}>{group.label}</Text>
+                <View style={styles.itemCountBadge}>
+                  <Text style={styles.itemCountText}>
+                    {group.items.length}{' '}
+                    {group.items.length === 1 ? 'item' : 'items'}
+                  </Text>
+                </View>
               </View>
-            );
-          })
+              <View style={styles.dayItems}>
+                {group.items.map((item, index) => (
+                  <WishlistItemRow
+                    item={item}
+                    key={item.id}
+                    onToggleBought={(value) =>
+                      void updateItem(item.id, { is_bought: value })
+                    }
+                    onToggleNeed={(value) =>
+                      void updateItem(item.id, { is_need: value })
+                    }
+                    rowNumber={group.items.length - index}
+                    saving={savingIds.has(item.id)}
+                  />
+                ))}
+              </View>
+            </View>
+          ))
         )}
         {loading && items.length ? (
           <ActivityIndicator color={colors.neutralIcon} style={styles.refreshing} />
@@ -348,10 +209,6 @@ export default function WishlistScreen() {
         onSave={async (input) => {
           await addItem(input);
           setSelectedYear(null);
-          setExpandedYear(currentYear);
-          setExpandedMonths((current) =>
-            new Set([...current, `${currentYear}-${currentMonth}`]),
-          );
         }}
         visible={addModalVisible}
       />
@@ -359,7 +216,6 @@ export default function WishlistScreen() {
         onClose={() => setYearFilterVisible(false)}
         onSelect={(year) => {
           setSelectedYear(year);
-          setExpandedYear(year ?? currentYear);
         }}
         selectedYear={selectedYear}
         visible={yearFilterVisible}
@@ -411,77 +267,45 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorSurface,
     borderRadius: 12,
   },
-  yearCard: {
+  dayCard: {
     marginBottom: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.warmWhite,
-    borderColor: colors.border,
+    backgroundColor: colors.backgroundPrimary,
+    borderColor: '#E5E7EB',
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 14,
+    shadowColor: colors.textPrimary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  yearHeader: {
-    minHeight: 34,
+  dayHeader: {
+    minHeight: 46,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  yearLabel: {
+  dayLabel: {
     color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  counterBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    overflow: 'hidden',
-    borderRadius: 10,
-  },
-  counterBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  totalCounterBadge: {
-    backgroundColor: '#F2F2F7',
-  },
-  totalCounterBadgeText: {
-    color: '#666666',
-  },
-  boughtCounterBadge: {
-    backgroundColor: '#FDF2F4',
-  },
-  boughtCounterBadgeText: {
-    color: colors.brand,
-  },
-  headerChevron: {
-    marginLeft: 'auto',
-  },
-  months: {
-    paddingTop: spacing.xs,
-  },
-  monthBlock: {
-    marginBottom: spacing.xs,
-  },
-  monthHeader: {
-    minHeight: 28,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  monthLabel: {
-    color: colors.textPrimary,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
   },
-  table: {
-    overflow: 'hidden',
-    borderRadius: 8,
+  itemCountBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
   },
-  noItems: {
+  itemCountText: {
     color: colors.mutedText,
     fontSize: 11,
-    paddingBottom: spacing.sm,
+    fontWeight: '600',
+  },
+  dayItems: {
+    paddingHorizontal: spacing.md,
   },
   refreshing: {
     margin: spacing.md,

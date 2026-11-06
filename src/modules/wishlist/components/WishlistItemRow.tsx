@@ -1,7 +1,6 @@
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import type { WishlistItem } from '../../../types';
 import { colors } from '../../../shared/ui/theme';
-import { getWishlistItemDay } from '../years';
 
 interface WishlistItemRowProps {
   item: WishlistItem;
@@ -19,122 +18,124 @@ export function WishlistItemRow({
   onToggleNeed,
 }: WishlistItemRowProps) {
   return (
-    <View style={[styles.row, rowNumber % 2 === 0 && styles.alternate]}>
-      <Text style={styles.index}>{rowNumber}</Text>
-      <Text style={styles.day}>{getWishlistItemDay(item)}</Text>
-      <Text numberOfLines={1} style={styles.item}>
-        {item.item_name}
-      </Text>
-      <View
-        style={[
-          styles.toggleCell,
-          item.is_bought && styles.boughtActive,
-        ]}
-      >
-        <Switch
-          accessibilityLabel={`Mark ${item.item_name} as bought`}
-          disabled={saving}
-          onValueChange={onToggleBought}
-          trackColor={{
-            false: colors.switchInactive,
-            true: colors.wishlistBought,
-          }}
-          thumbColor={colors.switchThumb}
-          value={item.is_bought}
-          style={styles.switch}
-        />
+    <View style={styles.row}>
+      <View style={styles.itemDetails}>
+        <Text style={styles.index}>#{rowNumber}</Text>
+        <Text numberOfLines={2} style={styles.item}>
+          {item.item_name}
+        </Text>
       </View>
-      <View
-        style={[
-          styles.toggleCell,
-          item.is_need && styles.needActive,
-        ]}
-      >
-        <Switch
-          accessibilityLabel={`Mark ${item.item_name} as a need`}
-          disabled={saving}
-          onValueChange={onToggleNeed}
-          trackColor={{
-            false: colors.switchInactive,
-            true: colors.wishlistNeed,
-          }}
-          thumbColor={colors.switchThumb}
-          value={item.is_need}
-          style={styles.switch}
-        />
+      <View style={styles.toggleControls}>
+        <View style={styles.toggleGroup}>
+          <Text
+            style={[
+              styles.toggleLabel,
+              item.is_bought && styles.boughtLabelActive,
+            ]}
+          >
+            Bought
+          </Text>
+          <Switch
+            accessibilityLabel={`Mark ${item.item_name} as bought`}
+            disabled={saving}
+            onValueChange={onToggleBought}
+            trackColor={{
+              false: colors.switchInactive,
+              true: colors.wishlistBought,
+            }}
+            thumbColor={colors.switchThumb}
+            value={item.is_bought}
+            style={styles.switch}
+          />
+        </View>
+        <View style={styles.toggleGroup}>
+          <Text
+            style={[
+              styles.toggleLabel,
+              item.is_need && styles.needLabelActive,
+            ]}
+          >
+            Need
+          </Text>
+          <Switch
+            accessibilityLabel={`Mark ${item.item_name} as a need`}
+            disabled={saving}
+            onValueChange={onToggleNeed}
+            trackColor={{
+              false: colors.switchInactive,
+              true: colors.wishlistNeed,
+            }}
+            thumbColor={colors.switchThumb}
+            value={item.is_need}
+            style={styles.switch}
+          />
+        </View>
       </View>
-    </View>
-  );
-}
-
-export function WishlistTableHeader() {
-  return (
-    <View style={styles.header}>
-      <Text style={[styles.headerText, styles.index]}>#</Text>
-      <Text style={[styles.headerText, styles.day]}>Day</Text>
-      <Text style={[styles.headerText, styles.item]}>Item</Text>
-      <Text style={[styles.headerText, styles.toggleCell]}>Bought</Text>
-      <Text style={[styles.headerText, styles.toggleCell]}>Need?</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 7,
-    backgroundColor: colors.backgroundSecondary,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-  },
-  headerText: {
-    color: colors.text,
-    fontSize: 9,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
   row: {
-    minHeight: 34,
+    minHeight: 68,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    backgroundColor: colors.backgroundPrimary,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  alternate: {
-    backgroundColor: colors.backgroundSecondary,
+  itemDetails: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   index: {
-    width: 24,
-    textAlign: 'center',
-  },
-  day: {
-    width: '12%',
+    width: 32,
+    height: 25,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 13,
+    color: colors.mutedText,
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 23,
     textAlign: 'center',
   },
   item: {
     flex: 1,
     color: colors.text,
-    fontSize: 9,
-    paddingHorizontal: 3,
+    fontSize: 13,
+    fontWeight: '500',
   },
-  toggleCell: {
-    width: '16%',
+  toggleControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  toggleGroup: {
+    width: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    paddingVertical: 4,
   },
-  boughtActive: {
-    backgroundColor: colors.wishlistBoughtSurface,
+  toggleLabel: {
+    marginBottom: 1,
+    color: colors.mutedText,
+    fontSize: 9,
+    fontWeight: '600',
   },
-  needActive: {
-    backgroundColor: colors.wishlistNeedSurface,
+  boughtLabelActive: {
+    color: colors.wishlistBought,
+  },
+  needLabelActive: {
+    color: colors.wishlistNeed,
   },
   switch: {
-    transform: [{ scaleX: 0.64 }, { scaleY: 0.64 }],
-    marginHorizontal: -7,
+    transform: [{ scaleX: 0.68 }, { scaleY: 0.68 }],
   },
 });
