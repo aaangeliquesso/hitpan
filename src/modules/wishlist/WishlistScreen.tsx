@@ -171,7 +171,7 @@ export default function WishlistScreen() {
                     onToggleNeed={(value) =>
                       void updateItem(item.id, { is_need: value })
                     }
-                    rowNumber={index + 1}
+                    rowNumber={group.items.length - index}
                     saving={savingIds.has(item.id)}
                   />
                 ))}
