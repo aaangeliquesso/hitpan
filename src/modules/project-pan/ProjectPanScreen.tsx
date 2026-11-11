@@ -208,9 +208,9 @@ export default function ProjectPanScreen() {
           !loading && !error ? (
             <View style={styles.empty}>
               <Ionicons
-                color={colors.textSecondary}
-                name="sparkles-outline"
-                size={30}
+                color={colors.mutedText}
+                name="book-outline"
+                size={32}
               />
               <Text style={styles.emptyTitle}>
                 Your project pan starts here
@@ -706,19 +706,26 @@ const styles = StyleSheet.create({
   },
   empty: {
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: 76,
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+    padding: spacing.lg,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
   },
   emptyTitle: {
     color: colors.textPrimary,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     marginTop: spacing.md,
+    textAlign: 'center',
   },
   emptyText: {
     color: colors.mutedText,
     fontSize: 13,
-    lineHeight: 20,
+    fontWeight: '400',
+    lineHeight: 19,
     marginTop: spacing.xs,
     textAlign: 'center',
   },
