@@ -226,35 +226,60 @@ export default function WishlistScreen() {
             accessibilityRole="progressbar"
             style={styles.analyticsBar}
           >
-            <View
-              style={[
-                styles.needBar,
-                { width: `${wishlistSummary.needBarPercentage}%` },
-              ]}
-            />
-            <View
-              style={[
-                styles.boughtBar,
-                { width: `${wishlistSummary.boughtBarPercentage}%` },
-              ]}
-            />
+            {wishlistSummary.total > 0 ? (
+              <>
+                <View
+                  style={[
+                    styles.needBar,
+                    { width: `${wishlistSummary.needBarPercentage}%` },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.boughtBar,
+                    { width: `${wishlistSummary.boughtBarPercentage}%` },
+                  ]}
+                />
+              </>
+            ) : null}
           </View>
-          <View style={styles.analyticsMetrics}>
-            <Text style={styles.needMetric}>
-              {wishlistSummary.needPercentage.toFixed(0)}% Intentional (
-              {wishlistSummary.need})
+          {wishlistSummary.total > 0 ? (
+            <View style={styles.analyticsMetrics}>
+              <Text style={styles.needMetric}>
+                {wishlistSummary.needPercentage.toFixed(0)}% Intentional (
+                {wishlistSummary.need})
+              </Text>
+              <Text style={styles.boughtMetric}>
+                {wishlistSummary.boughtPercentage.toFixed(0)}% Purchased (
+                {wishlistSummary.bought})
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.analyticsEmptyCaption}>
+              No items logged yet
             </Text>
-            <Text style={styles.boughtMetric}>
-              {wishlistSummary.boughtPercentage.toFixed(0)}% Purchased (
-              {wishlistSummary.bought})
-            </Text>
-          </View>
+          )}
         </View>
 
         {loading && !items.length ? (
           <ActivityIndicator color={colors.brand} style={styles.loader} />
         ) : error ? (
           <Text style={styles.error}>{error.message}</Text>
+        ) : items.length === 0 ? (
+          <View style={styles.emptyStateCard}>
+            <Ionicons
+              color={colors.mutedText}
+              name="bookmark-outline"
+              size={32}
+            />
+            <Text style={styles.emptyStateTitle}>
+              Your mindful journey starts here
+            </Text>
+            <Text style={styles.emptyStateDescription}>
+              Log items you're tempted to buy, evaluate your needs, and track
+              your spending intentionality over time.
+            </Text>
+          </View>
         ) : yearGroups.length ? (
           yearGroups.map((yearGroup) => {
             const isYearOpen = yearGroup.year === expandedYear;
@@ -421,6 +446,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E5EA',
     borderRadius: 6,
   },
+  analyticsEmptyCaption: {
+    marginTop: spacing.sm,
+    color: colors.mutedText,
+    fontSize: 12,
+    textAlign: 'center',
+  },
   needBar: {
     height: '100%',
     backgroundColor: colors.wishlistNeed,
@@ -474,6 +505,31 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     color: colors.mutedText,
     fontSize: 13,
+    textAlign: 'center',
+  },
+  emptyStateCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+    padding: spacing.lg,
+    backgroundColor: colors.backgroundPrimary,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+  },
+  emptyStateTitle: {
+    marginTop: spacing.md,
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  emptyStateDescription: {
+    marginTop: spacing.xs,
+    color: colors.mutedText,
+    fontSize: 13,
+    fontWeight: '400',
+    lineHeight: 19,
     textAlign: 'center',
   },
   filterButton: {
