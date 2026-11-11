@@ -116,18 +116,20 @@ function createYearGroups(items: WishlistItem[]): YearGroup[] {
 export default function WishlistScreen() {
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const {
     items,
     accountCreatedAt,
     loading,
+    loadingMore,
     error,
     refresh,
+    loadMore,
     addItem,
     updateItem,
     savingIds,
-  } = useWishlist();
+  } = useWishlist(selectedYear);
   const currentYear = new Date().getUTCFullYear();
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [expandedYear, setExpandedYear] = useState<number | null>(null);
   const initializedAccordion = useRef(false);
   const [yearFilterVisible, setYearFilterVisible] = useState(false);
@@ -184,6 +186,16 @@ export default function WishlistScreen() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+          if (
+            contentOffset.y + layoutMeasurement.height >=
+            contentSize.height - 300
+          ) {
+            void loadMore();
+          }
+        }}
+        scrollEventThrottle={300}
         refreshControl={
           <RefreshControl
             onRefresh={() => void refresh()}
@@ -226,35 +238,60 @@ export default function WishlistScreen() {
             accessibilityRole="progressbar"
             style={styles.analyticsBar}
           >
-            <View
-              style={[
-                styles.needBar,
-                { width: `${wishlistSummary.needBarPercentage}%` },
-              ]}
-            />
-            <View
-              style={[
-                styles.boughtBar,
-                { width: `${wishlistSummary.boughtBarPercentage}%` },
-              ]}
-            />
+            {wishlistSummary.total > 0 ? (
+              <>
+                <View
+                  style={[
+                    styles.needBar,
+                    { width: `${wishlistSummary.needBarPercentage}%` },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.boughtBar,
+                    { width: `${wishlistSummary.boughtBarPercentage}%` },
+                  ]}
+                />
+              </>
+            ) : null}
           </View>
-          <View style={styles.analyticsMetrics}>
-            <Text style={styles.needMetric}>
-              {wishlistSummary.needPercentage.toFixed(0)}% Intentional (
-              {wishlistSummary.need})
+          {wishlistSummary.total > 0 ? (
+            <View style={styles.analyticsMetrics}>
+              <Text style={styles.needMetric}>
+                {wishlistSummary.needPercentage.toFixed(0)}% Intentional (
+                {wishlistSummary.need})
+              </Text>
+              <Text style={styles.boughtMetric}>
+                {wishlistSummary.boughtPercentage.toFixed(0)}% Purchased (
+                {wishlistSummary.bought})
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.analyticsEmptyCaption}>
+              No items logged yet
             </Text>
-            <Text style={styles.boughtMetric}>
-              {wishlistSummary.boughtPercentage.toFixed(0)}% Purchased (
-              {wishlistSummary.bought})
-            </Text>
-          </View>
+          )}
         </View>
 
         {loading && !items.length ? (
           <ActivityIndicator color={colors.brand} style={styles.loader} />
-        ) : error ? (
+        ) : error && !items.length ? (
           <Text style={styles.error}>{error.message}</Text>
+        ) : items.length === 0 && selectedYear === null ? (
+          <View style={styles.emptyStateCard}>
+            <Ionicons
+              color={colors.mutedText}
+              name="bookmark-outline"
+              size={32}
+            />
+            <Text style={styles.emptyStateTitle}>
+              Your mindful journey starts here
+            </Text>
+            <Text style={styles.emptyStateDescription}>
+              Log items you're tempted to buy, evaluate your needs, and track
+              your spending intentionality over time.
+            </Text>
+          </View>
         ) : yearGroups.length ? (
           yearGroups.map((yearGroup) => {
             const isYearOpen = yearGroup.year === expandedYear;
@@ -325,6 +362,16 @@ export default function WishlistScreen() {
         ) : (
           <Text style={styles.noItems}>No wishlist items yet.</Text>
         )}
+        {error && items.length ? (
+          <Text style={styles.error}>{error.message}</Text>
+        ) : null}
+        {loadingMore ? (
+          <ActivityIndicator
+            color={colors.mutedText}
+            size="small"
+            style={styles.refreshing}
+          />
+        ) : null}
         {loading && items.length ? (
           <ActivityIndicator color={colors.brand} style={styles.refreshing} />
         ) : null}
@@ -421,6 +468,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E5EA',
     borderRadius: 6,
   },
+  analyticsEmptyCaption: {
+    marginTop: spacing.sm,
+    color: colors.mutedText,
+    fontSize: 12,
+    textAlign: 'center',
+  },
   needBar: {
     height: '100%',
     backgroundColor: colors.wishlistNeed,
@@ -456,9 +509,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    marginBottom: spacing.sm,
     paddingHorizontal: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   yearLabel: {
     color: colors.textPrimary,
@@ -474,6 +526,31 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     color: colors.mutedText,
     fontSize: 13,
+    textAlign: 'center',
+  },
+  emptyStateCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+    padding: spacing.lg,
+    backgroundColor: colors.backgroundPrimary,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+  },
+  emptyStateTitle: {
+    marginTop: spacing.md,
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  emptyStateDescription: {
+    marginTop: spacing.xs,
+    color: colors.mutedText,
+    fontSize: 13,
+    fontWeight: '400',
+    lineHeight: 19,
     textAlign: 'center',
   },
   filterButton: {
