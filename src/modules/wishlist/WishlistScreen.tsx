@@ -116,18 +116,20 @@ function createYearGroups(items: WishlistItem[]): YearGroup[] {
 export default function WishlistScreen() {
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const {
     items,
     accountCreatedAt,
     loading,
+    loadingMore,
     error,
     refresh,
+    loadMore,
     addItem,
     updateItem,
     savingIds,
-  } = useWishlist();
+  } = useWishlist(selectedYear);
   const currentYear = new Date().getUTCFullYear();
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [expandedYear, setExpandedYear] = useState<number | null>(null);
   const initializedAccordion = useRef(false);
   const [yearFilterVisible, setYearFilterVisible] = useState(false);
@@ -184,6 +186,16 @@ export default function WishlistScreen() {
     <SafeAreaView edges={['top']} style={styles.screen}>
       <ScrollView
         contentContainerStyle={styles.content}
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+          if (
+            contentOffset.y + layoutMeasurement.height >=
+            contentSize.height - 300
+          ) {
+            void loadMore();
+          }
+        }}
+        scrollEventThrottle={300}
         refreshControl={
           <RefreshControl
             onRefresh={() => void refresh()}
@@ -263,9 +275,9 @@ export default function WishlistScreen() {
 
         {loading && !items.length ? (
           <ActivityIndicator color={colors.brand} style={styles.loader} />
-        ) : error ? (
+        ) : error && !items.length ? (
           <Text style={styles.error}>{error.message}</Text>
-        ) : items.length === 0 ? (
+        ) : items.length === 0 && selectedYear === null ? (
           <View style={styles.emptyStateCard}>
             <Ionicons
               color={colors.mutedText}
@@ -350,6 +362,16 @@ export default function WishlistScreen() {
         ) : (
           <Text style={styles.noItems}>No wishlist items yet.</Text>
         )}
+        {error && items.length ? (
+          <Text style={styles.error}>{error.message}</Text>
+        ) : null}
+        {loadingMore ? (
+          <ActivityIndicator
+            color={colors.mutedText}
+            size="small"
+            style={styles.refreshing}
+          />
+        ) : null}
         {loading && items.length ? (
           <ActivityIndicator color={colors.brand} style={styles.refreshing} />
         ) : null}

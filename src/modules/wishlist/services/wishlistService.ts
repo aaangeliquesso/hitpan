@@ -51,11 +51,24 @@ export async function createWishlistItem(
   return data;
 }
 
-export async function getWishlist(): Promise<WishlistItem[]> {
-  const { data, error } = await supabase
+export async function getWishlistPage(
+  offset: number,
+  pageSize: number,
+  year: number | null,
+): Promise<WishlistItem[]> {
+  let query = supabase
     .from('wishlist_items')
-    .select('*')
+    .select('*');
+
+  if (year !== null) {
+    query = query
+      .gte('created_at', `${year}-01-01T00:00:00.000Z`)
+      .lte('created_at', `${year}-12-31T23:59:59.999Z`);
+  }
+
+  const { data, error } = await query
     .order('created_at', { ascending: false })
+    .range(offset, offset + pageSize - 1)
     .returns<WishlistItem[]>();
 
   if (error) {
