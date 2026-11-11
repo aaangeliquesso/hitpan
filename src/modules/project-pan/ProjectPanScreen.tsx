@@ -171,10 +171,6 @@ export default function ProjectPanScreen() {
     });
   }
 
-  async function handleRefresh() {
-    await refresh();
-  }
-
   function openDetails(item: VanityItem) {
     router.push({ pathname: '/product/[id]', params: { id: item.id } });
   }
@@ -229,19 +225,10 @@ export default function ProjectPanScreen() {
           <>
             {loading && items.length > 0 && !error ? (
               <ActivityIndicator
-                color={colors.neutralIcon}
+                color={colors.brand}
                 style={styles.refreshing}
               />
             ) : null}
-            <Pressable
-              accessibilityLabel="Refresh products"
-              accessibilityRole="button"
-              onPress={() => void handleRefresh()}
-              style={styles.refreshButton}
-            >
-              <Ionicons color={colors.neutralIcon} name="refresh" size={16} />
-              <Text style={styles.refreshText}>Refresh</Text>
-            </Pressable>
           </>
         }
         ListHeaderComponent={
@@ -283,7 +270,7 @@ export default function ProjectPanScreen() {
             ) : null}
             {loading && items.length === 0 ? (
               <ActivityIndicator
-                color={colors.neutralIcon}
+                color={colors.brand}
                 style={styles.loader}
               />
             ) : null}
@@ -292,9 +279,9 @@ export default function ProjectPanScreen() {
         }
         refreshControl={
           <RefreshControl
-            onRefresh={() => void handleRefresh()}
+            onRefresh={() => void refresh()}
             refreshing={loading}
-            tintColor={colors.neutralIcon}
+            tintColor={colors.brand}
           />
         }
         renderItem={({ item }) => (
@@ -737,18 +724,6 @@ const styles = StyleSheet.create({
   },
   refreshing: {
     margin: spacing.md,
-  },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    gap: spacing.xs,
-    padding: spacing.sm,
-  },
-  refreshText: {
-    color: colors.neutralIcon,
-    fontSize: 12,
-    fontWeight: '600',
   },
   fab: {
     position: 'absolute',
