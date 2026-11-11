@@ -1,6 +1,6 @@
-# HitPan
+# Hitpan
 
-HitPan is a minimalist mobile app for tracking cosmetics and product usage throughout a Project Pan journey, while managing a mindful wishlist designed to curb impulse spending. Its intentional beauty routine design system uses clear visual cues to help users reflect on what they own, what they need, and what they choose to finish.
+Hitpan is a minimalist mobile app for tracking cosmetics and product usage throughout a Project Pan journey, while managing a mindful wishlist designed to curb impulse spending. Its intentional beauty routine design system uses clear visual cues to help users reflect on what they own, what they need, and what they choose to finish.
 
 ## Mindful-Spending Design System
 

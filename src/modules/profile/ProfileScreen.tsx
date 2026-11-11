@@ -147,7 +147,7 @@ export default function ProfileScreen() {
           </View>
           <Header title="Profile" subtitle="Your HitPan account." />
           {loading ? (
-            <ActivityIndicator color={colors.neutralIcon} />
+            <ActivityIndicator color={colors.brand} />
           ) : error ? (
             <Text style={styles.error}>{error}</Text>
           ) : (

@@ -188,7 +188,7 @@ export default function WishlistScreen() {
           <RefreshControl
             onRefresh={() => void refresh()}
             refreshing={loading}
-            tintColor={colors.neutralIcon}
+            tintColor={colors.brand}
           />
         }
       >
@@ -252,7 +252,7 @@ export default function WishlistScreen() {
         </View>
 
         {loading && !items.length ? (
-          <ActivityIndicator color={colors.neutralIcon} style={styles.loader} />
+          <ActivityIndicator color={colors.brand} style={styles.loader} />
         ) : error ? (
           <Text style={styles.error}>{error.message}</Text>
         ) : yearGroups.length ? (
@@ -326,17 +326,7 @@ export default function WishlistScreen() {
           <Text style={styles.noItems}>No wishlist items yet.</Text>
         )}
         {loading && items.length ? (
-          <ActivityIndicator color={colors.neutralIcon} style={styles.refreshing} />
-        ) : null}
-        {!loading ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => void refresh()}
-            style={styles.refreshButton}
-          >
-            <Ionicons color={colors.neutralIcon} name="refresh" size={15} />
-            <Text style={styles.refreshText}>Refresh wishlist</Text>
-          </Pressable>
+          <ActivityIndicator color={colors.brand} style={styles.refreshing} />
         ) : null}
       </ScrollView>
       <Pressable
@@ -543,18 +533,6 @@ const styles = StyleSheet.create({
   },
   refreshing: {
     margin: spacing.md,
-  },
-  refreshButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    gap: spacing.xs,
-    padding: spacing.sm,
-  },
-  refreshText: {
-    color: colors.neutralIcon,
-    fontSize: 12,
-    fontWeight: '600',
   },
   fab: {
     position: 'absolute',
