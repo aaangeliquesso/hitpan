@@ -7,6 +7,7 @@
     "icon": "./logo/icon.png",
     "android": {
       "package": "com.aaangeliquesso.hitpan",
+      "softwareKeyboardLayoutMode": "resize",
       "icon": "./logo/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./logo/icon.png",

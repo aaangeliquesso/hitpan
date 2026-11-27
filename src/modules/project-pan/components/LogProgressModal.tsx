@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -13,7 +14,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useForm, useWatch } from 'react-hook-form';
@@ -38,6 +42,7 @@ export function LogProgressModal({
   onClose,
   onSave,
 }: LogProgressModalProps) {
+  const insets = useSafeAreaInsets();
   const progressForm = useForm<{ progress: number }>({
     defaultValues: {
       progress: clampProgressPercentage(currentProgress),
@@ -52,6 +57,25 @@ export function LogProgressModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notesFocused, setNotesFocused] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -121,6 +145,11 @@ export function LogProgressModal({
     }
   }
 
+  const sheetMaxHeight = Math.max(
+    0,
+    Dimensions.get('window').height - keyboardHeight - insets.top - 24,
+  );
+
   return (
     <Modal
       animationType="slide"
@@ -132,11 +161,16 @@ export function LogProgressModal({
       visible={visible}
     >
       <View style={styles.overlay}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardArea}
+        <View
+          style={[
+            styles.keyboardArea,
+            { marginBottom: keyboardHeight, maxHeight: sheetMaxHeight },
+          ]}
         >
-          <SafeAreaView edges={['bottom']} style={styles.sheet}>
+          <SafeAreaView
+            edges={['bottom']}
+            style={styles.sheet}
+          >
             <View style={styles.header}>
               <View style={styles.headerText}>
                 <Text style={styles.title}>Log progress</Text>
@@ -158,6 +192,7 @@ export function LogProgressModal({
             <ScrollView
               contentContainerStyle={styles.content}
               keyboardShouldPersistTaps="handled"
+              style={styles.contentScroll}
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.section}>
@@ -290,7 +325,7 @@ export function LogProgressModal({
               </View>
             </ScrollView>
           </SafeAreaView>
-        </KeyboardAvoidingView>
+        </View>
       </View>
     </Modal>
   );
@@ -303,10 +338,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   keyboardArea: {
-    maxHeight: '92%',
+    flexShrink: 1,
     justifyContent: 'flex-end',
   },
   sheet: {
+    maxHeight: '100%',
+    flexShrink: 1,
     overflow: 'hidden',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
@@ -344,7 +381,10 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingBottom: 24,
+  },
+  contentScroll: {
+    flexShrink: 1,
   },
   section: {
     gap: spacing.xs,

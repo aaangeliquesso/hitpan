@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  KeyboardAvoidingView,
+  Dimensions,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -15,7 +16,10 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, useWatch } from 'react-hook-form';
 import { StarRatingInput } from '../../../shared/components/StarRating';
@@ -130,6 +134,7 @@ export function AddPanItemModal({
   onSave,
   initialItem,
 }: AddPanItemModalProps) {
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
   const [variant, setVariant] = useState('');
@@ -154,6 +159,7 @@ export function AddPanItemModal({
   });
   const [rating, setRating] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [priceInputFocused, setPriceInputFocused] = useState(false);
   const [customCategoryInputFocused, setCustomCategoryInputFocused] =
     useState(false);
@@ -173,6 +179,24 @@ export function AddPanItemModal({
   const brandShake = useRef(new Animated.Value(0)).current;
   const categoryShake = useRef(new Animated.Value(0)).current;
   const priceShake = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   function resetForm(item?: VanityItem) {
     const acquiredDate = item?.acquired_on.slice(0, 10) ?? getToday();
@@ -417,6 +441,10 @@ export function AddPanItemModal({
   const hasValidDateInput =
     Boolean(dateInput) && isSelectableDate(dateInput);
   const todayValue = getToday();
+  const sheetMaxHeight = Math.max(
+    0,
+    Dimensions.get('window').height - keyboardHeight - insets.top - 24,
+  );
 
   return (
     <Modal
@@ -433,9 +461,11 @@ export function AddPanItemModal({
       visible={visible}
     >
       <View style={styles.overlay}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardArea}
+        <View
+          style={[
+            styles.keyboardArea,
+            { marginBottom: keyboardHeight, maxHeight: sheetMaxHeight },
+          ]}
         >
           <SafeAreaView edges={['bottom']} style={styles.sheet}>
             <View style={styles.heading}>
@@ -747,7 +777,7 @@ export function AddPanItemModal({
               </View>
             </ScrollView>
           </SafeAreaView>
-        </KeyboardAvoidingView>
+        </View>
         <Modal
           animationType="slide"
           onRequestClose={() => setCategoryPickerVisible(false)}
@@ -869,11 +899,16 @@ export function AddPanItemModal({
           visible={dateEntryVisible}
         >
           <View style={styles.dateEntryOverlay}>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={styles.dateEntryKeyboardArea}
+            <View
+              style={[
+                styles.dateEntryKeyboardArea,
+                { marginBottom: keyboardHeight, maxHeight: sheetMaxHeight },
+              ]}
             >
-              <SafeAreaView edges={['bottom']} style={styles.dateEntrySheet}>
+              <SafeAreaView
+                edges={['bottom']}
+                style={styles.dateEntrySheet}
+              >
                 <ScrollView
                   contentContainerStyle={styles.dateEntryContentContainer}
                   keyboardShouldPersistTaps="handled"
@@ -1047,7 +1082,7 @@ export function AddPanItemModal({
                   </Pressable>
                 </View>
               </SafeAreaView>
-            </KeyboardAvoidingView>
+            </View>
           </View>
         </Modal>
         <ConfirmationModal
@@ -1073,10 +1108,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   keyboardArea: {
+    flexShrink: 1,
     justifyContent: 'flex-end',
-    maxHeight: '92%',
   },
   sheet: {
+    maxHeight: '100%',
+    flexShrink: 1,
     overflow: 'hidden',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
@@ -1109,7 +1146,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
   },
   form: {
-    paddingBottom: spacing.md,
+    paddingBottom: 24,
   },
   formScroll: {
     flexShrink: 1,
@@ -1200,11 +1237,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   dateEntryKeyboardArea: {
-    flex: 1,
+    flexShrink: 1,
     justifyContent: 'flex-end',
   },
   dateEntrySheet: {
-    maxHeight: '85%',
+    maxHeight: '100%',
     flexShrink: 1,
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.md,
@@ -1218,6 +1255,7 @@ const styles = StyleSheet.create({
   },
   dateEntryContentContainer: {
     flexGrow: 1,
+    paddingBottom: 24,
   },
   dateEntryModalHeader: {
     flexDirection: 'row',
