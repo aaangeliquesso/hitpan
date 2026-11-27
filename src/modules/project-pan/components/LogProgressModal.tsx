@@ -506,6 +506,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   saveButton: {
+    flex: 3,
     backgroundColor: colors.brand,
   },
   saveText: {
