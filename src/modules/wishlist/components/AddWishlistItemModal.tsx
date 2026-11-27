@@ -122,6 +122,7 @@ export function AddWishlistItemModal({
           <Text style={styles.label}>Item name *</Text>
           <TextInput
             editable={!saving}
+            maxLength={50}
             onChangeText={setItemName}
             placeholder="What would you like?"
             placeholderTextColor={colors.mutedText}
