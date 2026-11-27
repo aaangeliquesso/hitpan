@@ -14,9 +14,19 @@ interface ProductCardProps {
   item: VanityItem;
   imageUrl?: string;
   onPress: () => void;
+  onLongPress: () => void;
+  selectionMode: boolean;
+  selected: boolean;
 }
 
-export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
+export function ProductCard({
+  item,
+  imageUrl,
+  onPress,
+  onLongPress,
+  selectionMode,
+  selected,
+}: ProductCardProps) {
   const progressPercentage = getCurrentProgressPercentage(
     item,
     item.progress_logs?.[0],
@@ -34,22 +44,50 @@ export function ProductCard({ item, imageUrl, onPress }: ProductCardProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`View details for ${item.name}`}
+      accessibilityLabel={
+        selectionMode
+          ? `${selected ? 'Deselect' : 'Select'} ${item.name}`
+          : `View details for ${item.name}`
+      }
+      accessibilityState={{ selected }}
+      onLongPress={onLongPress}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.card,
+        selected && styles.selectedCard,
+        pressed && styles.pressed,
+      ]}
     >
       <View style={styles.main}>
-        {imageUrl ? (
-          <Image
-            accessibilityLabel={`${item.name} product photo`}
-            source={{ uri: imageUrl }}
-            style={styles.image}
-          />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-            <Ionicons color={colors.textSecondary} name="image-outline" size={30} />
-          </View>
-        )}
+        <View style={styles.imageContainer}>
+          {imageUrl ? (
+            <Image
+              accessibilityLabel={`${item.name} product photo`}
+              source={{ uri: imageUrl }}
+              style={styles.image}
+            />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Ionicons
+                color={colors.textSecondary}
+                name="image-outline"
+                size={30}
+              />
+            </View>
+          )}
+          {selectionMode ? (
+            <View
+              style={[
+                styles.selectionIndicator,
+                selected && styles.selectedIndicator,
+              ]}
+            >
+              {selected ? (
+                <Ionicons color="#FFFFFF" name="checkmark" size={15} />
+              ) : null}
+            </View>
+          ) : null}
+        </View>
 
         <View style={styles.details}>
           <Text numberOfLines={1} style={styles.name}>
@@ -113,6 +151,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  selectedCard: {
+    borderColor: '#7A2033',
+    borderWidth: 1.5,
+  },
   pressed: {
     opacity: 0.86,
   },
@@ -121,19 +163,40 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     gap: spacing.sm,
   },
-  image: {
+  imageContainer: {
+    position: 'relative',
     width: 72,
     height: 96,
+    overflow: 'hidden',
     borderRadius: 12,
-    backgroundColor: colors.border,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   imagePlaceholder: {
-    width: 72,
-    height: 96,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.backgroundSecondary,
-    borderRadius: 12,
+  },
+  selectionIndicator: {
+    position: 'absolute',
+    top: 5,
+    left: 5,
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#9CA3AF',
+    borderRadius: 11,
+  },
+  selectedIndicator: {
+    backgroundColor: '#7A2033',
+    borderColor: '#7A2033',
   },
   details: {
     flex: 1,

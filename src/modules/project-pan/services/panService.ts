@@ -142,6 +142,25 @@ export async function deletePanItem(id: string): Promise<void> {
   }
 }
 
+export async function deletePanItems(ids: string[]): Promise<void> {
+  if (ids.length === 0) {
+    throw new Error('Select at least one product to delete.');
+  }
+
+  const { data, error } = await supabase
+    .from('vanity_items')
+    .delete()
+    .in('id', ids)
+    .select('id');
+
+  if (error) {
+    throw error;
+  }
+  if (data.length !== ids.length) {
+    throw new Error('Some selected products could not be found or deleted.');
+  }
+}
+
 export async function updatePanItemRating(
   id: string,
   rating: number,

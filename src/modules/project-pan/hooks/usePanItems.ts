@@ -26,9 +26,16 @@ export function usePanItems() {
     setItems((currentItems) => [item, ...currentItems]);
   }, []);
 
+  const removeItems = useCallback((ids: string[]) => {
+    const idsToRemove = new Set(ids);
+    setItems((currentItems) =>
+      currentItems.filter((item) => !idsToRemove.has(item.id)),
+    );
+  }, []);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  return { items, loading, error, refresh, addItem };
+  return { items, loading, error, refresh, addItem, removeItems };
 }

@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   ActivityIndicator,
   Modal,
   Pressable,
@@ -17,6 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
+import { ConfirmationModal } from '../../shared/components/ConfirmationModal';
 import {
   getNavbarSafePadding,
   NAVBAR_HEIGHT,
@@ -26,7 +28,7 @@ import { AddPanItemModal } from './components/AddPanItemModal';
 import { ProductCard } from './components/ProductCard';
 import { getCategoryGroup, PRODUCT_CATEGORIES } from './categories';
 import { usePanItems } from './hooks/usePanItems';
-import { createPanItem } from './services/panService';
+import { createPanItem, deletePanItems } from './services/panService';
 import { getCurrentProgressPercentage } from './progress';
 import type { VanityItem } from '../../types';
 
@@ -79,7 +81,7 @@ export default function ProjectPanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
-  const { items, loading, error, refresh, addItem } = usePanItems();
+  const { items, loading, error, refresh, addItem, removeItems } = usePanItems();
   const hasFocusedProjectPan = useRef(false);
   const [selectedFilters, setSelectedFilters] = useState<FilterState>(() => ({
     categories: new Set(),
@@ -91,6 +93,11 @@ export default function ProjectPanScreen() {
   }));
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [deleteConfirmationVisible, setDeleteConfirmationVisible] =
+    useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -150,6 +157,9 @@ export default function ProjectPanScreen() {
   const activeFilterCount =
     selectedFilters.categories.size +
     (selectedFilters.status === 'all' ? 0 : 1);
+  const visibleIds = filteredItems.map((item) => item.id);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
 
   function openCategoryFilter() {
     setDraftFilters({
@@ -173,6 +183,56 @@ export default function ProjectPanScreen() {
 
   function openDetails(item: VanityItem) {
     router.push({ pathname: '/product/[id]', params: { id: item.id } });
+  }
+
+  function startSelection(id: string) {
+    setIsSelectionMode(true);
+    setSelectedIds((current) => new Set(current).add(id));
+  }
+
+  function toggleSelection(id: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setIsSelectionMode(false);
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds(
+      allVisibleSelected ? new Set() : new Set(visibleIds),
+    );
+  }
+
+  async function deleteSelectedItems() {
+    const ids = [...selectedIds];
+    if (ids.length === 0 || bulkDeleting) {
+      return;
+    }
+
+    setBulkDeleting(true);
+    try {
+      await deletePanItems(ids);
+      removeItems(ids);
+      setDeleteConfirmationVisible(false);
+      clearSelection();
+    } catch (cause) {
+      Alert.alert(
+        'Products not deleted',
+        cause instanceof Error ? cause.message : 'Please try again.',
+      );
+    } finally {
+      setBulkDeleting(false);
+    }
   }
 
   async function saveProduct(input: Parameters<typeof createPanItem>[0]) {
@@ -236,37 +296,86 @@ export default function ProjectPanScreen() {
             <View style={styles.brandHeader}>
               <BrandWordmark width={116} />
             </View>
-            <View style={styles.titleRow}>
-              <Text style={styles.title}>My Project Pan</Text>
-              <Pressable
-                accessibilityLabel="Filter products by category"
-                accessibilityRole="button"
-                onPress={openCategoryFilter}
-                style={styles.filterButton}
-              >
-                <Ionicons
-                  color={colors.neutralIcon}
-                  name="options-outline"
-                  size={20}
-                />
-              </Pressable>
-            </View>
-            {activeFilterCount > 0 ? (
-              <View style={styles.activeFilterRow}>
-                <Text style={styles.activeFilterText}>
-                  {activeFilterCount} filter
-                  {activeFilterCount === 1 ? '' : 's'} selected
+            {isSelectionMode ? (
+              <View style={styles.selectionBar}>
+                <Pressable
+                  accessibilityLabel="Exit selection mode"
+                  accessibilityRole="button"
+                  onPress={clearSelection}
+                  style={styles.selectionCloseButton}
+                >
+                  <Ionicons color={colors.neutralIcon} name="close" size={22} />
+                </Pressable>
+                <Text style={styles.selectionCount}>
+                  {selectedIds.size} selected
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() =>
-                    setSelectedFilters({ categories: new Set(), status: 'all' })
-                  }
-                  style={styles.clearFiltersButton}
+                  onPress={toggleSelectAll}
+                  style={styles.selectAllButton}
                 >
-                  <Text style={styles.clearFiltersText}>Clear all</Text>
+                  <Text style={styles.selectAllText}>
+                    {allVisibleSelected ? 'Deselect All' : 'Select All'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Delete selected products"
+                  accessibilityRole="button"
+                  disabled={selectedIds.size === 0 || bulkDeleting}
+                  onPress={() => setDeleteConfirmationVisible(true)}
+                  style={({ pressed }) => [
+                    styles.bulkDeleteButton,
+                    (selectedIds.size === 0 || bulkDeleting) &&
+                      styles.bulkDeleteButtonDisabled,
+                    pressed &&
+                      selectedIds.size > 0 &&
+                      !bulkDeleting &&
+                      styles.bulkDeleteButtonPressed,
+                  ]}
+                >
+                  <Ionicons color="#FFFFFF" name="trash-outline" size={18} />
+                  <Text style={styles.bulkDeleteText}>Delete</Text>
                 </Pressable>
               </View>
+            ) : null}
+            {!isSelectionMode ? (
+              <>
+                <View style={styles.titleRow}>
+                  <Text style={styles.title}>My Project Pan</Text>
+                  <Pressable
+                    accessibilityLabel="Filter products by category"
+                    accessibilityRole="button"
+                    onPress={openCategoryFilter}
+                    style={styles.filterButton}
+                  >
+                    <Ionicons
+                      color={colors.neutralIcon}
+                      name="options-outline"
+                      size={20}
+                    />
+                  </Pressable>
+                </View>
+                {activeFilterCount > 0 ? (
+                  <View style={styles.activeFilterRow}>
+                    <Text style={styles.activeFilterText}>
+                      {activeFilterCount} filter
+                      {activeFilterCount === 1 ? '' : 's'} selected
+                    </Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() =>
+                        setSelectedFilters({
+                          categories: new Set(),
+                          status: 'all',
+                        })
+                      }
+                      style={styles.clearFiltersButton}
+                    >
+                      <Text style={styles.clearFiltersText}>Clear all</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </>
             ) : null}
             {loading && items.length === 0 ? (
               <ActivityIndicator
@@ -290,7 +399,16 @@ export default function ProjectPanScreen() {
               item.progress_logs?.[0]?.photo_url ?? item.image_url ?? undefined
             }
             item={item}
-            onPress={() => openDetails(item)}
+            onLongPress={() => startSelection(item.id)}
+            onPress={() => {
+              if (isSelectionMode) {
+                toggleSelection(item.id);
+              } else {
+                openDetails(item);
+              }
+            }}
+            selected={selectedIds.has(item.id)}
+            selectionMode={isSelectionMode}
           />
         )}
         renderSectionHeader={({ section }) => (
@@ -303,18 +421,20 @@ export default function ProjectPanScreen() {
         sections={error ? [] : productSections}
         stickySectionHeadersEnabled={false}
       />
-      <Pressable
-        accessibilityLabel="Add product"
-        accessibilityRole="button"
-        onPress={() => setAddModalVisible(true)}
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: navbarSafePadding + NAVBAR_HEIGHT + 16 },
-          pressed && styles.fabPressed,
-        ]}
-      >
-        <Ionicons color={colors.backgroundPrimary} name="add" size={30} />
-      </Pressable>
+      {!isSelectionMode ? (
+        <Pressable
+          accessibilityLabel="Add product"
+          accessibilityRole="button"
+          onPress={() => setAddModalVisible(true)}
+          style={({ pressed }) => [
+            styles.fab,
+            { bottom: navbarSafePadding + NAVBAR_HEIGHT + 16 },
+            pressed && styles.fabPressed,
+          ]}
+        >
+          <Ionicons color={colors.backgroundPrimary} name="add" size={30} />
+        </Pressable>
+      ) : null}
       <Modal
         animationType="slide"
         onRequestClose={() => setFilterModalVisible(false)}
@@ -477,6 +597,21 @@ export default function ProjectPanScreen() {
         onSave={saveProduct}
         visible={addModalVisible}
       />
+      <ConfirmationModal
+        cancelText="Keep"
+        confirmText="Delete"
+        loading={bulkDeleting}
+        message="Selected items will be permanently removed from your Project Pan."
+        onCancel={() => setDeleteConfirmationVisible(false)}
+        onConfirm={() => void deleteSelectedItems()}
+        title={
+          selectedIds.size === 1
+            ? 'Delete product?'
+            : `Delete ${selectedIds.size} products?`
+        }
+        variant="destructive"
+        visible={deleteConfirmationVisible}
+      />
     </SafeAreaView>
   );
 }
@@ -507,6 +642,56 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 18,
     fontWeight: '700',
+  },
+  selectionBar: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  selectionCloseButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectionCount: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  selectAllButton: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  selectAllText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  bulkDeleteButton: {
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: '#7A2033',
+    borderRadius: 10,
+  },
+  bulkDeleteButtonDisabled: {
+    opacity: 0.45,
+  },
+  bulkDeleteButtonPressed: {
+    opacity: 0.8,
+  },
+  bulkDeleteText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   filterButton: {
     width: 36,
