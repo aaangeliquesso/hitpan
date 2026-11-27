@@ -870,150 +870,158 @@ export function AddPanItemModal({
         >
           <View style={styles.dateEntryOverlay}>
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={styles.dateEntryKeyboardArea}
             >
               <SafeAreaView edges={['bottom']} style={styles.dateEntrySheet}>
-                <View style={styles.dateEntryModalHeader}>
-                  <View>
-                    <Text style={styles.dateEntryModalTitle}>
-                      {acquisitionType === 'gifted'
-                        ? 'Gift date'
-                        : 'Purchase date'}
-                    </Text>
-                    <Text style={styles.dateEntrySelectedDate}>
-                      {hasValidDateInput
-                        ? formatDate(dateInput)
-                        : 'Enter a valid date'}
-                    </Text>
-                  </View>
-                  <Pressable
-                    accessibilityLabel="Cancel date entry"
-                    accessibilityRole="button"
-                    onPress={cancelDateEntry}
-                    style={styles.closeButton}
-                  >
-                    <Ionicons
-                      color={colors.neutralIcon}
-                      name="close"
-                      size={23}
-                    />
-                  </Pressable>
-                </View>
-                <View style={styles.dateEntryCard}>
-                  <View style={styles.dateEntryHeading}>
-                    <Ionicons
-                      color={colors.neutralIcon}
-                      name="create-outline"
-                      size={17}
-                    />
-                    <Text style={styles.dateEntryLabel}>Enter date</Text>
+                <ScrollView
+                  contentContainerStyle={styles.dateEntryContentContainer}
+                  keyboardShouldPersistTaps="handled"
+                  style={styles.dateEntryContent}
+                >
+                  <View style={styles.dateEntryModalHeader}>
+                    <View>
+                      <Text style={styles.dateEntryModalTitle}>
+                        {acquisitionType === 'gifted'
+                          ? 'Gift date'
+                          : 'Purchase date'}
+                      </Text>
+                      <Text style={styles.dateEntrySelectedDate}>
+                        {hasValidDateInput
+                          ? formatDate(dateInput)
+                          : 'Enter a valid date'}
+                      </Text>
+                    </View>
                     <Pressable
+                      accessibilityLabel="Cancel date entry"
                       accessibilityRole="button"
-                      onPress={useToday}
-                      style={styles.todayButton}
+                      onPress={cancelDateEntry}
+                      style={styles.closeButton}
                     >
-                      <Text style={styles.todayButtonText}>Today</Text>
+                      <Ionicons
+                        color={colors.neutralIcon}
+                        name="close"
+                        size={23}
+                      />
                     </Pressable>
                   </View>
-                  <View style={styles.dateEntryFields}>
-                    <View style={[styles.datePartField, styles.dateYearField]}>
-                      <Text style={styles.datePartLabel}>Year</Text>
-                      <TextInput
-                        accessibilityLabel="Year"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        keyboardType="number-pad"
-                        maxLength={4}
-                        onBlur={() => setFocusedDatePart(null)}
-                        onChangeText={(value) => changeDatePart('year', value)}
-                        onFocus={() => setFocusedDatePart('year')}
-                        placeholder="YYYY"
-                        placeholderTextColor={colors.mutedText}
-                        returnKeyType="next"
-                        selectTextOnFocus
-                        style={[
-                          styles.datePartInput,
-                          focusedDatePart === 'year' && styles.inputFocused,
-                          hasDateInput &&
-                            dateYear.length > 0 &&
-                            dateYear.length !== 4 &&
-                            styles.invalidDateEntryInput,
-                        ]}
-                        value={dateYear}
+                  <View style={styles.dateEntryCard}>
+                    <View style={styles.dateEntryHeading}>
+                      <Ionicons
+                        color={colors.neutralIcon}
+                        name="create-outline"
+                        size={17}
                       />
+                      <Text style={styles.dateEntryLabel}>Enter date</Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={useToday}
+                        style={styles.todayButton}
+                      >
+                        <Text style={styles.todayButtonText}>Today</Text>
+                      </Pressable>
                     </View>
-                    <Text style={styles.datePartSeparator}>/</Text>
-                    <View style={styles.datePartField}>
-                      <Text style={styles.datePartLabel}>Month</Text>
-                      <TextInput
-                        accessibilityLabel="Month, 1 to 12"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        keyboardType="number-pad"
-                        maxLength={2}
-                        onBlur={() => setFocusedDatePart(null)}
-                        onChangeText={(value) => changeDatePart('month', value)}
-                        onFocus={() => setFocusedDatePart('month')}
-                        placeholder="MM"
-                        placeholderTextColor={colors.mutedText}
-                        returnKeyType="next"
-                        selectTextOnFocus
-                        style={[
-                          styles.datePartInput,
-                          focusedDatePart === 'month' && styles.inputFocused,
-                          dateMonth.length > 0 &&
-                            (Number(dateMonth) < 1 || Number(dateMonth) > 12) &&
-                            styles.invalidDateEntryInput,
-                        ]}
-                        value={dateMonth}
-                      />
+                    <View style={styles.dateEntryFields}>
+                      <View
+                        style={[styles.datePartField, styles.dateYearField]}
+                      >
+                        <Text style={styles.datePartLabel}>Year</Text>
+                        <TextInput
+                          accessibilityLabel="Year"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          keyboardType="number-pad"
+                          maxLength={4}
+                          onBlur={() => setFocusedDatePart(null)}
+                          onChangeText={(value) => changeDatePart('year', value)}
+                          onFocus={() => setFocusedDatePart('year')}
+                          placeholder="YYYY"
+                          placeholderTextColor={colors.mutedText}
+                          returnKeyType="next"
+                          selectTextOnFocus
+                          style={[
+                            styles.datePartInput,
+                            focusedDatePart === 'year' && styles.inputFocused,
+                            hasDateInput &&
+                              dateYear.length > 0 &&
+                              dateYear.length !== 4 &&
+                              styles.invalidDateEntryInput,
+                          ]}
+                          value={dateYear}
+                        />
+                      </View>
+                      <Text style={styles.datePartSeparator}>/</Text>
+                      <View style={styles.datePartField}>
+                        <Text style={styles.datePartLabel}>Month</Text>
+                        <TextInput
+                          accessibilityLabel="Month, 1 to 12"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          keyboardType="number-pad"
+                          maxLength={2}
+                          onBlur={() => setFocusedDatePart(null)}
+                          onChangeText={(value) => changeDatePart('month', value)}
+                          onFocus={() => setFocusedDatePart('month')}
+                          placeholder="MM"
+                          placeholderTextColor={colors.mutedText}
+                          returnKeyType="next"
+                          selectTextOnFocus
+                          style={[
+                            styles.datePartInput,
+                            focusedDatePart === 'month' && styles.inputFocused,
+                            dateMonth.length > 0 &&
+                              (Number(dateMonth) < 1 || Number(dateMonth) > 12) &&
+                              styles.invalidDateEntryInput,
+                          ]}
+                          value={dateMonth}
+                        />
+                      </View>
+                      <Text style={styles.datePartSeparator}>/</Text>
+                      <View style={styles.datePartField}>
+                        <Text style={styles.datePartLabel}>Day</Text>
+                        <TextInput
+                          accessibilityLabel="Day"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          keyboardType="number-pad"
+                          maxLength={2}
+                          onBlur={() => setFocusedDatePart(null)}
+                          onChangeText={(value) => changeDatePart('day', value)}
+                          onFocus={() => setFocusedDatePart('day')}
+                          placeholder="DD"
+                          placeholderTextColor={colors.mutedText}
+                          returnKeyType="done"
+                          selectTextOnFocus
+                          style={[
+                            styles.datePartInput,
+                            focusedDatePart === 'day' && styles.inputFocused,
+                            dateInput.length > 0 &&
+                              !hasValidDateInput &&
+                              styles.invalidDateEntryInput,
+                          ]}
+                          value={dateDay}
+                        />
+                      </View>
                     </View>
-                    <Text style={styles.datePartSeparator}>/</Text>
-                    <View style={styles.datePartField}>
-                      <Text style={styles.datePartLabel}>Day</Text>
-                      <TextInput
-                        accessibilityLabel="Day"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        keyboardType="number-pad"
-                        maxLength={2}
-                        onBlur={() => setFocusedDatePart(null)}
-                        onChangeText={(value) => changeDatePart('day', value)}
-                        onFocus={() => setFocusedDatePart('day')}
-                        placeholder="DD"
-                        placeholderTextColor={colors.mutedText}
-                        returnKeyType="done"
-                        selectTextOnFocus
-                        style={[
-                          styles.datePartInput,
-                          focusedDatePart === 'day' && styles.inputFocused,
+                    <Text
+                      style={[
+                        styles.dateEntryHint,
+                        hasDateInput &&
                           dateInput.length > 0 &&
-                            !hasValidDateInput &&
-                            styles.invalidDateEntryInput,
-                        ]}
-                        value={dateDay}
-                      />
-                    </View>
+                          !hasValidDateInput &&
+                          styles.invalidDateEntryHint,
+                      ]}
+                    >
+                      {hasDateInput &&
+                      dateInput.length > 0 &&
+                      !hasValidDateInput
+                        ? isValidDate(dateInput) && dateInput > todayValue
+                          ? 'Future dates are unavailable.'
+                          : 'Check the year, month, and day.'
+                        : 'Enter the date as YYYY-MM-DD. Future dates are unavailable.'}
+                    </Text>
                   </View>
-                  <Text
-                    style={[
-                      styles.dateEntryHint,
-                      hasDateInput &&
-                        dateInput.length > 0 &&
-                        !hasValidDateInput &&
-                        styles.invalidDateEntryHint,
-                    ]}
-                  >
-                    {hasDateInput &&
-                    dateInput.length > 0 &&
-                    !hasValidDateInput
-                      ? isValidDate(dateInput) && dateInput > todayValue
-                        ? 'Future dates are unavailable.'
-                        : 'Check the year, month, and day.'
-                      : 'Enter the date as YYYY-MM-DD. Future dates are unavailable.'}
-                  </Text>
-                </View>
+                </ScrollView>
                 <View style={styles.dateEntryActions}>
                   <Pressable
                     accessibilityRole="button"
@@ -1192,16 +1200,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   dateEntryKeyboardArea: {
+    flex: 1,
     justifyContent: 'flex-end',
   },
   dateEntrySheet: {
     maxHeight: '85%',
+    flexShrink: 1,
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
     backgroundColor: colors.cream,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
+  },
+  dateEntryContent: {
+    flexShrink: 1,
+  },
+  dateEntryContentContainer: {
+    flexGrow: 1,
   },
   dateEntryModalHeader: {
     flexDirection: 'row',
@@ -1306,6 +1322,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.xs,
+    flexShrink: 0,
   },
   dateEntryAction: {
     flex: 1,
