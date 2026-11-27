@@ -21,12 +21,10 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useForm, useWatch } from 'react-hook-form';
 import { StarRatingInput } from '../../../shared/components/StarRating';
 import { ConfirmationModal } from '../../../shared/components/ConfirmationModal';
 import { colors, spacing } from '../../../shared/ui/theme';
 import { PRODUCT_CATEGORIES } from '../categories';
-import { ProgressInput } from './ProgressInput';
 import type { NewPanItemInput } from '../services/panService';
 import type { VanityItem } from '../../../types';
 
@@ -150,13 +148,6 @@ export function AddPanItemModal({
   const [dateYear, setDateYear] = useState(() => getToday().slice(0, 4));
   const [dateMonth, setDateMonth] = useState(() => getToday().slice(5, 7));
   const [dateDay, setDateDay] = useState(() => getToday().slice(8, 10));
-  const progressForm = useForm<{ progress: number }>({
-    defaultValues: { progress: 0 },
-  });
-  const progress = useWatch({
-    control: progressForm.control,
-    name: 'progress',
-  });
   const [rating, setRating] = useState(0);
   const [saving, setSaving] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -215,7 +206,6 @@ export function AddPanItemModal({
     setDateYear(year);
     setDateMonth(month);
     setDateDay(day);
-    progressForm.reset({ progress: 0 });
     setRating(item?.rating ?? 0);
     setError(null);
     setFieldErrors({});
@@ -347,8 +337,7 @@ export function AddPanItemModal({
         customCategory.trim() ||
         price.trim() ||
         acquisitionType !== 'bought' ||
-        acquiredOn !== getToday() ||
-        progress !== 0,
+        acquiredOn !== getToday(),
     );
   }
 
@@ -374,7 +363,6 @@ export function AddPanItemModal({
     const normalizedName = name.trim();
     const normalizedBrand = brand.trim();
     const normalizedCategory = category.trim();
-    const parsedProgress = initialItem?.current_progress ?? progress;
     const parsedPrice = Number(price);
 
     const nextFieldErrors = {
@@ -413,7 +401,7 @@ export function AddPanItemModal({
         ...(acquisitionType === 'bought' ? { price: parsedPrice } : {}),
         acquisition_type: acquisitionType,
         acquired_on: acquiredOn,
-        current_progress: parsedProgress,
+        current_progress: initialItem?.current_progress ?? 0,
         rating,
         ...(initialItem
           ? {
@@ -707,40 +695,6 @@ export function AddPanItemModal({
                   </View>
                 </View>
               ) : null}
-              {!initialItem ? (
-                <View style={styles.field}>
-                  <View style={styles.progressCard}>
-                    <View style={styles.progressHeading}>
-                      <View style={styles.progressTitleGroup}>
-                        <View style={styles.progressIcon}>
-                          <Ionicons
-                            color={colors.neutralIcon}
-                            name="pie-chart-outline"
-                            size={17}
-                          />
-                        </View>
-                        <View>
-                          <Text style={styles.progressTitle}>
-                            Initial progress
-                          </Text>
-                          <Text style={styles.progressHint}>
-                            How much have you used?
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.progressBadge}>
-                        <Text style={styles.progressValue}>{progress}%</Text>
-                      </View>
-                    </View>
-                    <ProgressInput
-                      accessibilityLabel="Initial progress"
-                      control={progressForm.control}
-                      name="progress"
-                    />
-                  </View>
-                </View>
-              ) : null}
-
               {error ? (
                 <Text accessibilityRole="alert" style={styles.error}>
                   {error}
@@ -1377,56 +1331,6 @@ const styles = StyleSheet.create({
   confirmDateText: {
     color: colors.backgroundPrimary,
     fontSize: 14,
-    fontWeight: '700',
-  },
-  progressCard: {
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 10,
-    backgroundColor: colors.warmWhite,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 15,
-  },
-  progressHeading: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  progressTitleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  progressIcon: {
-    width: 34,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.brandSurface,
-    borderRadius: 17,
-  },
-  progressTitle: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  progressHint: {
-    color: colors.mutedText,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  progressBadge: {
-    minWidth: 54,
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: colors.brandSurface,
-    borderRadius: 13,
-  },
-  progressValue: {
-    color: colors.brand,
-    fontSize: 13,
     fontWeight: '700',
   },
   categorySelector: {
