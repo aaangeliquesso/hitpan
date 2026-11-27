@@ -297,6 +297,26 @@ export default function ProductDetailsScreen() {
                   />
                 </View>
               </Pressable>
+            </View>
+
+            <View style={styles.progressCard}>
+              <View style={styles.progressHeader}>
+                <View>
+                  <Text style={styles.progressTitle}>Usage progress</Text>
+                  <Text style={styles.progressSubtitle}>
+                    Keep logging your product use
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.progressValue,
+                    { color: getProgressTextColor(progressPercentage) },
+                  ]}
+                >
+                  {progressPercentage}%
+                </Text>
+              </View>
+              <ProgressBar progress={progressPercentage} />
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setLogProgressVisible(true)}
@@ -314,30 +334,11 @@ export default function ProductDetailsScreen() {
                   Log progress now
                 </Text>
               </Pressable>
-              <View style={styles.progressCard}>
-                <View style={styles.progressHeader}>
-                  <View>
-                    <Text style={styles.progressTitle}>Usage progress</Text>
-                    <Text style={styles.progressSubtitle}>
-                      Keep logging your product use
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.progressValue,
-                      { color: getProgressTextColor(progressPercentage) },
-                    ]}
-                  >
-                    {progressPercentage}%
-                  </Text>
-                </View>
-                <ProgressBar progress={progressPercentage} />
-              </View>
             </View>
 
             <View style={styles.sectionHeading}>
               <View style={styles.rule} />
-              <Text style={styles.sectionTitle}>Progress</Text>
+              <Text style={styles.sectionTitle}>Progress history</Text>
               <View style={styles.rule} />
             </View>
             {logsLoading ? (
@@ -732,6 +733,7 @@ const styles = StyleSheet.create({
   },
   progressCard: {
     padding: spacing.md,
+    marginTop: spacing.md,
     gap: spacing.sm,
     backgroundColor: colors.backgroundSecondary,
     borderColor: colors.border,
@@ -763,7 +765,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    marginTop: spacing.xs,
     borderRadius: 12,
     backgroundColor: colors.brand,
   },
