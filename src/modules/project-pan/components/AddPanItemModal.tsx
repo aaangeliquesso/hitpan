@@ -1121,15 +1121,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   input: {
-    minHeight: 44,
+    width: '100%',
+    height: 44,
     paddingHorizontal: 12,
-    paddingVertical: 9,
+    paddingVertical: 0,
     color: colors.text,
     backgroundColor: '#FFFFFF',
     borderColor: '#D1D5DB',
     borderWidth: 1,
     borderRadius: 11,
     fontSize: 14,
+    textAlignVertical: 'center',
   },
   inputFocused: {
     borderColor: '#D1D5DB',
@@ -1140,7 +1142,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorSurface,
   },
   dateSelector: {
-    minHeight: 44,
+    height: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
