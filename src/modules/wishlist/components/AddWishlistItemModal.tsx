@@ -119,7 +119,9 @@ export function AddWishlistItemModal({
             </Pressable>
           </View>
 
-          <Text style={styles.label}>Item name *</Text>
+          <Text style={styles.label}>
+            Item name <Text style={styles.requiredMark}>*</Text>
+          </Text>
           <TextInput
             editable={!saving}
             maxLength={50}
@@ -269,6 +271,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  requiredMark: {
+    color: colors.error,
+    fontWeight: '700',
+  },
   input: {
     minHeight: 46,
     marginBottom: spacing.md,
@@ -298,7 +304,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
-    backgroundColor: colors.warmWhite,
+    backgroundColor: colors.backgroundPrimary,
   },
   boughtToggleActive: {
     backgroundColor: colors.wishlistBoughtSurface,
