@@ -1,11 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Modal,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -17,6 +14,7 @@ import {
   deleteUserAccount,
 } from '../auth/services/authService';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
+import { ConfirmationModal } from '../../shared/components/ConfirmationModal';
 import { Header } from '../../shared/components/Header';
 import { colors, spacing } from '../../shared/ui/theme';
 import { ProfileSummary } from './components/ProfileSummary';
@@ -30,6 +28,8 @@ export default function ProfileScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [logoutConfirmationVisible, setLogoutConfirmationVisible] =
+    useState(false);
+  const [deleteConfirmationVisible, setDeleteConfirmationVisible] =
     useState(false);
   const accountActionInProgress = useRef(false);
 
@@ -122,20 +122,7 @@ export default function ProfileScreen() {
   };
 
   const confirmDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account?',
-      'This action is permanent. All your tracked vanity items, progress photos, and profile data will be permanently deleted.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            void handleDeleteAccount();
-          },
-        },
-      ],
-    );
+    setDeleteConfirmationVisible(true);
   };
 
   return (
@@ -161,56 +148,31 @@ export default function ProfileScreen() {
           )}
         </View>
       </SafeAreaView>
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setLogoutConfirmationVisible(false)}
-        transparent
+      <ConfirmationModal
+        cancelText="Go Back"
+        confirmText="Log Out"
+        loading={signingOut}
+        message="Are you sure you want to log out?"
+        onCancel={() => setLogoutConfirmationVisible(false)}
+        onConfirm={() => {
+          setLogoutConfirmationVisible(false);
+          void handleLogout();
+        }}
+        title="Log out?"
+        variant="neutral"
         visible={logoutConfirmationVisible}
-      >
-        <View style={styles.modalBackdrop}>
-          <View
-            accessibilityViewIsModal
-            style={styles.confirmationCard}
-          >
-            <View style={styles.confirmationIcon}>
-              <Ionicons
-                color={colors.neutralIcon}
-                name="log-out-outline"
-                size={24}
-              />
-            </View>
-            <Text style={styles.confirmationTitle}>Log out?</Text>
-            <Text style={styles.confirmationMessage}>
-              Are you sure you want to log out?
-            </Text>
-            <View style={styles.confirmationActions}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setLogoutConfirmationVisible(false)}
-                style={({ pressed }) => [
-                  styles.cancelButton,
-                  pressed && styles.confirmationButtonPressed,
-                ]}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  setLogoutConfirmationVisible(false);
-                  void handleLogout();
-                }}
-                style={({ pressed }) => [
-                  styles.confirmLogoutButton,
-                  pressed && styles.confirmationButtonPressed,
-                ]}
-              >
-                <Text style={styles.confirmLogoutButtonText}>Log Out</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      />
+      <ConfirmationModal
+        cancelText="Keep Account"
+        confirmText="Delete"
+        loading={deletingAccount}
+        message="This action is permanent. All your tracked vanity items, progress photos, and profile data will be permanently deleted."
+        onCancel={() => setDeleteConfirmationVisible(false)}
+        onConfirm={() => void handleDeleteAccount()}
+        title="Delete account?"
+        variant="destructive"
+        visible={deleteConfirmationVisible}
+      />
     </>
   );
 }
@@ -235,80 +197,5 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     backgroundColor: colors.errorSurface,
     borderRadius: 12,
-  },
-  modalBackdrop: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-    backgroundColor: 'rgba(18, 18, 18, 0.55)',
-  },
-  confirmationCard: {
-    width: '100%',
-    maxWidth: 360,
-    alignItems: 'center',
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 22,
-    backgroundColor: colors.backgroundPrimary,
-  },
-  confirmationIcon: {
-    width: 48,
-    height: 48,
-    marginBottom: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 24,
-    backgroundColor: colors.backgroundSecondary,
-  },
-  confirmationTitle: {
-    color: colors.textPrimary,
-    fontSize: 21,
-    fontWeight: '700',
-  },
-  confirmationMessage: {
-    marginTop: spacing.sm,
-    color: colors.mutedText,
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  confirmationActions: {
-    width: '100%',
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  cancelButton: {
-    flex: 1,
-    minHeight: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: colors.cream,
-  },
-  cancelButtonText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  confirmLogoutButton: {
-    flex: 1,
-    minHeight: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: colors.brand,
-  },
-  confirmLogoutButtonText: {
-    color: colors.backgroundPrimary,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  confirmationButtonPressed: {
-    opacity: 0.8,
   },
 });

@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../../../shared/ui/theme';
+import { ConfirmationModal } from '../../../shared/components/ConfirmationModal';
 import type { CreateWishlistItemInput } from '../services/wishlistService';
 
 interface AddWishlistItemModalProps {
@@ -206,51 +207,17 @@ export function AddWishlistItemModal({
               )}
             </Pressable>
           </View>
-          {cancelConfirmationVisible ? (
-            <View style={styles.confirmationOverlay}>
-              <View
-                accessibilityViewIsModal
-                style={styles.confirmationDialog}
-              >
-                <View style={styles.confirmationIcon}>
-                  <Ionicons
-                    color={colors.error}
-                    name="alert-circle-outline"
-                    size={27}
-                  />
-                </View>
-                <Text style={styles.confirmationTitle}>
-                  Cancel Wishlist Item?
-                </Text>
-                <Text style={styles.confirmationMessage}>
-                  Are you sure you want to cancel? Your item details will not be
-                  saved.
-                </Text>
-                <View style={styles.confirmationActions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => setCancelConfirmationVisible(false)}
-                    style={[
-                      styles.confirmationButton,
-                      styles.keepEditingButton,
-                    ]}
-                  >
-                    <Text style={styles.keepEditingText}>Keep Editing</Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={discardForm}
-                    style={[
-                      styles.confirmationButton,
-                      styles.discardButton,
-                    ]}
-                  >
-                    <Text style={styles.discardText}>Discard / Cancel</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          ) : null}
+          <ConfirmationModal
+            cancelText="Keep Editing"
+            confirmText="Discard"
+            loading={saving}
+            message="Your unsaved entries will be lost."
+            onCancel={() => setCancelConfirmationVisible(false)}
+            onConfirm={discardForm}
+            title="Discard changes?"
+            variant="destructive"
+            visible={cancelConfirmationVisible}
+          />
         </SafeAreaView>
       </View>
     </Modal>
@@ -262,84 +229,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(18, 18, 18, 0.45)',
-  },
-  confirmationOverlay: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    backgroundColor: 'rgba(18, 18, 18, 0.58)',
-    zIndex: 10,
-  },
-  confirmationDialog: {
-    width: '100%',
-    maxWidth: 400,
-    alignItems: 'center',
-    padding: spacing.lg,
-    backgroundColor: colors.cream,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 24,
-    shadowColor: colors.textPrimary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  confirmationIcon: {
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-    backgroundColor: colors.brandSurface,
-    borderRadius: 28,
-  },
-  confirmationTitle: {
-    color: colors.textPrimary,
-    fontSize: 19,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  confirmationMessage: {
-    marginTop: spacing.sm,
-    color: colors.mutedText,
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: 'center',
-  },
-  confirmationActions: {
-    width: '100%',
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  confirmationButton: {
-    minHeight: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-  },
-  keepEditingButton: {
-    backgroundColor: colors.brand,
-  },
-  keepEditingText: {
-    color: colors.backgroundPrimary,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  discardButton: {
-    backgroundColor: colors.errorSurface,
-    borderColor: colors.error,
-    borderWidth: 1,
-  },
-  discardText: {
-    color: colors.error,
-    fontSize: 14,
-    fontWeight: '700',
   },
   sheet: {
     paddingTop: spacing.lg,

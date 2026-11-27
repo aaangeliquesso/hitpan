@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandWordmark } from '../../src/shared/components/BrandWordmark';
+import { ConfirmationModal } from '../../src/shared/components/ConfirmationModal';
 import { colors, spacing } from '../../src/shared/ui/theme';
 import { ProgressBar } from '../../src/modules/project-pan/components/ProgressBar';
 import { ProgressLogCard } from '../../src/modules/project-pan/components/ProgressLogCard';
@@ -312,62 +312,21 @@ export default function ProductDetailsScreen() {
         onSave={saveProductChanges}
         visible={editVisible}
       />
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setDeleteConfirmationVisible(false)}
-        transparent
+      <ConfirmationModal
+        cancelText="Keep product"
+        confirmText="Delete product"
+        loading={deleting}
+        message={
+          item
+            ? `${item.name} will be permanently deleted. This action cannot be undone.`
+            : 'This product will be permanently deleted. This action cannot be undone.'
+        }
+        onCancel={() => setDeleteConfirmationVisible(false)}
+        onConfirm={() => void handleDelete()}
+        title="Delete product?"
+        variant="destructive"
         visible={deleteConfirmationVisible}
-      >
-        <View style={styles.confirmationBackdrop}>
-          <View
-            accessibilityViewIsModal
-            style={styles.confirmationCard}
-          >
-            <View style={styles.confirmationIcon}>
-              <Ionicons
-                color={colors.error}
-                name="trash-outline"
-                size={24}
-              />
-            </View>
-            <Text style={styles.confirmationTitle}>Delete product?</Text>
-            <Text style={styles.confirmationMessage}>
-              {item
-                ? `${item.name} will be permanently deleted. This action cannot be undone.`
-                : 'This product will be permanently deleted. This action cannot be undone.'}
-            </Text>
-            <View style={styles.confirmationActions}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setDeleteConfirmationVisible(false)}
-                style={({ pressed }) => [
-                  styles.cancelDeleteButton,
-                  pressed && styles.confirmationButtonPressed,
-                ]}
-              >
-                <Text style={styles.cancelDeleteButtonText}>Keep product</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={deleting}
-                onPress={() => {
-                  setDeleteConfirmationVisible(false);
-                  void handleDelete();
-                }}
-                style={({ pressed }) => [
-                  styles.confirmDeleteButton,
-                  pressed && styles.confirmationButtonPressed,
-                  deleting && styles.disabledButton,
-                ]}
-              >
-                <Text style={styles.confirmDeleteButtonText}>
-                  Delete product
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      />
     </>
   );
 }
@@ -550,83 +509,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorSurface,
     borderRadius: 12,
     textAlign: 'center',
-  },
-  confirmationBackdrop: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-    backgroundColor: 'rgba(18, 18, 18, 0.55)',
-  },
-  confirmationCard: {
-    width: '100%',
-    maxWidth: 360,
-    alignItems: 'center',
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 22,
-    backgroundColor: colors.backgroundPrimary,
-  },
-  confirmationIcon: {
-    width: 48,
-    height: 48,
-    marginBottom: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 24,
-    backgroundColor: colors.errorSurface,
-  },
-  confirmationTitle: {
-    color: colors.textPrimary,
-    fontSize: 21,
-    fontWeight: '700',
-  },
-  confirmationMessage: {
-    marginTop: spacing.sm,
-    color: colors.textSecondary,
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  confirmationActions: {
-    width: '100%',
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  cancelDeleteButton: {
-    flex: 1,
-    minHeight: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: colors.backgroundSecondary,
-  },
-  cancelDeleteButtonText: {
-    color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  confirmDeleteButton: {
-    flex: 1,
-    minHeight: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: colors.error,
-  },
-  confirmDeleteButtonText: {
-    color: colors.backgroundPrimary,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  confirmationButtonPressed: {
-    opacity: 0.8,
-  },
-  disabledButton: {
-    opacity: 0.65,
   },
 });
