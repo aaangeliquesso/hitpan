@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Animated,
   Dimensions,
   Keyboard,
   Modal,
@@ -27,6 +26,8 @@ import { PRODUCT_CATEGORIES } from '../categories';
 import type { NewPanItemInput } from '../services/panService';
 import type { VanityItem } from '../../../types';
 
+const FIELD_WARNING_COLOR = '#B7791F';
+
 interface AddPanItemModalProps {
   visible: boolean;
   onClose: () => void;
@@ -38,7 +39,6 @@ interface FormFieldProps extends TextInputProps {
   label: string;
   required?: boolean;
   error?: string;
-  shakeValue?: Animated.Value;
   containerStyle?: StyleProp<ViewStyle>;
 }
 
@@ -46,7 +46,6 @@ function FormField({
   label,
   required = false,
   error,
-  shakeValue,
   containerStyle,
   onBlur,
   onFocus,
@@ -60,30 +59,39 @@ function FormField({
         {label}
         {required ? <Text style={styles.requiredMark}>*</Text> : null}
       </Text>
-      <Animated.View
+      <TextInput
+        onBlur={(event) => {
+          setIsFocused(false);
+          onBlur?.(event);
+        }}
+        onFocus={(event) => {
+          setIsFocused(true);
+          onFocus?.(event);
+        }}
+        placeholderTextColor={colors.mutedText}
         style={[
-          shakeValue ? { transform: [{ translateX: shakeValue }] } : undefined,
+          styles.input,
+          isFocused && styles.inputFocused,
+          error && styles.invalidInput,
         ]}
-      >
-        <TextInput
-          onBlur={(event) => {
-            setIsFocused(false);
-            onBlur?.(event);
-          }}
-          onFocus={(event) => {
-            setIsFocused(true);
-            onFocus?.(event);
-          }}
-          placeholderTextColor={colors.mutedText}
-          style={[
-            styles.input,
-            isFocused && styles.inputFocused,
-            error && styles.invalidInput,
-          ]}
-          {...inputProps}
-        />
-      </Animated.View>
-      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+        {...inputProps}
+      />
+      {error ? <FieldWarning message={error} /> : null}
+    </View>
+  );
+}
+
+function FieldWarning({ message }: { message: string }) {
+  return (
+    <View style={styles.fieldWarning}>
+      <Ionicons
+        color={FIELD_WARNING_COLOR}
+        name="information-circle-outline"
+        size={14}
+      />
+      <Text accessibilityRole="alert" style={styles.fieldWarningText}>
+        {message}
+      </Text>
     </View>
   );
 }
@@ -164,10 +172,6 @@ export function AddPanItemModal({
     category?: string;
     price?: string;
   }>({});
-  const nameShake = useRef(new Animated.Value(0)).current;
-  const brandShake = useRef(new Animated.Value(0)).current;
-  const categoryShake = useRef(new Animated.Value(0)).current;
-  const priceShake = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const showEvent =
@@ -206,10 +210,6 @@ export function AddPanItemModal({
     setDateDay(day);
     setError(null);
     setFieldErrors({});
-    nameShake.setValue(0);
-    brandShake.setValue(0);
-    categoryShake.setValue(0);
-    priceShake.setValue(0);
   }
 
   useEffect(() => {
@@ -268,50 +268,6 @@ export function AddPanItemModal({
     setDateEntryVisible(false);
   }
 
-  function shakeInvalidFields(fields: Array<Animated.Value>) {
-    const animations = fields.map((value) => {
-      value.setValue(0);
-      return Animated.sequence([
-        Animated.timing(value, {
-          toValue: -10,
-          duration: 45,
-          useNativeDriver: true,
-        }),
-        Animated.timing(value, {
-          toValue: 10,
-          duration: 45,
-          useNativeDriver: true,
-        }),
-        Animated.timing(value, {
-          toValue: -8,
-          duration: 45,
-          useNativeDriver: true,
-        }),
-        Animated.timing(value, {
-          toValue: 8,
-          duration: 45,
-          useNativeDriver: true,
-        }),
-        Animated.timing(value, {
-          toValue: -4,
-          duration: 45,
-          useNativeDriver: true,
-        }),
-        Animated.timing(value, {
-          toValue: 4,
-          duration: 45,
-          useNativeDriver: true,
-        }),
-        Animated.timing(value, {
-          toValue: 0,
-          duration: 45,
-          useNativeDriver: true,
-        }),
-      ]);
-    });
-    Animated.parallel(animations).start();
-  }
-
   function hasUnsavedChanges() {
     if (initialItem) {
       return (
@@ -362,24 +318,25 @@ export function AddPanItemModal({
     const parsedPrice = Number(price);
 
     const nextFieldErrors = {
-      ...(!normalizedName ? { name: 'Product name is required' } : {}),
-      ...(!normalizedBrand ? { brand: 'Brand is required' } : {}),
-      ...(!normalizedCategory ? { category: 'Category is required' } : {}),
+      ...(!normalizedName
+        ? { name: 'Add a product name to continue.' }
+        : {}),
+      ...(!normalizedBrand ? { brand: 'Add a brand to continue.' } : {}),
+      ...(!normalizedCategory
+        ? { category: 'Choose a category to continue.' }
+        : {}),
       ...(acquisitionType === 'bought' &&
       (!price.trim() || !Number.isFinite(parsedPrice) || parsedPrice < 0)
-        ? { price: 'Enter a valid price' }
+        ? {
+            price: price.trim()
+              ? 'Enter a valid price.'
+              : 'Enter a price to continue.',
+          }
         : {}),
     };
     setFieldErrors(nextFieldErrors);
 
     if (Object.keys(nextFieldErrors).length > 0) {
-      const invalidFields = [
-        nextFieldErrors.name ? nameShake : null,
-        nextFieldErrors.brand ? brandShake : null,
-        nextFieldErrors.category ? categoryShake : null,
-        nextFieldErrors.price ? priceShake : null,
-      ].filter((field): field is Animated.Value => field !== null);
-      shakeInvalidFields(invalidFields);
       return;
     }
     if (!isValidDate(acquiredOn)) {
@@ -485,7 +442,6 @@ export function AddPanItemModal({
                 maxLength={50}
                 required
                 error={fieldErrors.name}
-                shakeValue={nameShake}
                 onChangeText={(value) => {
                   setName(value);
                   if (value.trim()) {
@@ -504,7 +460,6 @@ export function AddPanItemModal({
                 maxLength={50}
                 required
                 error={fieldErrors.brand}
-                shakeValue={brandShake}
                 onChangeText={(value) => {
                   setBrand(value);
                   if (value.trim()) {
@@ -529,42 +484,38 @@ export function AddPanItemModal({
                 <Text style={styles.fieldLabel}>
                   Category<Text style={styles.requiredMark}>*</Text>
                 </Text>
-                <Animated.View
-                  style={{ transform: [{ translateX: categoryShake }] }}
+                <Pressable
+                  accessibilityLabel={
+                    category ? `Category: ${category}` : 'Select category'
+                  }
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setCustomCategoryMode(false);
+                    setCustomCategory('');
+                    setCategoryPickerVisible(true);
+                  }}
+                  style={[
+                    styles.categorySelector,
+                    fieldErrors.category && styles.invalidInput,
+                  ]}
                 >
-                  <Pressable
-                    accessibilityLabel={
-                      category ? `Category: ${category}` : 'Select category'
-                    }
-                    accessibilityRole="button"
-                    onPress={() => {
-                      setCustomCategoryMode(false);
-                      setCustomCategory('');
-                      setCategoryPickerVisible(true);
-                    }}
+                  <Text
+                    numberOfLines={1}
                     style={[
-                      styles.categorySelector,
-                      fieldErrors.category && styles.invalidInput,
+                      styles.categorySelectorText,
+                      !category && styles.categoryPlaceholder,
                     ]}
                   >
-                    <Text
-                      numberOfLines={1}
-                      style={[
-                        styles.categorySelectorText,
-                        !category && styles.categoryPlaceholder,
-                      ]}
-                    >
-                      {category || 'Select Category'}
-                    </Text>
-                    <Ionicons
-                      color={colors.neutralIcon}
-                      name="chevron-down"
-                      size={18}
-                    />
-                  </Pressable>
-                </Animated.View>
+                    {category || 'Select Category'}
+                  </Text>
+                  <Ionicons
+                    color={colors.neutralIcon}
+                    name="chevron-down"
+                    size={18}
+                  />
+                </Pressable>
                 {fieldErrors.category ? (
-                  <Text style={styles.fieldError}>{fieldErrors.category}</Text>
+                  <FieldWarning message={fieldErrors.category} />
                 ) : null}
               </View>
 
@@ -606,12 +557,7 @@ export function AddPanItemModal({
                         <Text style={styles.requiredMark}>*</Text>
                       ) : null}
                     </Text>
-                    <Animated.View
-                      style={[
-                        styles.purchaseInputContainer,
-                        { transform: [{ translateX: priceShake }] },
-                      ]}
-                    >
+                    <View style={styles.purchaseInputContainer}>
                       <TextInput
                         keyboardType="decimal-pad"
                         onBlur={() => setPriceInputFocused(false)}
@@ -638,9 +584,9 @@ export function AddPanItemModal({
                         ]}
                         value={price}
                       />
-                    </Animated.View>
+                    </View>
                     {fieldErrors.price ? (
-                      <Text style={styles.fieldError}>{fieldErrors.price}</Text>
+                      <FieldWarning message={fieldErrors.price} />
                     ) : null}
                   </View>
                   <View style={[styles.field, styles.purchaseColumn]}>
@@ -1115,13 +1061,16 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontWeight: '700',
   },
-  fieldError: {
-    color: colors.error,
-    padding: spacing.xs,
-    backgroundColor: colors.errorSurface,
-    borderRadius: 6,
-    fontSize: 11,
+  fieldWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
     marginTop: 4,
+  },
+  fieldWarningText: {
+    flexShrink: 1,
+    color: FIELD_WARNING_COLOR,
+    fontSize: 11,
   },
   input: {
     width: '100%',
@@ -1140,9 +1089,9 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
   },
   invalidInput: {
-    borderColor: colors.error,
-    borderWidth: 1.5,
-    backgroundColor: colors.errorSurface,
+    borderColor: '#D6A94B',
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
   },
   dateSelector: {
     height: 44,
