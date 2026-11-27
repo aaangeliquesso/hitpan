@@ -685,7 +685,19 @@ export function AddPanItemModal({
               )}
               {initialItem ? (
                 <View style={styles.ratingField}>
-                  <Text style={styles.fieldLabel}>Star rating</Text>
+                  <View style={styles.ratingHeader}>
+                    <View>
+                      <Text style={styles.ratingTitle}>Your rating</Text>
+                      <Text style={styles.ratingSubtitle}>
+                        Tap a star to rate this product
+                      </Text>
+                    </View>
+                    <View style={styles.ratingValueBadge}>
+                      <Text style={styles.ratingValueText}>
+                        {rating > 0 ? `${rating}/5` : '—'}
+                      </Text>
+                    </View>
+                  </View>
                   <View style={styles.ratingChoices}>
                     <StarRatingInput
                       onRatingChange={setRating}
@@ -1103,11 +1115,46 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   ratingField: {
+    padding: spacing.md,
     marginBottom: spacing.sm,
+    backgroundColor: colors.backgroundSecondary,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 14,
+  },
+  ratingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  ratingTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  ratingSubtitle: {
+    color: colors.mutedText,
+    fontSize: 12,
+    marginTop: 3,
+  },
+  ratingValueBadge: {
+    minWidth: 44,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.brandSurface,
+    borderRadius: 12,
+  },
+  ratingValueText: {
+    color: colors.brand,
+    fontSize: 14,
+    fontWeight: '700',
   },
   ratingChoices: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    justifyContent: 'center',
+    marginTop: spacing.sm,
   },
   purchaseRow: {
     flexDirection: 'row',

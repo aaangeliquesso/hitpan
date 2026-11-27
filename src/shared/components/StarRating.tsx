@@ -3,12 +3,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../ui/theme';
 
 const STAR_ICON_SIZE = 16;
+const STAR_INPUT_ICON_SIZE = 24;
 
 interface StarRatingProps {
   rating: number;
+  size?: number;
 }
 
-export function StarRating({ rating }: StarRatingProps) {
+export function StarRating({
+  rating,
+  size = STAR_ICON_SIZE,
+}: StarRatingProps) {
   const boundedRating = Math.max(0, Math.min(5, Math.round(rating)));
 
   return (
@@ -18,10 +23,14 @@ export function StarRating({ rating }: StarRatingProps) {
     >
       {Array.from({ length: 5 }, (_, index) => (
         <Ionicons
-          color={index < boundedRating ? colors.ratingStar : colors.ratingStarEmpty}
+          color={
+            index < boundedRating
+              ? colors.ratingStar
+              : colors.ratingStarEmpty
+          }
           key={index}
           name={index < boundedRating ? 'star' : 'star-outline'}
-          size={STAR_ICON_SIZE}
+          size={size}
         />
       ))}
     </View>
@@ -55,11 +64,15 @@ export function StarRatingInput({
             hitSlop={8}
             key={value}
             onPress={() => onRatingChange(value)}
+            style={[
+              styles.inputStarButton,
+              selected && styles.selectedInputStarButton,
+            ]}
           >
             <Ionicons
               color={selected ? colors.ratingStar : colors.ratingStarEmpty}
               name={selected ? 'star' : 'star-outline'}
-              size={STAR_ICON_SIZE}
+              size={STAR_INPUT_ICON_SIZE}
             />
           </Pressable>
         );
@@ -72,5 +85,15 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 2,
+  },
+  inputStarButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+  },
+  selectedInputStarButton: {
+    backgroundColor: '#FFF4D6',
   },
 });

@@ -14,6 +14,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandWordmark } from '../../src/shared/components/BrandWordmark';
 import { ConfirmationModal } from '../../src/shared/components/ConfirmationModal';
+import { StarRating } from '../../src/shared/components/StarRating';
 import { colors, spacing } from '../../src/shared/ui/theme';
 import { ProgressBar } from '../../src/modules/project-pan/components/ProgressBar';
 import { ProgressLogCard } from '../../src/modules/project-pan/components/ProgressLogCard';
@@ -22,7 +23,6 @@ import {
   deletePanItem,
   getPanItemById,
   updatePanItem,
-  updatePanItemRating,
 } from '../../src/modules/project-pan/services/panService';
 import { createProgressLog } from '../../src/modules/project-pan/services/progressLogService';
 import {
@@ -39,7 +39,6 @@ export default function ProductDetailsScreen() {
   const [item, setItem] = useState<VanityItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [savingRating, setSavingRating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmationVisible, setDeleteConfirmationVisible] =
     useState(false);
@@ -72,27 +71,6 @@ export default function ProductDetailsScreen() {
   useEffect(() => {
     void loadItem();
   }, [loadItem]);
-
-  async function handleRatingChange(rating: number) {
-    if (!item || savingRating) {
-      return;
-    }
-
-    const previousRating = item.rating;
-    setItem({ ...item, rating });
-    setSavingRating(true);
-    try {
-      await updatePanItemRating(item.id, rating);
-    } catch (cause) {
-      setItem({ ...item, rating: previousRating });
-      Alert.alert(
-        'Rating not saved',
-        cause instanceof Error ? cause.message : 'Please try again.',
-      );
-    } finally {
-      setSavingRating(false);
-    }
-  }
 
   function confirmDelete() {
     if (!item || deleting) return;
@@ -221,28 +199,22 @@ export default function ProductDetailsScreen() {
                   { month: 'long', day: 'numeric', year: 'numeric' },
                 )}
               </Text>
-              <View style={styles.ratingRow}>
-                <Text style={styles.ratingLabel}>Rating</Text>
-                <View style={styles.stars}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Pressable
-                      accessibilityLabel={`Rate ${star} out of 5`}
-                      accessibilityRole="button"
-                      disabled={savingRating}
-                      key={star}
-                      onPress={() => void handleRatingChange(star)}
-                      hitSlop={4}
-                    >
-                      <Text
-                        style={[
-                          styles.star,
-                          star <= (item.rating ?? 0) && styles.filledStar,
-                        ]}
-                      >
-                        ★
-                      </Text>
-                    </Pressable>
-                  ))}
+              <View style={styles.ratingCard}>
+                <View style={styles.ratingHeader}>
+                  <View>
+                    <Text style={styles.ratingTitle}>Your rating</Text>
+                    <Text style={styles.ratingSubtitle}>
+                      Edit product to update this rating
+                    </Text>
+                  </View>
+                  <View style={styles.ratingValueBadge}>
+                    <Text style={styles.ratingValueText}>
+                      {item.rating ? `${item.rating}/5` : 'Not rated'}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.ratingDisplay}>
+                  <StarRating rating={item.rating ?? 0} size={22} />
                 </View>
               </View>
               <View style={styles.progressRow}>
@@ -428,26 +400,45 @@ const styles = StyleSheet.create({
     color: colors.success,
     backgroundColor: colors.backgroundSecondary,
   },
-  ratingRow: {
+  ratingCard: {
+    padding: spacing.md,
+    backgroundColor: colors.backgroundSecondary,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 14,
+  },
+  ratingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: -spacing.xs,
   },
-  ratingLabel: {
+  ratingTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  ratingSubtitle: {
     color: colors.mutedText,
     fontSize: 12,
+    marginTop: 3,
   },
-  stars: {
-    flexDirection: 'row',
-    gap: spacing.xs,
+  ratingValueBadge: {
+    minHeight: 34,
+    minWidth: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.brandSurface,
+    borderRadius: 12,
   },
-  star: {
-    color: colors.border,
-    fontSize: 19,
+  ratingValueText: {
+    color: colors.brand,
+    fontSize: 13,
+    fontWeight: '700',
   },
-  filledStar: {
-    color: colors.ratingStar,
+  ratingDisplay: {
+    alignItems: 'flex-start',
+    marginTop: spacing.sm,
   },
   progressRow: {
     flexDirection: 'row',
