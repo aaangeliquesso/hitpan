@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,7 +15,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandWordmark } from '../../src/shared/components/BrandWordmark';
 import { ConfirmationModal } from '../../src/shared/components/ConfirmationModal';
-import { StarRating } from '../../src/shared/components/StarRating';
+import {
+  StarRating,
+  StarRatingInput,
+} from '../../src/shared/components/StarRating';
 import { colors, spacing } from '../../src/shared/ui/theme';
 import { ProgressBar } from '../../src/modules/project-pan/components/ProgressBar';
 import { ProgressLogCard } from '../../src/modules/project-pan/components/ProgressLogCard';
@@ -23,6 +27,7 @@ import {
   deletePanItem,
   getPanItemById,
   updatePanItem,
+  updatePanItemRating,
 } from '../../src/modules/project-pan/services/panService';
 import { createProgressLog } from '../../src/modules/project-pan/services/progressLogService';
 import {
@@ -44,6 +49,9 @@ export default function ProductDetailsScreen() {
     useState(false);
   const [editVisible, setEditVisible] = useState(false);
   const [logProgressVisible, setLogProgressVisible] = useState(false);
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [draftRating, setDraftRating] = useState(0);
+  const [savingRating, setSavingRating] = useState(false);
   const {
     logs,
     loading: logsLoading,
@@ -73,6 +81,35 @@ export default function ProductDetailsScreen() {
   useEffect(() => {
     void loadItem();
   }, [loadItem]);
+
+  function openRatingModal() {
+    if (!item || savingRating) return;
+    setDraftRating(item.rating ?? 0);
+    setRatingModalVisible(true);
+  }
+
+  function closeRatingModal() {
+    if (savingRating) return;
+    setRatingModalVisible(false);
+  }
+
+  async function saveRating() {
+    if (!item || savingRating) return;
+
+    setSavingRating(true);
+    try {
+      await updatePanItemRating(item.id, draftRating);
+      setItem({ ...item, rating: draftRating });
+      setRatingModalVisible(false);
+    } catch (cause) {
+      Alert.alert(
+        'Rating not saved',
+        cause instanceof Error ? cause.message : 'Please try again.',
+      );
+    } finally {
+      setSavingRating(false);
+    }
+  }
 
   function confirmDelete() {
     if (!item || deleting) return;
@@ -234,24 +271,49 @@ export default function ProductDetailsScreen() {
                   <Text style={styles.deleteProductText}>Delete</Text>
                 </Pressable>
               </View>
-              <View style={styles.ratingCard}>
-                <View style={styles.ratingHeader}>
-                  <View>
-                    <Text style={styles.ratingTitle}>Your rating</Text>
-                    <Text style={styles.ratingSubtitle}>
-                      Edit product to update this rating
-                    </Text>
-                  </View>
-                  <View style={styles.ratingValueBadge}>
-                    <Text style={styles.ratingValueText}>
-                      {item.rating ? `${item.rating}/5` : 'Not rated'}
-                    </Text>
-                  </View>
+              <Pressable
+                accessibilityHint="Opens the rating editor. Changes are saved when you tap Save rating."
+                accessibilityLabel={
+                  item.rating
+                    ? `Tap to change rating. Current rating: ${item.rating} out of 5`
+                    : 'Tap to change rating. Not rated yet'
+                }
+                accessibilityRole="button"
+                onPress={openRatingModal}
+                style={({ pressed }) => [
+                  styles.ratingCard,
+                  pressed && styles.ratingCardPressed,
+                ]}
+              >
+                <View style={styles.ratingInfo}>
+                  <Text style={styles.ratingTitle}>Tap to change rating</Text>
+                  <StarRating rating={item.rating ?? 0} size={20} />
                 </View>
-                <View style={styles.ratingDisplay}>
-                  <StarRating rating={item.rating ?? 0} size={22} />
+                <View style={styles.ratingActionIcon}>
+                  <Ionicons
+                    color={colors.brand}
+                    name="chevron-forward"
+                    size={18}
+                  />
                 </View>
-              </View>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setLogProgressVisible(true)}
+                style={({ pressed }) => [
+                  styles.logProgressButton,
+                  pressed && styles.logProgressButtonPressed,
+                ]}
+              >
+                <Ionicons
+                  color={colors.backgroundPrimary}
+                  name="camera-outline"
+                  size={18}
+                />
+                <Text style={styles.logProgressButtonText}>
+                  Log progress now
+                </Text>
+              </Pressable>
               <View style={styles.progressCard}>
                 <View style={styles.progressHeader}>
                   <View>
@@ -271,21 +333,6 @@ export default function ProductDetailsScreen() {
                 </View>
                 <ProgressBar progress={progressPercentage} />
               </View>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setLogProgressVisible(true)}
-                style={({ pressed }) => [
-                  styles.logProgressButton,
-                  pressed && styles.logProgressButtonPressed,
-                ]}
-              >
-                <Ionicons
-                  color={colors.backgroundPrimary}
-                  name="camera-outline"
-                  size={18}
-                />
-                <Text style={styles.logProgressButtonText}>Log Progress</Text>
-              </Pressable>
             </View>
 
             <View style={styles.sectionHeading}>
@@ -311,6 +358,82 @@ export default function ProductDetailsScreen() {
           </ScrollView>
         ) : null}
       </SafeAreaView>
+      <Modal
+        animationType="fade"
+        onRequestClose={closeRatingModal}
+        transparent
+        visible={ratingModalVisible}
+      >
+        <View style={styles.ratingModalOverlay}>
+          <Pressable
+            accessibilityLabel="Close rating dialog"
+            disabled={savingRating}
+            onPress={closeRatingModal}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.ratingModalCard}>
+            <View style={styles.ratingModalHeader}>
+              <View style={styles.ratingModalHeading}>
+                <Text style={styles.ratingModalTitle}>Change rating</Text>
+                <Text numberOfLines={1} style={styles.ratingModalSubtitle}>
+                  {item?.name}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityLabel="Close rating dialog"
+                accessibilityRole="button"
+                disabled={savingRating}
+                onPress={closeRatingModal}
+                style={styles.ratingModalCloseButton}
+              >
+                <Ionicons
+                  color={colors.neutralIcon}
+                  name="close"
+                  size={20}
+                />
+              </Pressable>
+            </View>
+            <View style={styles.ratingModalStars}>
+              <StarRatingInput
+                disabled={savingRating}
+                onRatingChange={setDraftRating}
+                rating={draftRating}
+              />
+            </View>
+            <Text style={styles.ratingModalScore}>
+              {draftRating > 0
+                ? `${draftRating} out of 5 stars`
+                : 'Tap a star to choose a rating'}
+            </Text>
+            <View style={styles.ratingModalActions}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={savingRating}
+                onPress={closeRatingModal}
+                style={[styles.ratingModalAction, styles.ratingCancelButton]}
+              >
+                <Text style={styles.ratingCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={savingRating}
+                onPress={() => void saveRating()}
+                style={[
+                  styles.ratingModalAction,
+                  styles.ratingSaveButton,
+                  savingRating && styles.productActionPressed,
+                ]}
+              >
+                {savingRating ? (
+                  <ActivityIndicator color={colors.backgroundPrimary} />
+                ) : (
+                  <Text style={styles.ratingSaveText}>Save rating</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
       <LogProgressModal
         currentProgress={progressPercentage}
         itemId={item?.id ?? id}
@@ -494,44 +617,118 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   ratingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
     padding: spacing.md,
     backgroundColor: colors.backgroundSecondary,
     borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 12,
   },
-  ratingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  ratingCardPressed: {
+    opacity: 0.8,
+  },
+  ratingInfo: {
+    flex: 1,
+    minWidth: 0,
+    gap: spacing.xs,
   },
   ratingTitle: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  ratingSubtitle: {
-    color: colors.mutedText,
-    fontSize: 12,
-    marginTop: 3,
-  },
-  ratingValueBadge: {
-    minHeight: 34,
-    minWidth: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    backgroundColor: colors.brandSurface,
-    borderRadius: 12,
-  },
-  ratingValueText: {
-    color: colors.brand,
     fontSize: 13,
     fontWeight: '700',
   },
-  ratingDisplay: {
-    alignItems: 'flex-start',
-    marginTop: spacing.sm,
+  ratingActionIcon: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brandSurface,
+    borderRadius: 17,
+  },
+  ratingModalOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  ratingModalCard: {
+    width: '100%',
+    maxWidth: 400,
+    padding: 24,
+    backgroundColor: colors.backgroundPrimary,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 20,
+  },
+  ratingModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  ratingModalHeading: {
+    flex: 1,
+    minWidth: 0,
+  },
+  ratingModalTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  ratingModalSubtitle: {
+    color: colors.mutedText,
+    fontSize: 13,
+    marginTop: 3,
+  },
+  ratingModalCloseButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.neutralSurface,
+    borderRadius: 18,
+  },
+  ratingModalStars: {
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  ratingModalScore: {
+    color: colors.mutedText,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  ratingModalActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  ratingModalAction: {
+    flex: 1,
+    minHeight: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  ratingCancelButton: {
+    backgroundColor: colors.neutralSurface,
+  },
+  ratingCancelText: {
+    color: colors.neutralIcon,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  ratingSaveButton: {
+    backgroundColor: colors.brand,
+  },
+  ratingSaveText: {
+    color: colors.backgroundPrimary,
+    fontSize: 14,
+    fontWeight: '700',
   },
   progressCard: {
     padding: spacing.md,

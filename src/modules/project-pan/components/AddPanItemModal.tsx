@@ -21,7 +21,6 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { StarRatingInput } from '../../../shared/components/StarRating';
 import { ConfirmationModal } from '../../../shared/components/ConfirmationModal';
 import { colors, spacing } from '../../../shared/ui/theme';
 import { PRODUCT_CATEGORIES } from '../categories';
@@ -148,7 +147,6 @@ export function AddPanItemModal({
   const [dateYear, setDateYear] = useState(() => getToday().slice(0, 4));
   const [dateMonth, setDateMonth] = useState(() => getToday().slice(5, 7));
   const [dateDay, setDateDay] = useState(() => getToday().slice(8, 10));
-  const [rating, setRating] = useState(0);
   const [saving, setSaving] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [priceInputFocused, setPriceInputFocused] = useState(false);
@@ -206,7 +204,6 @@ export function AddPanItemModal({
     setDateYear(year);
     setDateMonth(month);
     setDateDay(day);
-    setRating(item?.rating ?? 0);
     setError(null);
     setFieldErrors({});
     nameShake.setValue(0);
@@ -324,8 +321,7 @@ export function AddPanItemModal({
         category !== initialItem.category ||
         price.trim() !== (initialItem.price?.toString() ?? '') ||
         acquisitionType !== initialItem.acquisition_type ||
-        acquiredOn !== initialItem.acquired_on.slice(0, 10) ||
-        rating !== (initialItem.rating ?? 0)
+        acquiredOn !== initialItem.acquired_on.slice(0, 10)
       );
     }
 
@@ -402,7 +398,7 @@ export function AddPanItemModal({
         acquisition_type: acquisitionType,
         acquired_on: acquiredOn,
         current_progress: initialItem?.current_progress ?? 0,
-        rating,
+        rating: initialItem?.rating ?? 0,
         ...(initialItem
           ? {
               status: initialItem.status,
@@ -683,30 +679,6 @@ export function AddPanItemModal({
                   </Pressable>
                 </View>
               )}
-              {initialItem ? (
-                <View style={styles.ratingField}>
-                  <View style={styles.ratingHeader}>
-                    <View>
-                      <Text style={styles.ratingTitle}>Your rating</Text>
-                      <Text style={styles.ratingSubtitle}>
-                        Tap a star to rate this product
-                      </Text>
-                    </View>
-                    <View style={styles.ratingValueBadge}>
-                      <Text style={styles.ratingValueText}>
-                        {rating > 0 ? `${rating}/5` : '—'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.ratingChoices}>
-                    <StarRatingInput
-                      onRatingChange={setRating}
-                      rating={rating}
-                      disabled={saving}
-                    />
-                  </View>
-                </View>
-              ) : null}
               {error ? (
                 <Text accessibilityRole="alert" style={styles.error}>
                   {error}
@@ -1113,48 +1085,6 @@ const styles = StyleSheet.create({
   },
   field: {
     marginBottom: spacing.sm,
-  },
-  ratingField: {
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    backgroundColor: colors.backgroundSecondary,
-    borderColor: colors.border,
-    borderWidth: 1,
-    borderRadius: 14,
-  },
-  ratingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  ratingTitle: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  ratingSubtitle: {
-    color: colors.mutedText,
-    fontSize: 12,
-    marginTop: 3,
-  },
-  ratingValueBadge: {
-    minWidth: 44,
-    height: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-    backgroundColor: colors.brandSurface,
-    borderRadius: 12,
-  },
-  ratingValueText: {
-    color: colors.brand,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  ratingChoices: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
   },
   purchaseRow: {
     flexDirection: 'row',
