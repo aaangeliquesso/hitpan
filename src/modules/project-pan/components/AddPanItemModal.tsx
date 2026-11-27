@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  Dimensions,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -108,20 +107,6 @@ function formatDate(value: string): string {
   });
 }
 
-function getCalendarCells(month: Date): Array<number | null> {
-  const year = month.getFullYear();
-  const monthIndex = month.getMonth();
-  const leadingDays = new Date(year, monthIndex, 1).getDay();
-  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-  const trailingDays = 42 - leadingDays - daysInMonth;
-
-  return [
-    ...Array<number | null>(leadingDays).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
-    ...Array<number | null>(trailingDays).fill(null),
-  ];
-}
-
 function isValidDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return false;
@@ -150,11 +135,7 @@ export function AddPanItemModal({
   const [variant, setVariant] = useState('');
   const [category, setCategory] = useState('');
   const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
-  const [datePickerVisible, setDatePickerVisible] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(() => {
-    const [year, month] = getToday().split('-').map(Number);
-    return new Date(year, month - 1, 1);
-  });
+  const [dateEntryVisible, setDateEntryVisible] = useState(false);
   const [customCategoryMode, setCustomCategoryMode] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
   const [price, setPrice] = useState('');
@@ -201,7 +182,7 @@ export function AddPanItemModal({
     setVariant(item?.variant ?? '');
     setCategory(item?.category ?? '');
     setCategoryPickerVisible(false);
-    setDatePickerVisible(false);
+    setDateEntryVisible(false);
     setCustomCategoryMode(false);
     setCustomCategory('');
     setPrice(item?.price?.toString() ?? '');
@@ -210,10 +191,6 @@ export function AddPanItemModal({
     setDateYear(year);
     setDateMonth(month);
     setDateDay(day);
-    const selectedDate = parseDate(acquiredDate);
-    setCalendarMonth(
-      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
-    );
     progressForm.reset({ progress: 0 });
     setRating(item?.rating ?? 0);
     setError(null);
@@ -238,51 +215,11 @@ export function AddPanItemModal({
     setError(null);
   }
 
-  function openDatePicker() {
-    const selectedDate = parseDate(acquiredOn);
+  function openDateEntry() {
     setDateYear(acquiredOn.slice(0, 4));
     setDateMonth(acquiredOn.slice(5, 7));
     setDateDay(acquiredOn.slice(8, 10));
-    setCalendarMonth(
-      new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
-    );
-    setDatePickerVisible(true);
-  }
-
-  function changeCalendarMonth(offset: number) {
-    setCalendarMonth((current) => {
-      const nextMonth = new Date(
-        current.getFullYear(),
-        current.getMonth() + offset,
-        1,
-      );
-      const today = new Date();
-      const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      return nextMonth > currentMonth ? current : nextMonth;
-    });
-  }
-
-  function selectDate(day: number) {
-    const selected = `${calendarMonth.getFullYear()}-${String(
-      calendarMonth.getMonth() + 1,
-    ).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    if (!isSelectableDate(selected)) return;
-
-    useCalendarDateParts(
-      calendarMonth.getFullYear(),
-      calendarMonth.getMonth() + 1,
-      day,
-    );
-  }
-
-  function useCalendarDateParts(year: number, month: number, day: number) {
-    const selected = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    if (!isSelectableDate(selected)) return;
-    setDateYear(String(year));
-    setDateMonth(String(month).padStart(2, '0'));
-    setDateDay(String(day).padStart(2, '0'));
-    const date = parseDate(selected);
-    setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+    setDateEntryVisible(true);
   }
 
   function changeDatePart(part: 'year' | 'month' | 'day', value: string) {
@@ -298,14 +235,6 @@ export function AddPanItemModal({
     setDateYear(nextParts.year);
     setDateMonth(nextParts.month);
     setDateDay(nextParts.day);
-
-    if (nextParts.year.length !== 4 || !nextParts.month || !nextParts.day) {
-      return;
-    }
-    const candidate = `${nextParts.year}-${nextParts.month.padStart(2, '0')}-${nextParts.day.padStart(2, '0')}`;
-    if (!isSelectableDate(candidate)) return;
-    const date = parseDate(candidate);
-    setCalendarMonth(new Date(date.getFullYear(), date.getMonth(), 1));
   }
 
   function useToday() {
@@ -313,20 +242,19 @@ export function AddPanItemModal({
     setDateYear(String(today.getFullYear()));
     setDateMonth(String(today.getMonth() + 1).padStart(2, '0'));
     setDateDay(String(today.getDate()).padStart(2, '0'));
-    setCalendarMonth(new Date(today.getFullYear(), today.getMonth(), 1));
   }
 
-  function confirmDateInput() {
+  function confirmDateEntry() {
     if (!isSelectableDate(dateInput)) return;
     setAcquiredOn(dateInput);
-    setDatePickerVisible(false);
+    setDateEntryVisible(false);
   }
 
-  function cancelDatePicker() {
+  function cancelDateEntry() {
     setDateYear(acquiredOn.slice(0, 4));
     setDateMonth(acquiredOn.slice(5, 7));
     setDateDay(acquiredOn.slice(8, 10));
-    setDatePickerVisible(false);
+    setDateEntryVisible(false);
   }
 
   function shakeInvalidFields(fields: Array<Animated.Value>) {
@@ -481,7 +409,6 @@ export function AddPanItemModal({
     }
   }
 
-  const calendarCells = getCalendarCells(calendarMonth);
   const dateInput =
     dateYear.length === 4 && dateMonth.length > 0 && dateDay.length > 0
       ? `${dateYear}-${dateMonth.padStart(2, '0')}-${dateDay.padStart(2, '0')}`
@@ -489,17 +416,7 @@ export function AddPanItemModal({
   const hasDateInput = Boolean(dateYear || dateMonth || dateDay);
   const hasValidDateInput =
     Boolean(dateInput) && isSelectableDate(dateInput);
-  const selectedDate = parseDate(
-    dateInput && isValidDate(dateInput) ? dateInput : acquiredOn,
-  );
-  const monthLabel = calendarMonth.toLocaleDateString(undefined, {
-    month: 'long',
-  });
-  const yearLabel = String(calendarMonth.getFullYear());
   const todayValue = getToday();
-  const nextMonthDisabled =
-    calendarMonth.getFullYear() === new Date().getFullYear() &&
-    calendarMonth.getMonth() === new Date().getMonth();
 
   return (
     <Modal
@@ -720,7 +637,7 @@ export function AddPanItemModal({
                     <Pressable
                       accessibilityLabel={`Purchase date: ${formatDate(acquiredOn)}`}
                       accessibilityRole="button"
-                      onPress={openDatePicker}
+                      onPress={openDateEntry}
                       style={styles.dateSelector}
                     >
                       <Text numberOfLines={1} style={styles.dateSelectorText}>
@@ -728,7 +645,7 @@ export function AddPanItemModal({
                       </Text>
                       <Ionicons
                         color={colors.neutralIcon}
-                        name="calendar-outline"
+                        name="create-outline"
                         size={18}
                       />
                     </Pressable>
@@ -740,7 +657,7 @@ export function AddPanItemModal({
                   <Pressable
                     accessibilityLabel={`Gift date: ${formatDate(acquiredOn)}`}
                     accessibilityRole="button"
-                    onPress={openDatePicker}
+                    onPress={openDateEntry}
                     style={styles.dateSelector}
                   >
                     <Text numberOfLines={1} style={styles.dateSelectorText}>
@@ -748,7 +665,7 @@ export function AddPanItemModal({
                     </Text>
                     <Ionicons
                       color={colors.neutralIcon}
-                      name="calendar-outline"
+                      name="create-outline"
                       size={18}
                     />
                   </Pressable>
@@ -947,269 +864,180 @@ export function AddPanItemModal({
         </Modal>
         <Modal
           animationType="slide"
-          onRequestClose={cancelDatePicker}
+          onRequestClose={cancelDateEntry}
           transparent
-          visible={datePickerVisible}
+          visible={dateEntryVisible}
         >
-          <View style={styles.calendarOverlay}>
+          <View style={styles.dateEntryOverlay}>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              style={styles.calendarKeyboardArea}
+              style={styles.dateEntryKeyboardArea}
             >
-              <SafeAreaView edges={['bottom']} style={styles.calendarSheet}>
-              <View style={styles.calendarHeader}>
-                <View>
-                  <Text style={styles.calendarTitle}>
-                    {acquisitionType === 'gifted' ? 'Gift date' : 'Purchase date'}
-                  </Text>
-                  <Text style={styles.calendarSelectedDate}>
-                    {hasValidDateInput
-                      ? formatDate(dateInput)
-                      : 'Choose a date'}
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityLabel="Cancel date selection"
-                  accessibilityRole="button"
-                  onPress={cancelDatePicker}
-                  style={styles.closeButton}
-                >
-                  <Ionicons color={colors.neutralIcon} name="close" size={23} />
-                </Pressable>
-              </View>
-              <View style={styles.dateEntryCard}>
-                <View style={styles.dateEntryHeading}>
-                  <Ionicons
-                    color={colors.neutralIcon}
-                    name="create-outline"
-                    size={17}
-                  />
-                  <Text style={styles.dateEntryLabel}>Or enter a date</Text>
+              <SafeAreaView edges={['bottom']} style={styles.dateEntrySheet}>
+                <View style={styles.dateEntryModalHeader}>
+                  <View>
+                    <Text style={styles.dateEntryModalTitle}>
+                      {acquisitionType === 'gifted'
+                        ? 'Gift date'
+                        : 'Purchase date'}
+                    </Text>
+                    <Text style={styles.dateEntrySelectedDate}>
+                      {hasValidDateInput
+                        ? formatDate(dateInput)
+                        : 'Enter a valid date'}
+                    </Text>
+                  </View>
                   <Pressable
+                    accessibilityLabel="Cancel date entry"
                     accessibilityRole="button"
-                    onPress={useToday}
-                    style={styles.todayButton}
+                    onPress={cancelDateEntry}
+                    style={styles.closeButton}
                   >
-                    <Text style={styles.todayButtonText}>Today</Text>
+                    <Ionicons
+                      color={colors.neutralIcon}
+                      name="close"
+                      size={23}
+                    />
                   </Pressable>
                 </View>
-                <View style={styles.dateEntryFields}>
-                  <View style={[styles.datePartField, styles.dateYearField]}>
-                    <Text style={styles.datePartLabel}>Year</Text>
-                    <TextInput
-                      accessibilityLabel="Year"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      keyboardType="number-pad"
-                      maxLength={4}
-                      onBlur={() => setFocusedDatePart(null)}
-                      onChangeText={(value) => changeDatePart('year', value)}
-                      onFocus={() => setFocusedDatePart('year')}
-                      placeholder="YYYY"
-                      placeholderTextColor={colors.mutedText}
-                      returnKeyType="next"
-                      selectTextOnFocus
-                      style={[
-                        styles.datePartInput,
-                        focusedDatePart === 'year' && styles.inputFocused,
-                        hasDateInput &&
-                          dateYear.length > 0 &&
-                          dateYear.length !== 4 &&
-                          styles.invalidDateEntryInput,
-                      ]}
-                      value={dateYear}
+                <View style={styles.dateEntryCard}>
+                  <View style={styles.dateEntryHeading}>
+                    <Ionicons
+                      color={colors.neutralIcon}
+                      name="create-outline"
+                      size={17}
                     />
-                  </View>
-                  <Text style={styles.datePartSeparator}>/</Text>
-                  <View style={styles.datePartField}>
-                    <Text style={styles.datePartLabel}>Month</Text>
-                    <TextInput
-                      accessibilityLabel="Month, 1 to 12"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      keyboardType="number-pad"
-                      maxLength={2}
-                      onBlur={() => setFocusedDatePart(null)}
-                      onChangeText={(value) => changeDatePart('month', value)}
-                      onFocus={() => setFocusedDatePart('month')}
-                      placeholder="MM"
-                      placeholderTextColor={colors.mutedText}
-                      returnKeyType="next"
-                      selectTextOnFocus
-                      style={[
-                        styles.datePartInput,
-                        focusedDatePart === 'month' && styles.inputFocused,
-                        dateMonth.length > 0 &&
-                          (Number(dateMonth) < 1 || Number(dateMonth) > 12) &&
-                          styles.invalidDateEntryInput,
-                      ]}
-                      value={dateMonth}
-                    />
-                  </View>
-                  <Text style={styles.datePartSeparator}>/</Text>
-                  <View style={styles.datePartField}>
-                    <Text style={styles.datePartLabel}>Day</Text>
-                    <TextInput
-                      accessibilityLabel="Day"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      keyboardType="number-pad"
-                      maxLength={2}
-                      onBlur={() => setFocusedDatePart(null)}
-                      onChangeText={(value) => changeDatePart('day', value)}
-                      onFocus={() => setFocusedDatePart('day')}
-                      placeholder="DD"
-                      placeholderTextColor={colors.mutedText}
-                      returnKeyType="done"
-                      selectTextOnFocus
-                      style={[
-                        styles.datePartInput,
-                        focusedDatePart === 'day' && styles.inputFocused,
-                        dateInput.length > 0 &&
-                          !hasValidDateInput &&
-                          styles.invalidDateEntryInput,
-                      ]}
-                      value={dateDay}
-                    />
-                  </View>
-                </View>
-                <Text
-                  style={[
-                    styles.dateEntryHint,
-                    hasDateInput &&
-                      dateInput.length > 0 &&
-                      !hasValidDateInput &&
-                      styles.invalidDateEntryHint,
-                  ]}
-                >
-                  {hasDateInput &&
-                  dateInput.length > 0 &&
-                  !hasValidDateInput
-                    ? isValidDate(dateInput) && dateInput > todayValue
-                      ? 'Future dates are unavailable.'
-                      : 'Check the year, month, and day.'
-                    : 'Enter a date above or select a day below.'}
-                </Text>
-              </View>
-              <View style={styles.calendarMonthRow}>
-                <Pressable
-                  accessibilityLabel="Previous month"
-                  accessibilityRole="button"
-                  onPress={() => changeCalendarMonth(-1)}
-                  style={styles.calendarArrow}
-                >
-                  <Ionicons
-                    color={colors.neutralIcon}
-                    name="chevron-back"
-                    size={20}
-                  />
-                </Pressable>
-                <Text style={styles.calendarMonth}>
-                  {monthLabel} {yearLabel}
-                </Text>
-                <Pressable
-                  accessibilityLabel="Next month"
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: nextMonthDisabled }}
-                  disabled={nextMonthDisabled}
-                  onPress={() => changeCalendarMonth(1)}
-                  style={[
-                    styles.calendarArrow,
-                    nextMonthDisabled && styles.disabledCalendarControl,
-                  ]}
-                >
-                  <Ionicons
-                    color={colors.neutralIcon}
-                    name="chevron-forward"
-                    size={20}
-                  />
-                </Pressable>
-              </View>
-              <View style={styles.calendarGrid}>
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-                    <Text
-                      key={`${day}-${index}`}
-                      style={styles.calendarWeekday}
+                    <Text style={styles.dateEntryLabel}>Enter date</Text>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={useToday}
+                      style={styles.todayButton}
                     >
-                      {day}
-                    </Text>
-                  ))}
-                  {calendarCells.map((day, index) => {
-                  if (day === null) {
-                    return (
-                      <View
-                        key={`empty-${index}`}
-                        style={styles.calendarDay}
-                      />
-                    );
-                  }
-
-                  const isSelected =
-                    selectedDate.getFullYear() === calendarMonth.getFullYear() &&
-                    selectedDate.getMonth() === calendarMonth.getMonth() &&
-                    selectedDate.getDate() === day;
-                  const isToday =
-                    new Date().getFullYear() === calendarMonth.getFullYear() &&
-                    new Date().getMonth() === calendarMonth.getMonth() &&
-                    new Date().getDate() === day;
-                  const dayValue = `${calendarMonth.getFullYear()}-${String(
-                    calendarMonth.getMonth() + 1,
-                  ).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                  const isFutureDate = dayValue > todayValue;
-
-                    return (
-                      <Pressable
-                        accessibilityLabel={`${monthLabel} ${day}, ${yearLabel}`}
-                        accessibilityRole="button"
-                        accessibilityState={{
-                          selected: isSelected,
-                          disabled: isFutureDate,
-                        }}
-                        disabled={isFutureDate}
-                        key={`day-${day}`}
-                        onPress={() => selectDate(day)}
+                      <Text style={styles.todayButtonText}>Today</Text>
+                    </Pressable>
+                  </View>
+                  <View style={styles.dateEntryFields}>
+                    <View style={[styles.datePartField, styles.dateYearField]}>
+                      <Text style={styles.datePartLabel}>Year</Text>
+                      <TextInput
+                        accessibilityLabel="Year"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        keyboardType="number-pad"
+                        maxLength={4}
+                        onBlur={() => setFocusedDatePart(null)}
+                        onChangeText={(value) => changeDatePart('year', value)}
+                        onFocus={() => setFocusedDatePart('year')}
+                        placeholder="YYYY"
+                        placeholderTextColor={colors.mutedText}
+                        returnKeyType="next"
+                        selectTextOnFocus
                         style={[
-                          styles.calendarDay,
-                          isToday && styles.todayCalendarDay,
-                          isSelected && styles.selectedCalendarDay,
-                          isFutureDate && styles.disabledCalendarDay,
+                          styles.datePartInput,
+                          focusedDatePart === 'year' && styles.inputFocused,
+                          hasDateInput &&
+                            dateYear.length > 0 &&
+                            dateYear.length !== 4 &&
+                            styles.invalidDateEntryInput,
                         ]}
-                      >
-                        <Text
-                          style={[
-                            styles.calendarDayText,
-                            isToday && styles.todayCalendarDayText,
-                            isSelected && styles.selectedCalendarDayText,
-                            isFutureDate && styles.disabledCalendarDayText,
-                          ]}
-                        >
-                          {day}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-              </View>
-              <View style={styles.calendarActions}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={cancelDatePicker}
-                  style={[styles.calendarAction, styles.calendarCancelAction]}
-                >
-                  <Text style={styles.calendarCancelText}>Cancel</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={!hasValidDateInput}
-                  onPress={confirmDateInput}
-                  style={[
-                    styles.calendarAction,
-                    styles.calendarConfirmAction,
-                    !hasValidDateInput && styles.disabled,
-                  ]}
-                >
-                  <Text style={styles.calendarConfirmText}>Confirm date</Text>
-                </Pressable>
-              </View>
+                        value={dateYear}
+                      />
+                    </View>
+                    <Text style={styles.datePartSeparator}>/</Text>
+                    <View style={styles.datePartField}>
+                      <Text style={styles.datePartLabel}>Month</Text>
+                      <TextInput
+                        accessibilityLabel="Month, 1 to 12"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        onBlur={() => setFocusedDatePart(null)}
+                        onChangeText={(value) => changeDatePart('month', value)}
+                        onFocus={() => setFocusedDatePart('month')}
+                        placeholder="MM"
+                        placeholderTextColor={colors.mutedText}
+                        returnKeyType="next"
+                        selectTextOnFocus
+                        style={[
+                          styles.datePartInput,
+                          focusedDatePart === 'month' && styles.inputFocused,
+                          dateMonth.length > 0 &&
+                            (Number(dateMonth) < 1 || Number(dateMonth) > 12) &&
+                            styles.invalidDateEntryInput,
+                        ]}
+                        value={dateMonth}
+                      />
+                    </View>
+                    <Text style={styles.datePartSeparator}>/</Text>
+                    <View style={styles.datePartField}>
+                      <Text style={styles.datePartLabel}>Day</Text>
+                      <TextInput
+                        accessibilityLabel="Day"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        keyboardType="number-pad"
+                        maxLength={2}
+                        onBlur={() => setFocusedDatePart(null)}
+                        onChangeText={(value) => changeDatePart('day', value)}
+                        onFocus={() => setFocusedDatePart('day')}
+                        placeholder="DD"
+                        placeholderTextColor={colors.mutedText}
+                        returnKeyType="done"
+                        selectTextOnFocus
+                        style={[
+                          styles.datePartInput,
+                          focusedDatePart === 'day' && styles.inputFocused,
+                          dateInput.length > 0 &&
+                            !hasValidDateInput &&
+                            styles.invalidDateEntryInput,
+                        ]}
+                        value={dateDay}
+                      />
+                    </View>
+                  </View>
+                  <Text
+                    style={[
+                      styles.dateEntryHint,
+                      hasDateInput &&
+                        dateInput.length > 0 &&
+                        !hasValidDateInput &&
+                        styles.invalidDateEntryHint,
+                    ]}
+                  >
+                    {hasDateInput &&
+                    dateInput.length > 0 &&
+                    !hasValidDateInput
+                      ? isValidDate(dateInput) && dateInput > todayValue
+                        ? 'Future dates are unavailable.'
+                        : 'Check the year, month, and day.'
+                      : 'Enter the date as YYYY-MM-DD. Future dates are unavailable.'}
+                  </Text>
+                </View>
+                <View style={styles.dateEntryActions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={cancelDateEntry}
+                    style={[
+                      styles.dateEntryAction,
+                      styles.cancelDateAction,
+                    ]}
+                  >
+                    <Text style={styles.cancelDateText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={!hasValidDateInput}
+                    onPress={confirmDateEntry}
+                    style={[
+                      styles.dateEntryAction,
+                      styles.confirmDateAction,
+                      !hasValidDateInput && styles.disabled,
+                    ]}
+                  >
+                    <Text style={styles.confirmDateText}>Confirm date</Text>
+                  </Pressable>
+                </View>
               </SafeAreaView>
             </KeyboardAvoidingView>
           </View>
@@ -1358,37 +1186,35 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 12,
   },
-  calendarOverlay: {
+  dateEntryOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
-  calendarKeyboardArea: {
+  dateEntryKeyboardArea: {
     justifyContent: 'flex-end',
   },
-  calendarSheet: {
-    minHeight: Dimensions.get('window').height * 0.7,
-    maxHeight: Dimensions.get('window').height * 0.9,
-    justifyContent: 'space-between',
+  dateEntrySheet: {
+    maxHeight: '85%',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl + 8,
+    paddingBottom: spacing.md,
     backgroundColor: colors.cream,
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
   },
-  calendarHeader: {
+  dateEntryModalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
-  calendarTitle: {
+  dateEntryModalTitle: {
     color: colors.textPrimary,
     fontSize: 19,
     fontWeight: '700',
   },
-  calendarSelectedDate: {
+  dateEntrySelectedDate: {
     color: colors.mutedText,
     fontSize: 13,
     marginTop: 3,
@@ -1476,100 +1302,32 @@ const styles = StyleSheet.create({
     backgroundColor: colors.errorSurface,
     borderRadius: 6,
   },
-  calendarMonthRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  calendarMonth: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  calendarArrow: {
-    width: 38,
-    height: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: 19,
-  },
-  disabledCalendarControl: {
-    opacity: 0.4,
-  },
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  calendarWeekday: {
-    width: '14.2857%',
-    height: 34,
-    color: colors.mutedText,
-    fontSize: 12,
-    fontWeight: '600',
-    lineHeight: 34,
-    textAlign: 'center',
-  },
-  calendarDay: {
-    width: '14.2857%',
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 21,
-  },
-  disabledCalendarDay: {
-    backgroundColor: colors.backgroundSecondary,
-  },
-  disabledCalendarDayText: {
-    color: colors.textSecondary,
-  },
-  calendarActions: {
+  dateEntryActions: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
   },
-  calendarAction: {
-    minHeight: 48,
+  dateEntryAction: {
     flex: 1,
+    minHeight: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
+    borderRadius: 12,
   },
-  calendarCancelAction: {
+  cancelDateAction: {
     backgroundColor: colors.neutralSurface,
   },
-  calendarCancelText: {
+  cancelDateText: {
     color: colors.neutralIcon,
     fontSize: 14,
     fontWeight: '700',
   },
-  calendarConfirmAction: {
+  confirmDateAction: {
     backgroundColor: colors.brand,
   },
-  calendarConfirmText: {
+  confirmDateText: {
     color: colors.backgroundPrimary,
     fontSize: 14,
-    fontWeight: '700',
-  },
-  calendarDayText: {
-    color: colors.text,
-    fontSize: 13,
-  },
-  todayCalendarDay: {
-    borderColor: colors.border,
-    borderWidth: 1,
-  },
-  todayCalendarDayText: {
-    color: colors.textPrimary,
-    fontWeight: '700',
-  },
-  selectedCalendarDay: {
-    backgroundColor: colors.brand,
-    borderColor: colors.brand,
-  },
-  selectedCalendarDayText: {
-    color: colors.backgroundPrimary,
     fontWeight: '700',
   },
   progressCard: {
