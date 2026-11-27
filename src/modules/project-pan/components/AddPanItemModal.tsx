@@ -1437,10 +1437,10 @@ const styles = StyleSheet.create({
   },
   choice: {
     flex: 1,
-    minHeight: 38,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.warmWhite,
+    backgroundColor: colors.backgroundPrimary,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 11,
