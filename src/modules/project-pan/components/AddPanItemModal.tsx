@@ -482,6 +482,7 @@ export function AddPanItemModal({
               <FormField
                 autoCapitalize="words"
                 label="Product name"
+                maxLength={50}
                 required
                 error={fieldErrors.name}
                 shakeValue={nameShake}
@@ -500,6 +501,7 @@ export function AddPanItemModal({
               <FormField
                 autoCapitalize="words"
                 label="Brand"
+                maxLength={50}
                 required
                 error={fieldErrors.brand}
                 shakeValue={brandShake}
@@ -518,6 +520,7 @@ export function AddPanItemModal({
               <FormField
                 autoCapitalize="words"
                 label="Variant (optional)"
+                maxLength={50}
                 onChangeText={setVariant}
                 placeholder="Shade or finish"
                 value={variant}
