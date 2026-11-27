@@ -15,6 +15,8 @@ import { colors, spacing } from '../../../shared/ui/theme';
 import { ConfirmationModal } from '../../../shared/components/ConfirmationModal';
 import type { CreateWishlistItemInput } from '../services/wishlistService';
 
+const FIELD_WARNING_COLOR = '#B7791F';
+
 interface AddWishlistItemModalProps {
   visible: boolean;
   onClose: () => void;
@@ -31,6 +33,7 @@ export function AddWishlistItemModal({
   const [isNeed, setIsNeed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameWarning, setNameWarning] = useState<string | null>(null);
   const [cancelConfirmationVisible, setCancelConfirmationVisible] =
     useState(false);
 
@@ -40,6 +43,7 @@ export function AddWishlistItemModal({
       setIsBought(false);
       setIsNeed(false);
       setError(null);
+      setNameWarning(null);
       setCancelConfirmationVisible(false);
     }
   }, [visible]);
@@ -66,7 +70,7 @@ export function AddWishlistItemModal({
   async function submit() {
     const name = itemName.trim();
     if (!name) {
-      setError('Item name is required.');
+      setNameWarning('Add an item name to continue.');
       return;
     }
     if (saving) return;
@@ -125,13 +129,35 @@ export function AddWishlistItemModal({
           <TextInput
             editable={!saving}
             maxLength={50}
-            onChangeText={setItemName}
+            onChangeText={(value) => {
+              setItemName(value);
+              if (value.trim()) {
+                setNameWarning(null);
+              }
+              setError(null);
+            }}
             placeholder="What would you like?"
             placeholderTextColor={colors.mutedText}
             returnKeyType="done"
-            style={styles.input}
+            style={[
+              styles.input,
+              nameWarning && styles.inputWarning,
+              nameWarning && styles.inputWithWarning,
+            ]}
             value={itemName}
           />
+          {nameWarning ? (
+            <View style={styles.nameWarning}>
+              <Ionicons
+                color={FIELD_WARNING_COLOR}
+                name="information-circle-outline"
+                size={15}
+              />
+              <Text accessibilityRole="alert" style={styles.warningText}>
+                {nameWarning}
+              </Text>
+            </View>
+          ) : null}
 
           <View style={styles.toggleRow}>
             <View
@@ -285,6 +311,22 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     backgroundColor: colors.backgroundPrimary,
     fontSize: 14,
+  },
+  inputWarning: {
+    borderColor: '#D6A94B',
+  },
+  inputWithWarning: {
+    marginBottom: spacing.xs,
+  },
+  nameWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  warningText: {
+    color: FIELD_WARNING_COLOR,
+    fontSize: 12,
   },
   toggleRow: {
     flexDirection: 'row',
