@@ -495,99 +495,90 @@ export function AddPanItemModal({
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <View style={styles.compactRow}>
-                <FormField
-                  autoCapitalize="words"
-                  containerStyle={styles.compactField}
-                  label="Product name"
-                  required
-                  error={fieldErrors.name}
-                  shakeValue={nameShake}
-                  onChangeText={(value) => {
-                    setName(value);
-                    if (value.trim()) {
-                      setFieldErrors((current) => ({
-                        ...current,
-                        name: undefined,
-                      }));
+              <FormField
+                autoCapitalize="words"
+                label="Product name"
+                required
+                error={fieldErrors.name}
+                shakeValue={nameShake}
+                onChangeText={(value) => {
+                  setName(value);
+                  if (value.trim()) {
+                    setFieldErrors((current) => ({
+                      ...current,
+                      name: undefined,
+                    }));
+                  }
+                }}
+                placeholder="e.g. Lipstick"
+                value={name}
+              />
+              <FormField
+                autoCapitalize="words"
+                label="Brand"
+                required
+                error={fieldErrors.brand}
+                shakeValue={brandShake}
+                onChangeText={(value) => {
+                  setBrand(value);
+                  if (value.trim()) {
+                    setFieldErrors((current) => ({
+                      ...current,
+                      brand: undefined,
+                    }));
+                  }
+                }}
+                placeholder="Brand name"
+                value={brand}
+              />
+              <FormField
+                autoCapitalize="words"
+                label="Variant (optional)"
+                onChangeText={setVariant}
+                placeholder="Shade or finish"
+                value={variant}
+              />
+              <View style={styles.field}>
+                <Text style={styles.fieldLabel}>
+                  Category<Text style={styles.requiredMark}>*</Text>
+                </Text>
+                <Animated.View
+                  style={{ transform: [{ translateX: categoryShake }] }}
+                >
+                  <Pressable
+                    accessibilityLabel={
+                      category ? `Category: ${category}` : 'Select category'
                     }
-                  }}
-                  placeholder="e.g. Lipstick"
-                  value={name}
-                />
-                <FormField
-                  autoCapitalize="words"
-                  containerStyle={styles.compactField}
-                  label="Brand"
-                  required
-                  error={fieldErrors.brand}
-                  shakeValue={brandShake}
-                  onChangeText={(value) => {
-                    setBrand(value);
-                    if (value.trim()) {
-                      setFieldErrors((current) => ({
-                        ...current,
-                        brand: undefined,
-                      }));
-                    }
-                  }}
-                  placeholder="Brand name"
-                  value={brand}
-                />
-              </View>
-              <View style={styles.compactRow}>
-                <FormField
-                  autoCapitalize="words"
-                  containerStyle={styles.compactField}
-                  label="Variant (optional)"
-                  onChangeText={setVariant}
-                  placeholder="Shade or finish"
-                  value={variant}
-                />
-                <View style={[styles.field, styles.compactField]}>
-                  <Text style={styles.fieldLabel}>
-                    Category<Text style={styles.requiredMark}>*</Text>
-                  </Text>
-                  <Animated.View
-                    style={{ transform: [{ translateX: categoryShake }] }}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setCustomCategoryMode(false);
+                      setCustomCategory('');
+                      setCategoryPickerVisible(true);
+                    }}
+                    style={[
+                      styles.categorySelector,
+                      fieldErrors.category && styles.invalidInput,
+                    ]}
                   >
-                    <Pressable
-                      accessibilityLabel={
-                        category ? `Category: ${category}` : 'Select category'
-                      }
-                      accessibilityRole="button"
-                      onPress={() => {
-                        setCustomCategoryMode(false);
-                        setCustomCategory('');
-                        setCategoryPickerVisible(true);
-                      }}
+                    <Text
+                      numberOfLines={1}
                       style={[
-                        styles.categorySelector,
-                        fieldErrors.category && styles.invalidInput,
+                        styles.categorySelectorText,
+                        !category && styles.categoryPlaceholder,
                       ]}
                     >
-                      <Text
-                        numberOfLines={1}
-                        style={[
-                          styles.categorySelectorText,
-                          !category && styles.categoryPlaceholder,
-                        ]}
-                      >
-                        {category || 'Select Category'}
-                      </Text>
-                      <Ionicons
-                        color={colors.neutralIcon}
-                        name="chevron-down"
-                        size={18}
-                      />
-                    </Pressable>
-                  </Animated.View>
-                  {fieldErrors.category ? (
-                    <Text style={styles.fieldError}>
-                      {fieldErrors.category}
+                      {category || 'Select Category'}
                     </Text>
-                  ) : null}
-                </View>
+                    <Ionicons
+                      color={colors.neutralIcon}
+                      name="chevron-down"
+                      size={18}
+                    />
+                  </Pressable>
+                </Animated.View>
+                {fieldErrors.category ? (
+                  <Text style={styles.fieldError}>{fieldErrors.category}</Text>
+                ) : null}
               </View>
 
               <View style={styles.field}>
@@ -1151,10 +1142,6 @@ const styles = StyleSheet.create({
   formScroll: {
     flexShrink: 1,
   },
-  compactRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
   field: {
     marginBottom: spacing.sm,
   },
@@ -1164,10 +1151,6 @@ const styles = StyleSheet.create({
   ratingChoices: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  compactField: {
-    flex: 1,
-    minWidth: 0,
   },
   purchaseRow: {
     flexDirection: 'row',
@@ -1200,14 +1183,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 9,
     color: colors.text,
-    backgroundColor: colors.backgroundPrimary,
-    borderColor: colors.border,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#D1D5DB',
     borderWidth: 1,
     borderRadius: 11,
     fontSize: 14,
   },
   inputFocused: {
-    borderColor: colors.textPrimary,
+    borderColor: '#D1D5DB',
   },
   invalidInput: {
     borderColor: colors.error,
@@ -1221,8 +1204,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.xs,
     paddingHorizontal: 12,
-    backgroundColor: colors.warmWhite,
-    borderColor: colors.border,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#D1D5DB',
     borderWidth: 1,
     borderRadius: 11,
   },
@@ -1327,8 +1310,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 6,
     color: colors.text,
-    backgroundColor: colors.backgroundPrimary,
-    borderColor: colors.border,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#D1D5DB',
     borderWidth: 1,
     borderRadius: 12,
     fontSize: 15,
@@ -1441,8 +1424,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 14,
-    backgroundColor: colors.warmWhite,
-    borderColor: colors.border,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#D1D5DB',
     borderWidth: 1,
     borderRadius: 11,
   },
