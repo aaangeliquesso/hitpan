@@ -620,7 +620,10 @@ export function AddPanItemModal({
                       ) : null}
                     </Text>
                     <Animated.View
-                      style={{ transform: [{ translateX: priceShake }] }}
+                      style={[
+                        styles.purchaseInputContainer,
+                        { transform: [{ translateX: priceShake }] },
+                      ]}
                     >
                       <TextInput
                         keyboardType="decimal-pad"
@@ -659,7 +662,7 @@ export function AddPanItemModal({
                       accessibilityLabel={`Purchase date: ${formatDate(acquiredOn)}`}
                       accessibilityRole="button"
                       onPress={openDateEntry}
-                      style={styles.dateSelector}
+                      style={[styles.dateSelector, styles.purchaseDateSelector]}
                     >
                       <Text numberOfLines={1} style={styles.dateSelectorText}>
                         {formatDate(acquiredOn)}
@@ -1154,11 +1157,19 @@ const styles = StyleSheet.create({
   },
   purchaseRow: {
     flexDirection: 'row',
+    alignItems: 'stretch',
     gap: spacing.sm,
   },
   purchaseColumn: {
     flex: 1,
+    flexBasis: 0,
     minWidth: 0,
+  },
+  purchaseInputContainer: {
+    width: '100%',
+  },
+  purchaseDateSelector: {
+    width: '100%',
   },
   fieldLabel: {
     color: colors.text,
