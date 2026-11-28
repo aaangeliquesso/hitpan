@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: colors.warmWhite,
+    backgroundColor: colors.backgroundPrimary,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 17,
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     borderColor: colors.brand,
   },
   filterOptionText: {
-    color: colors.mutedText,
+    color: colors.textPrimary,
     fontSize: 11,
   },
   selectedStatusOption: {
@@ -310,12 +310,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   disabledOption: {
-    borderColor: colors.border,
-    backgroundColor: colors.backgroundSecondary,
+    borderColor: colors.switchInactive,
+    backgroundColor: colors.switchInactive,
   },
   disabledOptionText: {
-    color: colors.accessibleMutedText,
-    opacity: 0.55,
+    color: '#8E8E93',
   },
   statusText: {
     marginTop: spacing.sm,
