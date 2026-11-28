@@ -116,16 +116,16 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
   },
   brandHeader: {
     alignItems: 'center',
     marginTop: spacing.md,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
   },
   title: {
     color: colors.text,
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
     marginBottom: spacing.md,
   },
