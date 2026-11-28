@@ -192,6 +192,8 @@ export default function WishlistScreen() {
     [filteredItems],
   );
   const allYearGroups = useMemo(() => createYearGroups(items), [items]);
+  const activeFilterCount =
+    (selectedYear === null ? 0 : 1) + (selectedMonth === null ? 0 : 1);
   useEffect(() => {
     if (!loading && !initializedAccordion.current) {
       setExpandedYear(yearGroups[0]?.year ?? currentYear);
@@ -243,6 +245,25 @@ export default function WishlistScreen() {
             />
           </Pressable>
         </View>
+        {activeFilterCount > 0 ? (
+          <View style={styles.activeFilterRow}>
+            <Text style={styles.activeFilterText}>
+              {activeFilterCount} filter
+              {activeFilterCount === 1 ? '' : 's'} selected
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setSelectedYear(null);
+                setSelectedMonth(null);
+                setExpandedYear(allYearGroups[0]?.year ?? currentYear);
+              }}
+              style={styles.clearFiltersButton}
+            >
+              <Text style={styles.clearFiltersText}>Clear all</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {loading && !items.length ? (
           <ActivityIndicator color={colors.brand} style={styles.loader} />
@@ -372,6 +393,13 @@ export default function WishlistScreen() {
       />
       <WishlistYearFilter
         onClose={() => setYearFilterVisible(false)}
+        onClear={() => {
+          setDraftYear(null);
+          setDraftMonth(null);
+          setMonthsWithItems([]);
+          setMonthsLoading(false);
+          setMonthsError(null);
+        }}
         onApply={() => {
           setSelectedYear(draftYear);
           setSelectedMonth(draftMonth);
@@ -482,6 +510,27 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  activeFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  activeFilterText: {
+    color: colors.mutedText,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  clearFiltersButton: {
+    minHeight: 32,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  clearFiltersText: {
+    color: colors.brand,
+    fontSize: 12,
+    fontWeight: '700',
   },
   loader: {
     marginTop: 80,

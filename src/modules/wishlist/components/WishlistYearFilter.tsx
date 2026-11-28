@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../../shared/ui/theme';
 
@@ -35,6 +36,7 @@ interface WishlistYearFilterProps {
   monthsError: Error | null;
   onYearChange: (year: number | null) => void;
   onMonthChange: (month: number | null) => void;
+  onClear: () => void;
   onApply: () => void;
   onClose: () => void;
 }
@@ -49,6 +51,7 @@ export function WishlistYearFilter({
   monthsError,
   onYearChange,
   onMonthChange,
+  onClear,
   onApply,
   onClose,
 }: WishlistYearFilterProps) {
@@ -69,7 +72,7 @@ export function WishlistYearFilter({
         <SafeAreaView edges={['bottom']} style={styles.sheet}>
           <View style={styles.header}>
             <View>
-              <Text style={styles.title}>Filter wishlist</Text>
+              <Text style={styles.title}>Filter your wishlist</Text>
               <Text style={styles.subtitle}>Choose a year and month.</Text>
             </View>
             <Pressable
@@ -78,13 +81,16 @@ export function WishlistYearFilter({
               onPress={onClose}
               style={styles.closeButton}
             >
-              <Text style={styles.closeText}>×</Text>
+              <Ionicons color={colors.neutralIcon} name="close" size={22} />
             </Pressable>
           </View>
-          <ScrollView contentContainerStyle={styles.content}>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Year</Text>
-              <View style={styles.options}>
+          <ScrollView
+            contentContainerStyle={styles.filterList}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterGroupTitle}>Year</Text>
+              <View style={styles.filterOptions}>
                 {yearOptions.map((option) => {
                   const selected = selectedYear === option.year;
                   return (
@@ -97,14 +103,14 @@ export function WishlistYearFilter({
                         onMonthChange(null);
                       }}
                       style={[
-                        styles.option,
-                        selected && styles.selectedOption,
+                        styles.filterOption,
+                        selected && styles.selectedStatusOption,
                       ]}
                     >
                       <Text
                         style={[
-                          styles.optionText,
-                          selected && styles.selectedOptionText,
+                          styles.filterOptionText,
+                          selected && styles.selectedStatusOptionText,
                         ]}
                       >
                         {option.label}
@@ -114,23 +120,23 @@ export function WishlistYearFilter({
                 })}
               </View>
             </View>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Month</Text>
-              <View style={styles.monthOptions}>
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterGroupTitle}>Month</Text>
+              <View style={styles.filterOptions}>
                 <Pressable
                   accessibilityRole="radio"
                   accessibilityState={{ selected: selectedMonth === null }}
                   onPress={() => onMonthChange(null)}
                   style={[
-                    styles.monthOption,
-                    styles.allMonthsOption,
-                    selectedMonth === null && styles.selectedOption,
+                    styles.filterOption,
+                    selectedMonth === null && styles.selectedStatusOption,
                   ]}
                 >
                   <Text
                     style={[
-                      styles.optionText,
-                      selectedMonth === null && styles.selectedOptionText,
+                      styles.filterOptionText,
+                      selectedMonth === null &&
+                        styles.selectedStatusOptionText,
                     ]}
                   >
                     All months
@@ -151,20 +157,27 @@ export function WishlistYearFilter({
                       key={month}
                       onPress={() => onMonthChange(monthIndex)}
                       style={[
-                        styles.monthOption,
-                        selected && !disabled && styles.selectedOption,
+                        styles.filterOption,
+                        selected && !disabled && styles.selectedFilterOption,
                         disabled && styles.disabledOption,
                       ]}
                     >
                       <Text
                         style={[
-                          styles.optionText,
+                          styles.filterOptionText,
                           selected && !disabled && styles.selectedOptionText,
                           disabled && styles.disabledOptionText,
                         ]}
                       >
                         {month}
                       </Text>
+                      {selected && !disabled ? (
+                        <Ionicons
+                          color={colors.brand}
+                          name="checkmark"
+                          size={15}
+                        />
+                      ) : null}
                     </Pressable>
                   );
                 })}
@@ -188,15 +201,15 @@ export function WishlistYearFilter({
           <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"
-              onPress={onClose}
-              style={styles.cancelButton}
+              onPress={onClear}
+              style={[styles.actionButton, styles.clearButton]}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.clearText}>Clear</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               onPress={onApply}
-              style={styles.applyButton}
+              style={[styles.actionButton, styles.applyButton]}
             >
               <Text style={styles.applyText}>Apply filter</Text>
             </Pressable>
@@ -214,7 +227,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   sheet: {
-    maxHeight: '85%',
+    maxHeight: '84%',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.backgroundPrimary,
@@ -233,9 +246,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   subtitle: {
-    marginTop: 3,
     color: colors.mutedText,
     fontSize: 12,
+    marginTop: 3,
   },
   closeButton: {
     width: 38,
@@ -245,75 +258,64 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     backgroundColor: colors.backgroundSecondary,
   },
-  closeText: {
-    color: colors.neutralIcon,
-    fontSize: 24,
-    lineHeight: 28,
-  },
-  content: {
+  filterList: {
     paddingBottom: spacing.md,
   },
-  section: {
-    marginBottom: spacing.lg,
+  filterGroup: {
+    paddingVertical: spacing.sm,
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
   },
-  sectionTitle: {
+  filterGroupTitle: {
     marginBottom: spacing.sm,
     color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
-  options: {
+  filterOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
-  option: {
-    minHeight: 38,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 19,
+  filterOption: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     backgroundColor: colors.warmWhite,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 17,
   },
-  selectedOption: {
+  selectedFilterOption: {
+    backgroundColor: colors.brandSurface,
+    borderColor: colors.brand,
+  },
+  filterOptionText: {
+    color: colors.mutedText,
+    fontSize: 11,
+  },
+  selectedStatusOption: {
     borderColor: colors.brand,
     backgroundColor: colors.brand,
   },
-  optionText: {
-    color: colors.mutedText,
-    fontSize: 13,
+  selectedStatusOptionText: {
+    color: colors.backgroundPrimary,
     fontWeight: '600',
   },
   selectedOptionText: {
-    color: colors.backgroundPrimary,
-  },
-  monthOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  monthOption: {
-    width: '31%',
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
-    backgroundColor: colors.warmWhite,
-  },
-  allMonthsOption: {
-    width: '100%',
+    color: colors.brand,
+    fontWeight: '600',
   },
   disabledOption: {
-    borderColor: '#E5E5EA',
-    backgroundColor: '#F2F2F5',
+    borderColor: colors.border,
+    backgroundColor: colors.backgroundSecondary,
   },
   disabledOptionText: {
-    color: '#A0A0A5',
+    color: colors.accessibleMutedText,
+    opacity: 0.55,
   },
   statusText: {
     marginTop: spacing.sm,
@@ -333,34 +335,31 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    backgroundColor: colors.backgroundPrimary,
   },
-  cancelButton: {
-    flex: 1,
-    minHeight: 44,
+  actionButton: {
+    minHeight: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 22,
+    borderRadius: 13,
   },
-  cancelText: {
-    color: colors.textPrimary,
-    fontSize: 14,
+  clearButton: {
+    width: 84,
+    backgroundColor: colors.neutralSurface,
+  },
+  clearText: {
+    color: colors.neutralIcon,
+    fontSize: 13,
     fontWeight: '600',
   },
   applyButton: {
     flex: 1,
     minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: colors.brand,
-    borderRadius: 22,
   },
   applyText: {
     color: colors.backgroundPrimary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
