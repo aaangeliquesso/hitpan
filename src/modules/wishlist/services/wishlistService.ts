@@ -81,6 +81,21 @@ export async function getWishlistPage(
   return data;
 }
 
+export async function getWishlistItemsForYear(
+  year: number,
+): Promise<WishlistItem[]> {
+  const pageSize = 500;
+  const items: WishlistItem[] = [];
+
+  for (let offset = 0; ; offset += pageSize) {
+    const page = await getWishlistPage(offset, pageSize, year, null);
+    items.push(...page);
+    if (page.length < pageSize) {
+      return items;
+    }
+  }
+}
+
 export async function getWishlistMonthsWithItems(
   year: number,
 ): Promise<number[]> {
