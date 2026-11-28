@@ -437,6 +437,11 @@ export default function AnalyticsScreen() {
                   <View
                     accessibilityLabel={`${panMetrics.completionPercentage}% pan completion`}
                     accessibilityRole="progressbar"
+                    accessibilityValue={{
+                      min: 0,
+                      max: 100,
+                      now: panMetrics.completionPercentage,
+                    }}
                     style={styles.completionTrack}
                   >
                     <View
@@ -445,6 +450,32 @@ export default function AnalyticsScreen() {
                         { width: `${panMetrics.completionPercentage}%` },
                       ]}
                     />
+                    <View
+                      style={[
+                        styles.completionRemainingBar,
+                        { width: `${100 - panMetrics.completionPercentage}%` },
+                      ]}
+                    />
+                  </View>
+                  <View style={styles.chartLegend}>
+                    <View style={styles.chartLegendItem}>
+                      <View
+                        style={[
+                          styles.chartLegendSwatch,
+                          styles.pannedLegendSwatch,
+                        ]}
+                      />
+                      <Text style={styles.chartLegendText}>Panned</Text>
+                    </View>
+                    <View style={styles.chartLegendItem}>
+                      <View
+                        style={[
+                          styles.chartLegendSwatch,
+                          styles.remainingLegendSwatch,
+                        ]}
+                      />
+                      <Text style={styles.chartLegendText}>Remaining</Text>
+                    </View>
                   </View>
                   <View style={styles.completionFooter}>
                     <Text style={styles.completionCount}>
@@ -459,24 +490,58 @@ export default function AnalyticsScreen() {
 
                   <View style={styles.divider} />
                   <Text style={styles.subsectionTitle}>Repurchase</Text>
-                  <View style={styles.ratingPills}>
-                    <View style={[styles.ratingPill, styles.rebuyPill]}>
-                      <Text style={styles.ratingStars}>4-5 ★</Text>
-                      <Text style={styles.rebuyCount}>
-                        {panMetrics.wouldRebuy}
-                      </Text>
-                      <Text style={styles.ratingCaption}>Would rebuy</Text>
-                    </View>
-                    <View style={[styles.ratingPill, styles.skipPill]}>
-                      <Text style={styles.ratingStars}>1-3 ★</Text>
-                      <Text style={styles.skipCount}>
-                        {panMetrics.skipNextTime}
-                      </Text>
-                      <Text style={styles.ratingCaption}>
-                        Skip next time
-                      </Text>
-                    </View>
-                  </View>
+                  {[
+                    {
+                      key: 'rebuy',
+                      label: 'Holy Grails · 4-5 ★',
+                      count: panMetrics.wouldRebuy,
+                      barStyle: styles.rebuyChartBar,
+                    },
+                    {
+                      key: 'skip',
+                      label: 'Skip next time · 1-3 ★',
+                      count: panMetrics.skipNextTime,
+                      barStyle: styles.skipChartBar,
+                    },
+                  ].map((rating) => {
+                    const maxCount = Math.max(
+                      panMetrics.wouldRebuy,
+                      panMetrics.skipNextTime,
+                      1,
+                    );
+                    const percentage = (rating.count / maxCount) * 100;
+
+                    return (
+                      <View key={rating.key} style={styles.ratingChartRow}>
+                        <View style={styles.ratingChartHeading}>
+                          <Text style={styles.ratingChartLabel}>
+                            {rating.label}
+                          </Text>
+                          <Text style={styles.ratingChartCount}>
+                            {rating.count}
+                          </Text>
+                        </View>
+                        <View
+                          accessibilityLabel={`${rating.label}: ${rating.count}`}
+                          accessibilityRole="progressbar"
+                          accessibilityValue={{
+                            min: 0,
+                            max: maxCount,
+                            now: rating.count,
+                          }}
+                          style={styles.ratingChartTrack}
+                        >
+                          <View
+                            style={[
+                              styles.ratingChartBar,
+                              rating.barStyle,
+                              { width: `${percentage}%` },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                    );
+                  })}
 
                   <View style={styles.divider} />
                   <Text style={styles.subsectionTitle}>Category progress</Text>
@@ -500,12 +565,23 @@ export default function AnalyticsScreen() {
                         <View
                           accessibilityLabel={`${category.category}: ${category.finished} of ${category.total} items panned`}
                           accessibilityRole="progressbar"
+                          accessibilityValue={{
+                            min: 0,
+                            max: 100,
+                            now: percentage,
+                          }}
                           style={styles.categoryTrack}
                         >
                           <View
                             style={[
                               styles.categoryBar,
                               { width: `${percentage}%` },
+                            ]}
+                          />
+                          <View
+                            style={[
+                              styles.categoryRemainingBar,
+                              { width: `${100 - percentage}%` },
                             ]}
                           />
                         </View>
@@ -830,14 +906,43 @@ const styles = StyleSheet.create({
   },
   completionTrack: {
     height: 10,
+    flexDirection: 'row',
     overflow: 'hidden',
     backgroundColor: palette.track,
     borderRadius: 7,
   },
   completionBar: {
     height: '100%',
-    backgroundColor: palette.burgundy,
-    borderRadius: 7,
+    backgroundColor: palette.sage,
+  },
+  completionRemainingBar: {
+    height: '100%',
+    backgroundColor: palette.track,
+  },
+  chartLegend: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  chartLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  chartLegendSwatch: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  pannedLegendSwatch: {
+    backgroundColor: palette.sage,
+  },
+  remainingLegendSwatch: {
+    backgroundColor: palette.track,
+  },
+  chartLegendText: {
+    color: palette.muted,
+    fontSize: 10,
   },
   completionFooter: {
     flexDirection: 'row',
@@ -874,48 +979,41 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  ratingPills: {
+  ratingChartRow: {
+    marginBottom: spacing.sm,
+  },
+  ratingChartHeading: {
     flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  ratingPill: {
-    flex: 1,
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
-    borderWidth: 1,
-    borderRadius: 14,
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
-  rebuyPill: {
-    backgroundColor: palette.sageSurface,
-    borderColor: '#D5E1D1',
+  ratingChartLabel: {
+    color: palette.charcoal,
+    fontSize: 11,
+    fontWeight: '600',
   },
-  skipPill: {
-    backgroundColor: palette.burgundySurface,
-    borderColor: '#E8D3D7',
-  },
-  ratingStars: {
+  ratingChartCount: {
     color: palette.muted,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
   },
-  rebuyCount: {
-    marginTop: 2,
-    color: palette.sage,
-    fontSize: 22,
-    fontWeight: '800',
+  ratingChartTrack: {
+    height: 8,
+    overflow: 'hidden',
+    backgroundColor: palette.track,
+    borderRadius: 4,
   },
-  skipCount: {
-    marginTop: 2,
-    color: palette.burgundy,
-    fontSize: 22,
-    fontWeight: '800',
+  ratingChartBar: {
+    height: '100%',
+    borderRadius: 4,
   },
-  ratingCaption: {
-    color: palette.charcoal,
-    fontSize: 10,
-    fontWeight: '600',
-    textAlign: 'center',
+  rebuyChartBar: {
+    backgroundColor: palette.sage,
+  },
+  skipChartBar: {
+    backgroundColor: palette.burgundy,
   },
   categoryRow: {
     marginBottom: spacing.sm,
@@ -937,6 +1035,7 @@ const styles = StyleSheet.create({
   },
   categoryTrack: {
     height: 7,
+    flexDirection: 'row',
     overflow: 'hidden',
     backgroundColor: palette.track,
     borderRadius: 5,
@@ -944,7 +1043,10 @@ const styles = StyleSheet.create({
   categoryBar: {
     height: '100%',
     backgroundColor: palette.sage,
-    borderRadius: 5,
+  },
+  categoryRemainingBar: {
+    height: '100%',
+    backgroundColor: palette.track,
   },
   durationPill: {
     alignSelf: 'flex-start',
