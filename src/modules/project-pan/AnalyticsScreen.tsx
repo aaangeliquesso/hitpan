@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -126,6 +127,9 @@ function ErrorMessage({ message }: { message: string }) {
 export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
+  const [selectedView, setSelectedView] = useState<'project-pan' | 'wishlist'>(
+    'project-pan',
+  );
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState(true);
   const [wishlistError, setWishlistError] = useState<Error | null>(null);
@@ -317,13 +321,55 @@ export default function AnalyticsScreen() {
         </View>
         <Text style={styles.title}>My Analytics</Text>
         <Text style={styles.subtitle}>Your consumption loop at a glance</Text>
+        <View style={styles.segmentedControl}>
+          <Pressable
+            accessibilityLabel="Show Project Pan analytics"
+            accessibilityRole="button"
+            accessibilityState={{ selected: selectedView === 'project-pan' }}
+            onPress={() => setSelectedView('project-pan')}
+            style={({ pressed }) => [
+              styles.segmentButton,
+              selectedView === 'project-pan' && styles.activeSegmentButton,
+              pressed && styles.segmentPressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.segmentText,
+                selectedView === 'project-pan' && styles.activeSegmentText,
+              ]}
+            >
+              Project Pan
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Show Wishlist analytics"
+            accessibilityRole="button"
+            accessibilityState={{ selected: selectedView === 'wishlist' }}
+            onPress={() => setSelectedView('wishlist')}
+            style={({ pressed }) => [
+              styles.segmentButton,
+              selectedView === 'wishlist' && styles.activeSegmentButton,
+              pressed && styles.segmentPressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.segmentText,
+                selectedView === 'wishlist' && styles.activeSegmentText,
+              ]}
+            >
+              Wishlist
+            </Text>
+          </Pressable>
+        </View>
 
         {initialLoading ? (
           <View style={styles.loadingState}>
             <ActivityIndicator color={palette.burgundy} size="large" />
             <Text style={styles.loadingText}>Gathering your mindful stats</Text>
           </View>
-        ) : (
+        ) : selectedView === 'project-pan' ? (
           <>
             <View style={styles.sectionHeading}>
               <Text style={styles.sectionEyebrow}>PROJECT PAN UTILIZATION</Text>
@@ -449,7 +495,9 @@ export default function AnalyticsScreen() {
                 </View>
               ))
             )}
-
+          </>
+        ) : (
+          <>
             <View style={styles.sectionHeading}>
               <Text style={styles.sectionEyebrow}>WISHLIST HABITS</Text>
               <Text style={styles.sectionTitle}>Mindful Buying</Text>
@@ -552,9 +600,42 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: spacing.xs,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     color: palette.muted,
     fontSize: 13,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginBottom: spacing.lg,
+    padding: spacing.xs,
+    backgroundColor: palette.track,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 14,
+  },
+  segmentButton: {
+    flex: 1,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    borderRadius: 10,
+  },
+  activeSegmentButton: {
+    backgroundColor: palette.burgundy,
+  },
+  segmentText: {
+    color: palette.muted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  activeSegmentText: {
+    color: colors.backgroundPrimary,
+    fontWeight: '700',
+  },
+  segmentPressed: {
+    opacity: 0.8,
   },
   sectionHeading: {
     marginBottom: spacing.sm,
