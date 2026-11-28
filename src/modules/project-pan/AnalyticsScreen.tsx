@@ -281,78 +281,6 @@ export default function AnalyticsScreen() {
         ) : (
           <>
             <View style={styles.sectionHeading}>
-              <Text style={styles.sectionEyebrow}>WISHLIST HABITS</Text>
-              <Text style={styles.sectionTitle}>Mindful Buying</Text>
-            </View>
-            {wishlistError ? (
-              <ErrorMessage message={wishlistError.message} />
-            ) : wishlistItems.length === 0 ? (
-              <EmptyStateCard
-                action="Log your first wishlist item"
-                description={`Add items you are considering to track your ${currentYear} mindful buying habits.`}
-                icon="bookmark-outline"
-                title="Your wishlist starts here"
-              />
-            ) : (
-              <View style={styles.card}>
-                <Text style={styles.metricLabel}>
-                  {currentYear} Mindful Spending Ratio
-                </Text>
-                <View style={styles.ratioLabels}>
-                  <Text style={styles.resistedLabel}>
-                    {wishlistSummary.resistedPercentage}% Resisted
-                  </Text>
-                  <Text style={styles.boughtLabel}>
-                    {wishlistSummary.boughtPercentage}% Bought
-                  </Text>
-                </View>
-                <View
-                  accessibilityLabel={`${wishlistSummary.resistedPercentage}% resisted, ${wishlistSummary.boughtPercentage}% bought`}
-                  accessibilityRole="progressbar"
-                  style={styles.ratioTrack}
-                >
-                  <View
-                    style={[
-                      styles.resistedBar,
-                      { width: `${wishlistSummary.resistedPercentage}%` },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.boughtBar,
-                      { width: `${wishlistSummary.boughtPercentage}%` },
-                    ]}
-                  />
-                </View>
-                <View style={styles.wishlistStats}>
-                  <View style={styles.resistedStat}>
-                    <Text style={styles.resistedCount}>
-                      {wishlistSummary.resisted}
-                    </Text>
-                    <Text style={styles.resistedDescription}>
-                      {wishlistSummary.resisted === 1 ? 'item' : 'items'} paused
-                      {' & '}unbought
-                    </Text>
-                  </View>
-                  <View style={styles.boughtPill}>
-                    <Ionicons
-                      color={palette.burgundy}
-                      name="bag-check-outline"
-                      size={16}
-                    />
-                    <Text style={styles.boughtPillText}>
-                      {wishlistSummary.bought} bought
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.totalNote}>
-                  Based on {wishlistSummary.total} logged wishlist{' '}
-                  {wishlistSummary.total === 1 ? 'item' : 'items'}
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.sectionHeading}>
               <Text style={styles.sectionEyebrow}>PROJECT PAN UTILIZATION</Text>
               <Text style={styles.sectionTitle}>Intentional Finishing</Text>
             </View>
@@ -462,6 +390,78 @@ export default function AnalyticsScreen() {
                 </View>
                 <Text style={styles.durationNote}>
                   Calculated from acquired_on to updated_at for finished items
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionEyebrow}>WISHLIST HABITS</Text>
+              <Text style={styles.sectionTitle}>Mindful Buying</Text>
+            </View>
+            {wishlistError ? (
+              <ErrorMessage message={wishlistError.message} />
+            ) : wishlistItems.length === 0 ? (
+              <EmptyStateCard
+                action="Log your first wishlist item"
+                description={`Add items you are considering to track your ${currentYear} mindful buying habits.`}
+                icon="bookmark-outline"
+                title="Your wishlist starts here"
+              />
+            ) : (
+              <View style={styles.card}>
+                <Text style={styles.metricLabel}>
+                  {currentYear} Mindful Spending Ratio
+                </Text>
+                <View style={styles.ratioLabels}>
+                  <Text style={styles.resistedLabel}>
+                    {wishlistSummary.resistedPercentage}% Resisted
+                  </Text>
+                  <Text style={styles.boughtLabel}>
+                    {wishlistSummary.boughtPercentage}% Bought
+                  </Text>
+                </View>
+                <View
+                  accessibilityLabel={`${wishlistSummary.resistedPercentage}% resisted, ${wishlistSummary.boughtPercentage}% bought`}
+                  accessibilityRole="progressbar"
+                  style={styles.ratioTrack}
+                >
+                  <View
+                    style={[
+                      styles.resistedBar,
+                      { width: `${wishlistSummary.resistedPercentage}%` },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.boughtBar,
+                      { width: `${wishlistSummary.boughtPercentage}%` },
+                    ]}
+                  />
+                </View>
+                <View style={styles.wishlistStats}>
+                  <View style={styles.resistedStat}>
+                    <Text style={styles.resistedCount}>
+                      {wishlistSummary.resisted}
+                    </Text>
+                    <Text style={styles.resistedDescription}>
+                      {wishlistSummary.resisted === 1 ? 'item' : 'items'} paused
+                      {' & '}unbought
+                    </Text>
+                  </View>
+                  <View style={styles.boughtPill}>
+                    <Ionicons
+                      color={palette.burgundy}
+                      name="bag-check-outline"
+                      size={16}
+                    />
+                    <Text style={styles.boughtPillText}>
+                      {wishlistSummary.bought} bought
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.totalNote}>
+                  Based on {wishlistSummary.total} logged wishlist{' '}
+                  {wishlistSummary.total === 1 ? 'item' : 'items'}
                 </Text>
               </View>
             )}
