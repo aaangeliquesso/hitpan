@@ -55,15 +55,18 @@ export async function getWishlistPage(
   offset: number,
   pageSize: number,
   year: number | null,
+  month: number | null,
 ): Promise<WishlistItem[]> {
   let query = supabase
     .from('wishlist_items')
     .select('*');
 
   if (year !== null) {
-    query = query
-      .gte('created_at', `${year}-01-01T00:00:00.000Z`)
-      .lte('created_at', `${year}-12-31T23:59:59.999Z`);
+    const start = new Date(Date.UTC(year, month ?? 0, 1)).toISOString();
+    const end = new Date(
+      Date.UTC(year, month === null ? 12 : month + 1, 1),
+    ).toISOString();
+    query = query.gte('created_at', start).lt('created_at', end);
   }
 
   const { data, error } = await query
@@ -76,6 +79,30 @@ export async function getWishlistPage(
   }
 
   return data;
+}
+
+export async function getWishlistMonthsWithItems(
+  year: number,
+): Promise<number[]> {
+  const monthResults = await Promise.all(
+    Array.from({ length: 12 }, async (_, month) => {
+      const start = new Date(Date.UTC(year, month, 1)).toISOString();
+      const end = new Date(Date.UTC(year, month + 1, 1)).toISOString();
+      const { count, error } = await supabase
+        .from('wishlist_items')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', start)
+        .lt('created_at', end);
+
+      if (error) {
+        throw error;
+      }
+
+      return count ? month : null;
+    }),
+  );
+
+  return monthResults.filter((month): month is number => month !== null);
 }
 
 export async function getWishlistAccountCreatedAt(): Promise<string | null> {

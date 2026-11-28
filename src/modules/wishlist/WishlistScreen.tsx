@@ -24,6 +24,7 @@ import type { WishlistItem } from '../../types';
 import { useWishlist } from './hooks/useWishlist';
 import { WishlistItemRow } from './components/WishlistItemRow';
 import { WishlistYearFilter } from './components/WishlistYearFilter';
+import { getWishlistMonthsWithItems } from './services/wishlistService';
 import {
   filterWishlistByYear,
   getAvailableWishlistYears,
@@ -117,6 +118,12 @@ export default function WishlistScreen() {
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [draftYear, setDraftYear] = useState<number | null>(null);
+  const [draftMonth, setDraftMonth] = useState<number | null>(null);
+  const [monthsWithItems, setMonthsWithItems] = useState<number[]>([]);
+  const [monthsLoading, setMonthsLoading] = useState(false);
+  const [monthsError, setMonthsError] = useState<Error | null>(null);
   const {
     items,
     accountCreatedAt,
@@ -128,19 +135,57 @@ export default function WishlistScreen() {
     addItem,
     updateItem,
     savingIds,
-  } = useWishlist(selectedYear);
+  } = useWishlist(selectedYear, selectedMonth);
   const currentYear = new Date().getUTCFullYear();
   const [expandedYear, setExpandedYear] = useState<number | null>(null);
   const initializedAccordion = useRef(false);
   const [yearFilterVisible, setYearFilterVisible] = useState(false);
   const [addModalVisible, setAddModalVisible] = useState(false);
+  useEffect(() => {
+    if (!yearFilterVisible || draftYear === null) {
+      setMonthsWithItems([]);
+      setMonthsLoading(false);
+      setMonthsError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setMonthsWithItems([]);
+    setMonthsLoading(true);
+    setMonthsError(null);
+
+    void getWishlistMonthsWithItems(draftYear)
+      .then((months) => {
+        if (!cancelled) {
+          setMonthsWithItems(months);
+        }
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) {
+          setMonthsError(
+            cause instanceof Error
+              ? cause
+              : new Error('Unable to load months for this year.'),
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setMonthsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draftYear, yearFilterVisible]);
   const availableYears = useMemo(
     () => getAvailableWishlistYears(items, accountCreatedAt, currentYear),
     [accountCreatedAt, currentYear, items],
   );
   const filteredItems = useMemo(
-    () => filterWishlistByYear(items, selectedYear),
-    [items, selectedYear],
+    () => filterWishlistByYear(items, selectedYear, selectedMonth),
+    [items, selectedMonth, selectedYear],
   );
   const yearGroups = useMemo(
     () => createYearGroups(filteredItems),
@@ -153,15 +198,6 @@ export default function WishlistScreen() {
       initializedAccordion.current = true;
     }
   }, [currentYear, loading, yearGroups]);
-  const activeYear =
-    selectedYear ??
-    expandedYear ??
-    yearGroups[0]?.year ??
-    currentYear;
-  const activeYearItems = useMemo(
-    () => filteredItems.filter((item) => getItemYear(item) === activeYear),
-    [activeYear, filteredItems],
-  );
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
@@ -191,9 +227,13 @@ export default function WishlistScreen() {
         <View style={styles.titleRow}>
           <Text style={styles.title}>My Wishlist</Text>
           <Pressable
-            accessibilityLabel="Filter wishlist by year"
+            accessibilityLabel="Filter wishlist by year and month"
             accessibilityRole="button"
-            onPress={() => setYearFilterVisible(true)}
+            onPress={() => {
+              setDraftYear(selectedYear);
+              setDraftMonth(selectedMonth);
+              setYearFilterVisible(true);
+            }}
             style={styles.filterButton}
           >
             <Ionicons
@@ -208,7 +248,9 @@ export default function WishlistScreen() {
           <ActivityIndicator color={colors.brand} style={styles.loader} />
         ) : error && !items.length ? (
           <Text style={styles.error}>{error.message}</Text>
-        ) : items.length === 0 && selectedYear === null ? (
+        ) : items.length === 0 &&
+          selectedYear === null &&
+          selectedMonth === null ? (
           <View style={styles.emptyStateCard}>
             <Ionicons
               color={colors.mutedText}
@@ -323,19 +365,34 @@ export default function WishlistScreen() {
         onSave={async (input) => {
           await addItem(input);
           setSelectedYear(null);
+          setSelectedMonth(null);
           setExpandedYear(currentYear);
         }}
         visible={addModalVisible}
       />
       <WishlistYearFilter
         onClose={() => setYearFilterVisible(false)}
-        onSelect={(year) => {
-          setSelectedYear(year);
-          setExpandedYear(year ?? allYearGroups[0]?.year ?? null);
+        onApply={() => {
+          setSelectedYear(draftYear);
+          setSelectedMonth(draftMonth);
+          setExpandedYear(draftYear ?? allYearGroups[0]?.year ?? null);
+          setYearFilterVisible(false);
         }}
-        selectedYear={selectedYear}
+        onMonthChange={setDraftMonth}
+        onYearChange={(year) => {
+          setDraftYear(year);
+          setDraftMonth(null);
+          setMonthsWithItems([]);
+          setMonthsLoading(year !== null);
+          setMonthsError(null);
+        }}
+        selectedMonth={draftMonth}
+        selectedYear={draftYear}
         visible={yearFilterVisible}
         years={availableYears}
+        monthsWithItems={monthsWithItems}
+        monthsLoading={monthsLoading}
+        monthsError={monthsError}
       />
     </SafeAreaView>
   );

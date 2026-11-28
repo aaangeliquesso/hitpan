@@ -11,7 +11,10 @@ import { sortWishlistByCreatedAt } from '../years';
 
 const WISHLIST_PAGE_SIZE = 50;
 
-export function useWishlist(selectedYear: number | null) {
+export function useWishlist(
+  selectedYear: number | null,
+  selectedMonth: number | null = null,
+) {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [accountCreatedAt, setAccountCreatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +40,7 @@ export function useWishlist(selectedYear: number | null) {
 
     try {
       const [page, accountCreationDate] = await Promise.all([
-        getWishlistPage(0, WISHLIST_PAGE_SIZE, selectedYear),
+        getWishlistPage(0, WISHLIST_PAGE_SIZE, selectedYear, selectedMonth),
         getWishlistAccountCreatedAt(),
       ]);
       if (requestId !== requestIdRef.current) return;
@@ -58,7 +61,7 @@ export function useWishlist(selectedYear: number | null) {
         setLoading(false);
       }
     }
-  }, [selectedYear]);
+  }, [selectedMonth, selectedYear]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMoreRef.current || !hasMoreRef.current) return;
@@ -74,6 +77,7 @@ export function useWishlist(selectedYear: number | null) {
         offset,
         WISHLIST_PAGE_SIZE,
         selectedYear,
+        selectedMonth,
       );
       if (requestId !== requestIdRef.current) return;
 
@@ -101,7 +105,7 @@ export function useWishlist(selectedYear: number | null) {
         setLoadingMore(false);
       }
     }
-  }, [loading, selectedYear]);
+  }, [loading, selectedMonth, selectedYear]);
 
   const updateItem = useCallback(
     async (
@@ -146,8 +150,10 @@ export function useWishlist(selectedYear: number | null) {
       setError(null);
       const item = await createWishlistItem(input);
       if (
-        selectedYear === null ||
-        Number(item.created_at.slice(0, 4)) === selectedYear
+        (selectedYear === null ||
+          Number(item.created_at.slice(0, 4)) === selectedYear) &&
+        (selectedMonth === null ||
+          new Date(item.created_at).getUTCMonth() === selectedMonth)
       ) {
         setItems((current) =>
           sortWishlistByCreatedAt([
@@ -161,7 +167,7 @@ export function useWishlist(selectedYear: number | null) {
       }
       return item;
     },
-    [selectedYear],
+    [selectedMonth, selectedYear],
   );
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
@@ -9,11 +10,32 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../../shared/ui/theme';
 
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
 interface WishlistYearFilterProps {
   visible: boolean;
   years: number[];
   selectedYear: number | null;
-  onSelect: (year: number | null) => void;
+  selectedMonth: number | null;
+  monthsWithItems: number[];
+  monthsLoading: boolean;
+  monthsError: Error | null;
+  onYearChange: (year: number | null) => void;
+  onMonthChange: (month: number | null) => void;
+  onApply: () => void;
   onClose: () => void;
 }
 
@@ -21,10 +43,16 @@ export function WishlistYearFilter({
   visible,
   years,
   selectedYear,
-  onSelect,
+  selectedMonth,
+  monthsWithItems,
+  monthsLoading,
+  monthsError,
+  onYearChange,
+  onMonthChange,
+  onApply,
   onClose,
 }: WishlistYearFilterProps) {
-  const options = [
+  const yearOptions = [
     { label: 'All Years', year: null },
     ...years.map((year) => ({ label: String(year), year })),
   ];
@@ -42,10 +70,10 @@ export function WishlistYearFilter({
           <View style={styles.header}>
             <View>
               <Text style={styles.title}>Filter wishlist</Text>
-              <Text style={styles.subtitle}>Choose a creation year.</Text>
+              <Text style={styles.subtitle}>Choose a year and month.</Text>
             </View>
             <Pressable
-              accessibilityLabel="Close year filter"
+              accessibilityLabel="Close wishlist filter"
               accessibilityRole="button"
               onPress={onClose}
               style={styles.closeButton}
@@ -53,35 +81,126 @@ export function WishlistYearFilter({
               <Text style={styles.closeText}>×</Text>
             </Pressable>
           </View>
-          <ScrollView contentContainerStyle={styles.options}>
-            {options.map((option) => {
-              const selected = selectedYear === option.year;
-              return (
+          <ScrollView contentContainerStyle={styles.content}>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Year</Text>
+              <View style={styles.options}>
+                {yearOptions.map((option) => {
+                  const selected = selectedYear === option.year;
+                  return (
+                    <Pressable
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      key={option.label}
+                      onPress={() => {
+                        onYearChange(option.year);
+                        onMonthChange(null);
+                      }}
+                      style={[
+                        styles.option,
+                        selected && styles.selectedOption,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.optionText,
+                          selected && styles.selectedOptionText,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Month</Text>
+              <View style={styles.monthOptions}>
                 <Pressable
                   accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  key={option.label}
-                  onPress={() => {
-                    onSelect(option.year);
-                    onClose();
-                  }}
+                  accessibilityState={{ selected: selectedMonth === null }}
+                  onPress={() => onMonthChange(null)}
                   style={[
-                    styles.option,
-                    selected && styles.selectedOption,
+                    styles.monthOption,
+                    styles.allMonthsOption,
+                    selectedMonth === null && styles.selectedOption,
                   ]}
                 >
                   <Text
                     style={[
                       styles.optionText,
-                      selected && styles.selectedOptionText,
+                      selectedMonth === null && styles.selectedOptionText,
                     ]}
                   >
-                    {option.label}
+                    All months
                   </Text>
                 </Pressable>
-              );
-            })}
+                {MONTHS.map((month, monthIndex) => {
+                  const disabled =
+                    selectedYear === null ||
+                    monthsLoading ||
+                    monthsError !== null ||
+                    !monthsWithItems.includes(monthIndex);
+                  const selected = selectedMonth === monthIndex;
+                  return (
+                    <Pressable
+                      accessibilityRole="radio"
+                      accessibilityState={{ disabled, selected }}
+                      disabled={disabled}
+                      key={month}
+                      onPress={() => onMonthChange(monthIndex)}
+                      style={[
+                        styles.monthOption,
+                        selected && !disabled && styles.selectedOption,
+                        disabled && styles.disabledOption,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.optionText,
+                          selected && !disabled && styles.selectedOptionText,
+                          disabled && styles.disabledOptionText,
+                        ]}
+                      >
+                        {month}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {selectedYear === null ? (
+                <Text style={styles.statusText}>
+                  Choose a year to enable month filtering.
+                </Text>
+              ) : monthsLoading ? (
+                <ActivityIndicator
+                  color={colors.brand}
+                  style={styles.statusIndicator}
+                />
+              ) : monthsError ? (
+                <Text accessibilityRole="alert" style={styles.errorText}>
+                  {monthsError.message}
+                </Text>
+              ) : null}
+            </View>
           </ScrollView>
+          <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onClose}
+              style={styles.cancelButton}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onApply}
+              style={styles.applyButton}
+            >
+              <Text style={styles.applyText}>Apply filter</Text>
+            </Pressable>
+          </View>
         </SafeAreaView>
       </View>
     </Modal>
@@ -95,7 +214,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(18, 18, 18, 0.45)',
   },
   sheet: {
-    maxHeight: '70%',
+    maxHeight: '85%',
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.backgroundPrimary,
@@ -131,11 +250,22 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 28,
   },
+  content: {
+    paddingBottom: spacing.md,
+  },
+  section: {
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    marginBottom: spacing.sm,
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
   options: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    paddingBottom: spacing.lg,
   },
   option: {
     minHeight: 38,
@@ -157,5 +287,80 @@ const styles = StyleSheet.create({
   },
   selectedOptionText: {
     color: colors.backgroundPrimary,
+  },
+  monthOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  monthOption: {
+    width: '31%',
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    backgroundColor: colors.warmWhite,
+  },
+  allMonthsOption: {
+    width: '100%',
+  },
+  disabledOption: {
+    borderColor: '#E5E5EA',
+    backgroundColor: '#F2F2F5',
+  },
+  disabledOptionText: {
+    color: '#A0A0A5',
+  },
+  statusText: {
+    marginTop: spacing.sm,
+    color: colors.mutedText,
+    fontSize: 12,
+  },
+  statusIndicator: {
+    marginTop: spacing.sm,
+  },
+  errorText: {
+    marginTop: spacing.sm,
+    color: colors.error,
+    fontSize: 12,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  cancelButton: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+  },
+  cancelText: {
+    color: colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  applyButton: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.brand,
+    borderRadius: 22,
+  },
+  applyText: {
+    color: colors.backgroundPrimary,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

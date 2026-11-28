@@ -23,6 +23,16 @@ export function getWishlistItemMonth(item: WishlistItem): string {
   return item.month_name;
 }
 
+export function getWishlistItemMonthIndex(item: WishlistItem): number | null {
+  const timestamp = Date.parse(item.created_at);
+  if (Number.isFinite(timestamp)) {
+    return new Date(timestamp).getUTCMonth();
+  }
+
+  const monthIndex = new Date(`${item.month_name} 1, ${item.year}`).getMonth();
+  return Number.isInteger(monthIndex) ? monthIndex : null;
+}
+
 export function getWishlistItemDay(item: WishlistItem): number {
   const timestamp = Date.parse(item.created_at);
   if (Number.isFinite(timestamp)) {
@@ -68,7 +78,13 @@ export function getAvailableWishlistYears(
 export function filterWishlistByYear(
   items: WishlistItem[],
   selectedYear: number | null,
+  selectedMonth: number | null = null,
 ): WishlistItem[] {
-  if (selectedYear === null) return items;
-  return items.filter((item) => getWishlistItemYear(item) === selectedYear);
+  return items.filter(
+    (item) =>
+      (selectedYear === null ||
+        getWishlistItemYear(item) === selectedYear) &&
+      (selectedMonth === null ||
+        getWishlistItemMonthIndex(item) === selectedMonth),
+  );
 }
