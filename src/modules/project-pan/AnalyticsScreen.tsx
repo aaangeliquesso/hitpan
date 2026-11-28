@@ -14,7 +14,14 @@ export default function AnalyticsScreen() {
     items: wishlistItems,
     loading,
     error,
+    refresh: refreshWishlistItems,
   } = useWishlist(currentYear);
+  const {
+    items: allWishlistItems,
+    loading: allWishlistLoading,
+    error: allWishlistError,
+    refresh: refreshAllWishlistItems,
+  } = useWishlist(null);
   const {
     items: panItems,
     loading: panLoading,
@@ -26,10 +33,12 @@ export default function AnalyticsScreen() {
     useCallback(() => {
       if (hasFocusedHome.current) {
         void refreshPanItems();
+        void refreshWishlistItems();
+        void refreshAllWishlistItems();
       } else {
         hasFocusedHome.current = true;
       }
-    }, [refreshPanItems]),
+    }, [refreshAllWishlistItems, refreshPanItems, refreshWishlistItems]),
   );
   const wishlistSummary = useMemo(() => {
     const total = wishlistItems.length;
@@ -58,62 +67,87 @@ export default function AnalyticsScreen() {
           <BrandWordmark width={116} />
         </View>
         <Text style={styles.title}>Home</Text>
-        <View style={styles.analyticsCard}>
-          <View style={styles.analyticsHeader}>
-            <Text style={styles.analyticsTitle}>
-              {currentYear} Mindful Spending Ratio
+        {allWishlistLoading && !allWishlistItems.length ? (
+          <ActivityIndicator
+            color={colors.brand}
+            style={styles.analyticsStatus}
+          />
+        ) : allWishlistError ? (
+          <Text style={styles.analyticsError}>{allWishlistError.message}</Text>
+        ) : allWishlistItems.length === 0 ? (
+          <View style={styles.card}>
+            <View style={styles.icon}>
+              <Ionicons
+                color={colors.neutralIcon}
+                name="bookmark-outline"
+                size={28}
+              />
+            </View>
+            <Text style={styles.cardTitle}>Your wishlist, at a glance</Text>
+            <Text style={styles.description}>
+              Your mindful wishlist will appear here as you add items to track
+              what you need and what you choose to buy.
             </Text>
-            <Text style={styles.analyticsTotal}>
-              {wishlistSummary.total}{' '}
-              {wishlistSummary.total === 1 ? 'item' : 'items'}
-            </Text>
+            <Text style={styles.comingSoon}>Add a wishlist item to begin</Text>
           </View>
-          <View
-            accessibilityLabel={`${wishlistSummary.needPercentage.toFixed(0)}% intentional, ${wishlistSummary.boughtPercentage.toFixed(0)}% purchased`}
-            accessibilityRole="progressbar"
-            style={styles.analyticsBar}
-          >
-            {wishlistSummary.total > 0 ? (
-              <>
-                <View
-                  style={[
-                    styles.needBar,
-                    { width: `${wishlistSummary.needBarPercentage}%` },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.boughtBar,
-                    { width: `${wishlistSummary.boughtBarPercentage}%` },
-                  ]}
-                />
-              </>
-            ) : null}
-          </View>
-          {loading && !wishlistItems.length ? (
-            <ActivityIndicator
-              color={colors.brand}
-              style={styles.analyticsStatus}
-            />
-          ) : error && !wishlistItems.length ? (
-            <Text style={styles.analyticsError}>{error.message}</Text>
-          ) : wishlistSummary.total > 0 ? (
-            <View style={styles.analyticsMetrics}>
-              <Text style={styles.needMetric}>
-                {wishlistSummary.needPercentage.toFixed(0)}% Intentional (
-                {wishlistSummary.need})
+        ) : (
+          <View style={styles.analyticsCard}>
+            <View style={styles.analyticsHeader}>
+              <Text style={styles.analyticsTitle}>
+                {currentYear} Mindful Spending Ratio
               </Text>
-              <Text style={styles.boughtMetric}>
-                {wishlistSummary.boughtPercentage.toFixed(0)}% Purchased (
-                {wishlistSummary.bought})
+              <Text style={styles.analyticsTotal}>
+                {wishlistSummary.total}{' '}
+                {wishlistSummary.total === 1 ? 'item' : 'items'}
               </Text>
             </View>
-          ) : (
-            <Text style={styles.analyticsEmptyCaption}>
-              No items logged yet
-            </Text>
-          )}
-        </View>
+            <View
+              accessibilityLabel={`${wishlistSummary.needPercentage.toFixed(0)}% intentional, ${wishlistSummary.boughtPercentage.toFixed(0)}% purchased`}
+              accessibilityRole="progressbar"
+              style={styles.analyticsBar}
+            >
+              {wishlistSummary.total > 0 ? (
+                <>
+                  <View
+                    style={[
+                      styles.needBar,
+                      { width: `${wishlistSummary.needBarPercentage}%` },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.boughtBar,
+                      { width: `${wishlistSummary.boughtBarPercentage}%` },
+                    ]}
+                  />
+                </>
+              ) : null}
+            </View>
+            {loading && !wishlistItems.length ? (
+              <ActivityIndicator
+                color={colors.brand}
+                style={styles.analyticsStatus}
+              />
+            ) : error && !wishlistItems.length ? (
+              <Text style={styles.analyticsError}>{error.message}</Text>
+            ) : wishlistSummary.total > 0 ? (
+              <View style={styles.analyticsMetrics}>
+                <Text style={styles.needMetric}>
+                  {wishlistSummary.needPercentage.toFixed(0)}% Intentional (
+                  {wishlistSummary.need})
+                </Text>
+                <Text style={styles.boughtMetric}>
+                  {wishlistSummary.boughtPercentage.toFixed(0)}% Purchased (
+                  {wishlistSummary.bought})
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.analyticsEmptyCaption}>
+                No items logged yet
+              </Text>
+            )}
+          </View>
+        )}
         {panLoading && !panItems.length ? (
           <ActivityIndicator color={colors.brand} style={styles.panStatus} />
         ) : panError ? (
