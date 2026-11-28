@@ -24,6 +24,10 @@ import type { VanityItem, WishlistItem } from '../../types';
 import { usePanItems } from './hooks/usePanItems';
 import { getCurrentProgressPercentage } from './progress';
 import { getWishlistItemsForAllYears } from '../wishlist/services/wishlistService';
+import {
+  getWishlistItemMonth,
+  getWishlistItemMonthIndex,
+} from '../wishlist/years';
 
 const palette = {
   background: colors.cream,
@@ -63,6 +67,16 @@ interface PanSummary {
 interface WishlistSummary {
   year: number;
   total: number;
+  bought: number;
+  resisted: number;
+  resistedPercentage: number;
+  boughtPercentage: number;
+  months: WishlistMonthSummary[];
+}
+
+interface WishlistMonthSummary {
+  monthIndex: number;
+  name: string;
   bought: number;
   resisted: number;
   resistedPercentage: number;
@@ -210,6 +224,38 @@ export default function AnalyticsScreen() {
         const bought = items.filter((item) => item.is_bought).length;
         const resisted = total - bought;
         const resistedPercentage = Math.round((resisted / total) * 100);
+        const itemsByMonth = new Map<number, WishlistItem[]>();
+
+        for (const item of items) {
+          const monthIndex = getWishlistItemMonthIndex(item);
+          if (monthIndex === null) continue;
+
+          const monthItems = itemsByMonth.get(monthIndex) ?? [];
+          monthItems.push(item);
+          itemsByMonth.set(monthIndex, monthItems);
+        }
+
+        const months = [...itemsByMonth.entries()]
+          .sort(([monthA], [monthB]) => monthA - monthB)
+          .map(([monthIndex, monthItems]): WishlistMonthSummary => {
+            const monthTotal = monthItems.length;
+            const monthBought = monthItems.filter(
+              (item) => item.is_bought,
+            ).length;
+            const monthResisted = monthTotal - monthBought;
+            const monthResistedPercentage = Math.round(
+              (monthResisted / monthTotal) * 100,
+            );
+
+            return {
+              monthIndex,
+              name: getWishlistItemMonth(monthItems[0]),
+              bought: monthBought,
+              resisted: monthResisted,
+              resistedPercentage: monthResistedPercentage,
+              boughtPercentage: 100 - monthResistedPercentage,
+            };
+          });
 
         return {
           year,
@@ -218,6 +264,7 @@ export default function AnalyticsScreen() {
           resisted,
           resistedPercentage,
           boughtPercentage: 100 - resistedPercentage,
+          months,
         };
       });
   }, [wishlistItems]);
@@ -547,6 +594,36 @@ export default function AnalyticsScreen() {
                       </Text>
                     </View>
                   </View>
+                  <View style={styles.divider} />
+                  <Text style={styles.subsectionTitle}>Monthly</Text>
+                  {wishlistSummary.months.map((month) => (
+                    <View key={month.monthIndex} style={styles.monthRow}>
+                      <View style={styles.monthHeading}>
+                        <Text style={styles.monthName}>{month.name}</Text>
+                        <Text style={styles.monthCounts}>
+                          {month.resisted} unbought · {month.bought} bought
+                        </Text>
+                      </View>
+                      <View
+                        accessibilityLabel={`${month.name} ${wishlistSummary.year}: ${month.resistedPercentage}% unbought, ${month.boughtPercentage}% bought`}
+                        accessibilityRole="progressbar"
+                        style={styles.monthTrack}
+                      >
+                        <View
+                          style={[
+                            styles.monthResistedBar,
+                            { width: `${month.resistedPercentage}%` },
+                          ]}
+                        />
+                        <View
+                          style={[
+                            styles.monthBoughtBar,
+                            { width: `${month.boughtPercentage}%` },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  ))}
                 </View>
               ))
             )}
@@ -697,6 +774,43 @@ const styles = StyleSheet.create({
     color: palette.burgundy,
     fontSize: 12,
     fontWeight: '700',
+  },
+  monthRow: {
+    marginBottom: spacing.sm,
+  },
+  monthHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  monthName: {
+    width: 72,
+    color: palette.charcoal,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  monthCounts: {
+    flex: 1,
+    color: palette.muted,
+    fontSize: 10,
+    textAlign: 'right',
+  },
+  monthTrack: {
+    height: 6,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    backgroundColor: palette.track,
+    borderRadius: 4,
+  },
+  monthResistedBar: {
+    height: '100%',
+    backgroundColor: palette.sage,
+  },
+  monthBoughtBar: {
+    height: '100%',
+    backgroundColor: palette.burgundy,
   },
   completionHeading: {
     flexDirection: 'row',
