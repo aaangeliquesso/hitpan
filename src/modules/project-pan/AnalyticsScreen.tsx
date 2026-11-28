@@ -1,18 +1,40 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
 import { colors, spacing } from '../../shared/ui/theme';
 import { useWishlist } from '../wishlist/hooks/useWishlist';
+import { usePanItems } from './hooks/usePanItems';
 
 export default function AnalyticsScreen() {
   const currentYear = new Date().getUTCFullYear();
-  const { items, loading, error } = useWishlist(currentYear);
+  const {
+    items: wishlistItems,
+    loading,
+    error,
+  } = useWishlist(currentYear);
+  const {
+    items: panItems,
+    loading: panLoading,
+    error: panError,
+    refresh: refreshPanItems,
+  } = usePanItems();
+  const hasFocusedHome = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (hasFocusedHome.current) {
+        void refreshPanItems();
+      } else {
+        hasFocusedHome.current = true;
+      }
+    }, [refreshPanItems]),
+  );
   const wishlistSummary = useMemo(() => {
-    const total = items.length;
-    const need = items.filter((item) => item.is_need).length;
-    const bought = items.filter((item) => item.is_bought).length;
+    const total = wishlistItems.length;
+    const need = wishlistItems.filter((item) => item.is_need).length;
+    const bought = wishlistItems.filter((item) => item.is_bought).length;
     const needPercentage = total ? (need / total) * 100 : 0;
     const boughtPercentage = total ? (bought / total) * 100 : 0;
     const markedPercentage = needPercentage + boughtPercentage;
@@ -27,7 +49,7 @@ export default function AnalyticsScreen() {
       needBarPercentage: needPercentage * barScale,
       boughtBarPercentage: boughtPercentage * barScale,
     };
-  }, [items]);
+  }, [wishlistItems]);
 
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
@@ -68,12 +90,12 @@ export default function AnalyticsScreen() {
               </>
             ) : null}
           </View>
-          {loading && !items.length ? (
+          {loading && !wishlistItems.length ? (
             <ActivityIndicator
               color={colors.brand}
               style={styles.analyticsStatus}
             />
-          ) : error && !items.length ? (
+          ) : error && !wishlistItems.length ? (
             <Text style={styles.analyticsError}>{error.message}</Text>
           ) : wishlistSummary.total > 0 ? (
             <View style={styles.analyticsMetrics}>
@@ -92,17 +114,27 @@ export default function AnalyticsScreen() {
             </Text>
           )}
         </View>
-        <View style={styles.card}>
-          <View style={styles.icon}>
-            <Ionicons color={colors.neutralIcon} name="bar-chart-outline" size={28} />
+        {panLoading && !panItems.length ? (
+          <ActivityIndicator color={colors.brand} style={styles.panStatus} />
+        ) : panError ? (
+          <Text style={styles.panError}>{panError.message}</Text>
+        ) : panItems.length === 0 ? (
+          <View style={styles.card}>
+            <View style={styles.icon}>
+              <Ionicons
+                color={colors.neutralIcon}
+                name="bar-chart-outline"
+                size={28}
+              />
+            </View>
+            <Text style={styles.cardTitle}>Your pan, at a glance</Text>
+            <Text style={styles.description}>
+              Progress charts and product insights will appear here as you
+              track your collection.
+            </Text>
+            <Text style={styles.comingSoon}>Analytics coming soon</Text>
           </View>
-          <Text style={styles.cardTitle}>Your pan, at a glance</Text>
-          <Text style={styles.description}>
-            Progress charts and product insights will appear here as you track
-            your collection.
-          </Text>
-          <Text style={styles.comingSoon}>Analytics coming soon</Text>
-        </View>
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -208,6 +240,16 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 20,
+  },
+  panStatus: {
+    marginTop: spacing.md,
+  },
+  panError: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    color: colors.error,
+    backgroundColor: colors.errorSurface,
+    borderRadius: 12,
   },
   icon: {
     width: 58,
