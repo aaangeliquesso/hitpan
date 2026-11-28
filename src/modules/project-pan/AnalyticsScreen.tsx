@@ -26,7 +26,7 @@ import { getWishlistItemsForYear } from '../wishlist/services/wishlistService';
 
 const palette = {
   background: colors.cream,
-  card: '#FFFEFC',
+  card: colors.backgroundPrimary,
   border: '#E8DFD5',
   burgundy: colors.brand,
   sage: colors.success,
@@ -518,8 +518,13 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     backgroundColor: palette.card,
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: colors.border,
     borderRadius: 18,
+    shadowColor: colors.textPrimary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
   metricLabel: {
     color: palette.muted,
@@ -761,8 +766,13 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     backgroundColor: palette.card,
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: colors.border,
     borderRadius: 18,
+    shadowColor: colors.textPrimary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
   emptyIcon: {
     width: 48,
