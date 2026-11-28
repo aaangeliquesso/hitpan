@@ -135,12 +135,201 @@ function ErrorMessage({ message }: { message: string }) {
   );
 }
 
+function ProjectPanAnalyticsCard({
+  summary,
+  expanded,
+  onToggle,
+}: {
+  summary: PanSummary;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const maxRatingCount = Math.max(
+    summary.wouldRebuy,
+    summary.skipNextTime,
+    1,
+  );
+  const ratingMetrics = [
+    {
+      key: 'rebuy',
+      label: 'Holy Grails · 4-5 ★',
+      count: summary.wouldRebuy,
+      barStyle: styles.rebuyChartBar,
+    },
+    {
+      key: 'skip',
+      label: 'Skip next time · 1-3 ★',
+      count: summary.skipNextTime,
+      barStyle: styles.skipChartBar,
+    },
+  ];
+
+  return (
+    <Pressable
+      accessibilityLabel={`${summary.year} Project Pan: ${summary.completionPercentage}% complete`}
+      accessibilityRole="button"
+      accessibilityState={{ expanded }}
+      onPress={onToggle}
+      style={({ pressed }) => [
+        styles.card,
+        pressed && styles.cardPressed,
+      ]}
+    >
+      <View style={styles.panCardHeader}>
+        <View>
+          <Text style={styles.metricLabel}>{summary.year}</Text>
+          <Text style={styles.completionCount}>
+            {summary.finished} of {summary.total} panned
+          </Text>
+        </View>
+        <View style={styles.panCardCompletion}>
+          <View style={styles.panCardCompletionText}>
+            <Text style={styles.completionPercentage}>
+              {summary.completionPercentage}%
+            </Text>
+            <Text style={styles.completionLabel}>complete</Text>
+          </View>
+          <Ionicons
+            color={palette.muted}
+            name={expanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+          />
+        </View>
+      </View>
+      <View
+        accessibilityLabel={`${summary.completionPercentage}% pan completion`}
+        accessibilityRole="progressbar"
+        accessibilityValue={{
+          min: 0,
+          max: 100,
+          now: summary.completionPercentage,
+        }}
+        style={styles.completionTrack}
+      >
+        <View
+          style={[
+            styles.completionBar,
+            { width: `${summary.completionPercentage}%` },
+          ]}
+        />
+        <View
+          style={[
+            styles.completionRemainingBar,
+            { width: `${100 - summary.completionPercentage}%` },
+          ]}
+        />
+      </View>
+
+      {expanded ? (
+        <View style={styles.expandedPanDetails}>
+          <View style={styles.activeBadge}>
+            <Text style={styles.activeBadgeText}>
+              {summary.activeCount} currently panning
+            </Text>
+          </View>
+
+          <View style={styles.divider} />
+          <Text style={styles.subsectionTitle}>Repurchase</Text>
+          {ratingMetrics.map((rating) => {
+            const percentage = (rating.count / maxRatingCount) * 100;
+
+            return (
+              <View key={rating.key} style={styles.ratingChartRow}>
+                <View style={styles.ratingChartHeading}>
+                  <Text style={styles.ratingChartLabel}>{rating.label}</Text>
+                  <Text style={styles.ratingChartCount}>{rating.count}</Text>
+                </View>
+                <View
+                  accessibilityLabel={`${rating.label}: ${rating.count}`}
+                  accessibilityRole="progressbar"
+                  accessibilityValue={{
+                    min: 0,
+                    max: maxRatingCount,
+                    now: rating.count,
+                  }}
+                  style={styles.ratingChartTrack}
+                >
+                  <View
+                    style={[
+                      styles.ratingChartBar,
+                      rating.barStyle,
+                      { width: `${percentage}%` },
+                    ]}
+                  />
+                </View>
+              </View>
+            );
+          })}
+
+          <View style={styles.divider} />
+          <Text style={styles.subsectionTitle}>Category progress</Text>
+          {summary.categories.map((category) => {
+            const percentage = Math.round(
+              (category.finished / category.total) * 100,
+            );
+
+            return (
+              <View key={category.category} style={styles.categoryRow}>
+                <View style={styles.categoryLabelRow}>
+                  <Text style={styles.categoryName}>{category.category}</Text>
+                  <Text style={styles.categoryCount}>
+                    {category.finished}/{category.total}
+                  </Text>
+                </View>
+                <View
+                  accessibilityLabel={`${category.category}: ${category.finished} of ${category.total} items panned`}
+                  accessibilityRole="progressbar"
+                  accessibilityValue={{
+                    min: 0,
+                    max: 100,
+                    now: percentage,
+                  }}
+                  style={styles.categoryTrack}
+                >
+                  <View
+                    style={[
+                      styles.categoryBar,
+                      { width: `${percentage}%` },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.categoryRemainingBar,
+                      { width: `${100 - percentage}%` },
+                    ]}
+                  />
+                </View>
+              </View>
+            );
+          })}
+
+          <View style={styles.durationPill}>
+            <Ionicons
+              color={palette.burgundy}
+              name="time-outline"
+              size={17}
+            />
+            <Text style={styles.durationText}>
+              Avg.{' '}
+              {summary.averageDaysToFinish === null
+                ? '—'
+                : `${summary.averageDaysToFinish} days`}{' '}
+              to finish
+            </Text>
+          </View>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
 export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
   const [selectedView, setSelectedView] = useState<'project-pan' | 'wishlist'>(
     'project-pan',
   );
+  const [expandedPanYear, setExpandedPanYear] = useState<number | null>(null);
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState(true);
   const [wishlistError, setWishlistError] = useState<Error | null>(null);
@@ -423,187 +612,17 @@ export default function AnalyticsScreen() {
                 title="Your pan starts here"
               />
             ) : (
-              panSummaries.map((panMetrics) => (
-                <View key={panMetrics.year} style={styles.card}>
-                  <Text style={styles.metricLabel}>
-                    {panMetrics.year}
-                  </Text>
-                  <View style={styles.completionHeading}>
-                    <Text style={styles.completionPercentage}>
-                      {panMetrics.completionPercentage}%
-                    </Text>
-                    <Text style={styles.completionLabel}>Completion Rate</Text>
-                  </View>
-                  <View
-                    accessibilityLabel={`${panMetrics.completionPercentage}% pan completion`}
-                    accessibilityRole="progressbar"
-                    accessibilityValue={{
-                      min: 0,
-                      max: 100,
-                      now: panMetrics.completionPercentage,
-                    }}
-                    style={styles.completionTrack}
-                  >
-                    <View
-                      style={[
-                        styles.completionBar,
-                        { width: `${panMetrics.completionPercentage}%` },
-                      ]}
-                    />
-                    <View
-                      style={[
-                        styles.completionRemainingBar,
-                        { width: `${100 - panMetrics.completionPercentage}%` },
-                      ]}
-                    />
-                  </View>
-                  <View style={styles.chartLegend}>
-                    <View style={styles.chartLegendItem}>
-                      <View
-                        style={[
-                          styles.chartLegendSwatch,
-                          styles.pannedLegendSwatch,
-                        ]}
-                      />
-                      <Text style={styles.chartLegendText}>Panned</Text>
-                    </View>
-                    <View style={styles.chartLegendItem}>
-                      <View
-                        style={[
-                          styles.chartLegendSwatch,
-                          styles.remainingLegendSwatch,
-                        ]}
-                      />
-                      <Text style={styles.chartLegendText}>Remaining</Text>
-                    </View>
-                  </View>
-                  <View style={styles.completionFooter}>
-                    <Text style={styles.completionCount}>
-                      {panMetrics.finished} of {panMetrics.total} panned
-                    </Text>
-                    <View style={styles.activeBadge}>
-                      <Text style={styles.activeBadgeText}>
-                        {panMetrics.activeCount} currently panning
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.divider} />
-                  <Text style={styles.subsectionTitle}>Repurchase</Text>
-                  {[
-                    {
-                      key: 'rebuy',
-                      label: 'Holy Grails · 4-5 ★',
-                      count: panMetrics.wouldRebuy,
-                      barStyle: styles.rebuyChartBar,
-                    },
-                    {
-                      key: 'skip',
-                      label: 'Skip next time · 1-3 ★',
-                      count: panMetrics.skipNextTime,
-                      barStyle: styles.skipChartBar,
-                    },
-                  ].map((rating) => {
-                    const maxCount = Math.max(
-                      panMetrics.wouldRebuy,
-                      panMetrics.skipNextTime,
-                      1,
-                    );
-                    const percentage = (rating.count / maxCount) * 100;
-
-                    return (
-                      <View key={rating.key} style={styles.ratingChartRow}>
-                        <View style={styles.ratingChartHeading}>
-                          <Text style={styles.ratingChartLabel}>
-                            {rating.label}
-                          </Text>
-                          <Text style={styles.ratingChartCount}>
-                            {rating.count}
-                          </Text>
-                        </View>
-                        <View
-                          accessibilityLabel={`${rating.label}: ${rating.count}`}
-                          accessibilityRole="progressbar"
-                          accessibilityValue={{
-                            min: 0,
-                            max: maxCount,
-                            now: rating.count,
-                          }}
-                          style={styles.ratingChartTrack}
-                        >
-                          <View
-                            style={[
-                              styles.ratingChartBar,
-                              rating.barStyle,
-                              { width: `${percentage}%` },
-                            ]}
-                          />
-                        </View>
-                      </View>
-                    );
-                  })}
-
-                  <View style={styles.divider} />
-                  <Text style={styles.subsectionTitle}>Category progress</Text>
-                  {panMetrics.categories.map((category) => {
-                    const percentage = Math.round(
-                      (category.finished / category.total) * 100,
-                    );
-                    return (
-                      <View
-                        key={category.category}
-                        style={styles.categoryRow}
-                      >
-                        <View style={styles.categoryLabelRow}>
-                          <Text style={styles.categoryName}>
-                            {category.category}
-                          </Text>
-                          <Text style={styles.categoryCount}>
-                            {category.finished}/{category.total}
-                          </Text>
-                        </View>
-                        <View
-                          accessibilityLabel={`${category.category}: ${category.finished} of ${category.total} items panned`}
-                          accessibilityRole="progressbar"
-                          accessibilityValue={{
-                            min: 0,
-                            max: 100,
-                            now: percentage,
-                          }}
-                          style={styles.categoryTrack}
-                        >
-                          <View
-                            style={[
-                              styles.categoryBar,
-                              { width: `${percentage}%` },
-                            ]}
-                          />
-                          <View
-                            style={[
-                              styles.categoryRemainingBar,
-                              { width: `${100 - percentage}%` },
-                            ]}
-                          />
-                        </View>
-                      </View>
-                    );
-                  })}
-
-                  <View style={styles.durationPill}>
-                    <Ionicons
-                      color={palette.burgundy}
-                      name="time-outline"
-                      size={17}
-                    />
-                    <Text style={styles.durationText}>
-                      Avg.{' '}
-                      {panMetrics.averageDaysToFinish === null
-                        ? '—'
-                        : `${panMetrics.averageDaysToFinish} days`}{' '}
-                      to finish
-                    </Text>
-                  </View>
-                </View>
+              panSummaries.map((summary) => (
+                <ProjectPanAnalyticsCard
+                  expanded={expandedPanYear === summary.year}
+                  key={summary.year}
+                  onToggle={() =>
+                    setExpandedPanYear((current) =>
+                      current === summary.year ? null : summary.year,
+                    )
+                  }
+                  summary={summary}
+                />
               ))
             )}
           </>
@@ -777,6 +796,26 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  cardPressed: {
+    opacity: 0.88,
+  },
+  panCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  panCardCompletion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  panCardCompletionText: {
+    alignItems: 'flex-end',
+  },
+  expandedPanDetails: {
+    marginTop: spacing.sm,
+  },
   metricLabel: {
     color: palette.muted,
     fontSize: 12,
@@ -888,26 +927,21 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: palette.burgundy,
   },
-  completionHeading: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
   completionPercentage: {
     color: palette.charcoal,
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: '800',
   },
   completionLabel: {
     color: palette.muted,
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: '600',
   },
   completionTrack: {
     height: 10,
     flexDirection: 'row',
     overflow: 'hidden',
+    marginTop: spacing.sm,
     backgroundColor: palette.track,
     borderRadius: 7,
   },
@@ -919,45 +953,14 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: palette.track,
   },
-  chartLegend: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xs,
-  },
-  chartLegendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  chartLegendSwatch: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  pannedLegendSwatch: {
-    backgroundColor: palette.sage,
-  },
-  remainingLegendSwatch: {
-    backgroundColor: palette.track,
-  },
-  chartLegendText: {
-    color: palette.muted,
-    fontSize: 10,
-  },
-  completionFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
   completionCount: {
     color: palette.charcoal,
     fontSize: 12,
     fontWeight: '600',
   },
   activeBadge: {
+    alignSelf: 'flex-start',
+    marginBottom: spacing.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     backgroundColor: palette.sageSurface,
