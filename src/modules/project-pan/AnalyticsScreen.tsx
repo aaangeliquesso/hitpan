@@ -49,7 +49,7 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 interface CategorySummary {
   category: string;
   total: number;
-  finished: number;
+  progressPercentage: number;
 }
 
 interface PanSummary {
@@ -57,11 +57,12 @@ interface PanSummary {
   total: number;
   finished: number;
   activeCount: number;
-  completionPercentage: number;
+  averageProgressPercentage: number;
   wouldRebuy: number;
   skipNextTime: number;
   categories: CategorySummary[];
   averageDaysToFinish: number | null;
+  averageDaysInRotation: number | null;
 }
 
 interface WishlistSummary {
@@ -105,6 +106,16 @@ function isFinished(item: VanityItem): boolean {
   return (
     getCurrentProgressPercentage(item, item.progress_logs?.[0]) >= 100
   );
+}
+
+function getItemProgressPercentage(item: VanityItem): number {
+  if (isFinished(item)) return 100;
+
+  const progress = getCurrentProgressPercentage(
+    item,
+    item.progress_logs?.[0],
+  );
+  return Math.max(0, Math.min(100, progress));
 }
 
 function EmptyStateCard({
@@ -166,7 +177,7 @@ function ProjectPanAnalyticsCard({
 
   return (
     <Pressable
-      accessibilityLabel={`${summary.year} Project Pan: ${summary.completionPercentage}% complete`}
+      accessibilityLabel={`${summary.year} Project Pan: ${summary.averageProgressPercentage}% average progress`}
       accessibilityRole="button"
       accessibilityState={{ expanded }}
       onPress={onToggle}
@@ -179,15 +190,15 @@ function ProjectPanAnalyticsCard({
         <View>
           <Text style={styles.metricLabel}>{summary.year}</Text>
           <Text style={styles.completionCount}>
-            {summary.finished} of {summary.total} panned
+            {summary.finished} of {summary.total} finished
           </Text>
         </View>
         <View style={styles.panCardCompletion}>
           <View style={styles.panCardCompletionText}>
             <Text style={styles.completionPercentage}>
-              {summary.completionPercentage}%
+              {summary.averageProgressPercentage}%
             </Text>
-            <Text style={styles.completionLabel}>complete</Text>
+            <Text style={styles.completionLabel}>avg. progress</Text>
           </View>
           <Ionicons
             color={palette.muted}
@@ -197,25 +208,28 @@ function ProjectPanAnalyticsCard({
         </View>
       </View>
       <View
-        accessibilityLabel={`${summary.completionPercentage}% pan completion`}
+        accessibilityLabel={`${summary.averageProgressPercentage}% average progress across tracked products`}
         accessibilityRole="progressbar"
         accessibilityValue={{
           min: 0,
           max: 100,
-          now: summary.completionPercentage,
+          now: summary.averageProgressPercentage,
         }}
         style={styles.completionTrack}
       >
         <View
           style={[
             styles.completionBar,
-            { width: `${summary.completionPercentage}%` },
+            { width: String(summary.averageProgressPercentage) + '%' },
           ]}
         />
         <View
           style={[
             styles.completionRemainingBar,
-            { width: `${100 - summary.completionPercentage}%` },
+            {
+              width:
+                String(100 - summary.averageProgressPercentage) + '%',
+            },
           ]}
         />
       </View>
@@ -229,7 +243,7 @@ function ProjectPanAnalyticsCard({
           </View>
 
           <View style={styles.divider} />
-          <Text style={styles.subsectionTitle}>Repurchase</Text>
+          <Text style={styles.subsectionTitle}>Star ratings</Text>
           {ratingMetrics.map((rating) => {
             const percentage = (rating.count / maxRatingCount) * 100;
 
@@ -264,20 +278,18 @@ function ProjectPanAnalyticsCard({
           <View style={styles.divider} />
           <Text style={styles.subsectionTitle}>Category progress</Text>
           {summary.categories.map((category) => {
-            const percentage = Math.round(
-              (category.finished / category.total) * 100,
-            );
+            const percentage = category.progressPercentage;
 
             return (
               <View key={category.category} style={styles.categoryRow}>
                 <View style={styles.categoryLabelRow}>
                   <Text style={styles.categoryName}>{category.category}</Text>
                   <Text style={styles.categoryCount}>
-                    {category.finished}/{category.total}
+                    {percentage}%
                   </Text>
                 </View>
                 <View
-                  accessibilityLabel={`${category.category}: ${category.finished} of ${category.total} items panned`}
+                  accessibilityLabel={`${category.category}: ${percentage}% average progress across ${category.total} products`}
                   accessibilityRole="progressbar"
                   accessibilityValue={{
                     min: 0,
@@ -303,19 +315,37 @@ function ProjectPanAnalyticsCard({
             );
           })}
 
-          <View style={styles.durationPill}>
-            <Ionicons
-              color={palette.burgundy}
-              name="time-outline"
-              size={17}
-            />
-            <Text style={styles.durationText}>
-              Avg.{' '}
-              {summary.averageDaysToFinish === null
-                ? '—'
-                : `${summary.averageDaysToFinish} days`}{' '}
-              to finish
-            </Text>
+          <View style={styles.durationMetrics}>
+            <View style={styles.durationPill}>
+              <Ionicons
+                color={palette.burgundy}
+                name="time-outline"
+                size={17}
+              />
+              <Text style={styles.durationText}>
+                Avg.{' '}
+                {summary.averageDaysToFinish === null
+                  ? '—'
+                  : `${summary.averageDaysToFinish} days`}{' '}
+                to finish
+              </Text>
+            </View>
+            {summary.activeCount > 0 ? (
+              <View style={styles.durationPill}>
+                <Ionicons
+                  color={palette.burgundy}
+                  name="time-outline"
+                  size={17}
+                />
+                <Text style={styles.durationText}>
+                  Avg.{' '}
+                  {summary.averageDaysInRotation === null
+                    ? '—'
+                    : `${summary.averageDaysInRotation} days`}{' '}
+                  in rotation
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
       ) : null}
@@ -476,7 +506,10 @@ export default function AnalyticsScreen() {
         const activeCount = cohort.filter(
           (item) => item.status === 'active' && !isFinished(item),
         ).length;
-        const finishedRatings = finished
+        const ratedItems = cohort.filter(
+          (item) => item.status === 'active' || isFinished(item),
+        );
+        const ratedItemsRatings = ratedItems
           .map((item) => item.rating)
           .filter(
             (rating): rating is number =>
@@ -485,27 +518,53 @@ export default function AnalyticsScreen() {
               rating >= 1 &&
               rating <= 5,
           );
-        const categoryMap = new Map<string, CategorySummary>();
+        const categoryMap = new Map<
+          string,
+          {
+            category: string;
+            total: number;
+            progressTotal: number;
+          }
+        >();
 
         for (const item of cohort) {
           const category = item.category || 'Uncategorized';
           const summary = categoryMap.get(category) ?? {
             category,
             total: 0,
-            finished: 0,
+            progressTotal: 0,
           };
           summary.total += 1;
-          if (isFinished(item)) summary.finished += 1;
+          summary.progressTotal += getItemProgressPercentage(item);
           categoryMap.set(category, summary);
         }
 
         const durations = finished
           .map((item) => getDaysBetween(item.acquired_on, item.updated_at))
           .filter((days): days is number => days !== null);
-        const categories = [...categoryMap.values()].sort(
-          (left, right) =>
-            right.total - left.total ||
-            left.category.localeCompare(right.category),
+        const today = new Date().toISOString().slice(0, 10);
+        const activeDurations = cohort
+          .filter((item) => item.status === 'active' && !isFinished(item))
+          .map((item) => getDaysBetween(item.acquired_on, today))
+          .filter((days): days is number => days !== null);
+        const categories: CategorySummary[] = [...categoryMap.values()]
+          .map(({ progressTotal, ...category }) => ({
+            ...category,
+            progressPercentage: Math.round(
+              progressTotal / category.total,
+            ),
+          }))
+          .sort(
+            (left, right) =>
+              right.total - left.total ||
+              left.category.localeCompare(right.category),
+          );
+        const averageProgressPercentage = Math.round(
+          cohort.reduce(
+            (totalProgress, item) =>
+              totalProgress + getItemProgressPercentage(item),
+            0,
+          ) / cohort.length,
         );
 
         return {
@@ -513,16 +572,20 @@ export default function AnalyticsScreen() {
           total: cohort.length,
           finished: finished.length,
           activeCount,
-          completionPercentage: Math.round(
-            (finished.length / cohort.length) * 100,
-          ),
-          wouldRebuy: finishedRatings.filter((rating) => rating >= 4).length,
-          skipNextTime: finishedRatings.filter((rating) => rating <= 3).length,
+          averageProgressPercentage,
+          wouldRebuy: ratedItemsRatings.filter((rating) => rating >= 4).length,
+          skipNextTime: ratedItemsRatings.filter((rating) => rating <= 3).length,
           categories,
           averageDaysToFinish: durations.length
             ? Math.round(
                 durations.reduce((sum, days) => sum + days, 0) /
                   durations.length,
+              )
+            : null,
+          averageDaysInRotation: activeDurations.length
+            ? Math.round(
+                activeDurations.reduce((sum, days) => sum + days, 0) /
+                  activeDurations.length,
               )
             : null,
         };
@@ -1061,6 +1124,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     backgroundColor: palette.burgundySurface,
     borderRadius: 16,
+  },
+  durationMetrics: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   durationText: {
     color: palette.burgundy,
