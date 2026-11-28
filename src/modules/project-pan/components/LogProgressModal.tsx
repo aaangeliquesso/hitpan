@@ -21,6 +21,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useForm, useWatch } from 'react-hook-form';
+import { ConfirmationModal } from '../../../shared/components/ConfirmationModal';
 import { colors, spacing } from '../../../shared/ui/theme';
 import { clampProgressPercentage, ProgressInput } from './ProgressInput';
 import type { CreateProgressLogInput } from '../services/progressLogService';
@@ -56,6 +57,8 @@ export function LogProgressModal({
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cancelConfirmationVisible, setCancelConfirmationVisible] =
+    useState(false);
   const [notesFocused, setNotesFocused] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -85,8 +88,36 @@ export function LogProgressModal({
       setNotes('');
       setImageUri(null);
       setError(null);
+      setCancelConfirmationVisible(false);
     }
   }, [currentProgress, visible]);
+
+  function cancelForm() {
+    if (saving) return;
+
+    const hasUnsavedChanges =
+      progress !== clampProgressPercentage(currentProgress) ||
+      Boolean(notes.trim()) ||
+      imageUri !== null;
+
+    if (!hasUnsavedChanges) {
+      onClose();
+      return;
+    }
+
+    setCancelConfirmationVisible(true);
+  }
+
+  function discardForm() {
+    setCancelConfirmationVisible(false);
+    progressForm.reset({
+      progress: clampProgressPercentage(currentProgress),
+    });
+    setNotes('');
+    setImageUri(null);
+    setError(null);
+    onClose();
+  }
 
   async function takePhoto() {
     try {
@@ -153,9 +184,7 @@ export function LogProgressModal({
   return (
     <Modal
       animationType="slide"
-      onRequestClose={() => {
-        if (!saving) onClose();
-      }}
+      onRequestClose={cancelForm}
       statusBarTranslucent
       transparent
       visible={visible}
@@ -182,7 +211,7 @@ export function LogProgressModal({
                 accessibilityLabel="Close progress form"
                 accessibilityRole="button"
                 disabled={saving}
-                onPress={onClose}
+                onPress={cancelForm}
                 style={styles.closeButton}
               >
                 <Ionicons color={colors.neutralIcon} name="close" size={22} />
@@ -301,7 +330,7 @@ export function LogProgressModal({
                 <Pressable
                   accessibilityRole="button"
                   disabled={saving}
-                  onPress={onClose}
+                  onPress={cancelForm}
                   style={[styles.actionButton, styles.cancelButton]}
                 >
                   <Text style={styles.cancelText}>Cancel</Text>
@@ -326,6 +355,17 @@ export function LogProgressModal({
             </ScrollView>
           </SafeAreaView>
         </View>
+        <ConfirmationModal
+          cancelText="Keep editing"
+          confirmText="Discard"
+          loading={saving}
+          message="Your progress update will be lost."
+          onCancel={() => setCancelConfirmationVisible(false)}
+          onConfirm={discardForm}
+          title="Discard progress update?"
+          variant="destructive"
+          visible={cancelConfirmationVisible}
+        />
       </View>
     </Modal>
   );
