@@ -155,23 +155,20 @@ function ProjectPanAnalyticsCard({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const maxRatingCount = Math.max(
-    summary.wouldRebuy,
-    summary.skipNextTime,
-    1,
-  );
   const ratingMetrics = [
     {
       key: 'rebuy',
       label: 'Holy Grails · 4-5 ★',
       count: summary.wouldRebuy,
-      barStyle: styles.rebuyChartBar,
+      icon: 'heart' as const,
+      metricStyle: styles.positiveMetric,
     },
     {
       key: 'skip',
       label: 'Skip next time · 1-3 ★',
       count: summary.skipNextTime,
-      barStyle: styles.skipChartBar,
+      icon: 'close-circle' as const,
+      metricStyle: styles.neutralMetric,
     },
   ];
 
@@ -207,33 +204,6 @@ function ProjectPanAnalyticsCard({
           />
         </View>
       </View>
-      <View
-        accessibilityLabel={`${summary.averageProgressPercentage}% average progress across tracked products`}
-        accessibilityRole="progressbar"
-        accessibilityValue={{
-          min: 0,
-          max: 100,
-          now: summary.averageProgressPercentage,
-        }}
-        style={styles.completionTrack}
-      >
-        <View
-          style={[
-            styles.completionBar,
-            { width: String(summary.averageProgressPercentage) + '%' },
-          ]}
-        />
-        <View
-          style={[
-            styles.completionRemainingBar,
-            {
-              width:
-                String(100 - summary.averageProgressPercentage) + '%',
-            },
-          ]}
-        />
-      </View>
-
       {expanded ? (
         <View style={styles.expandedPanDetails}>
           <View style={styles.activeBadge}>
@@ -244,76 +214,47 @@ function ProjectPanAnalyticsCard({
 
           <View style={styles.divider} />
           <Text style={styles.subsectionTitle}>Star ratings</Text>
-          {ratingMetrics.map((rating) => {
-            const percentage = (rating.count / maxRatingCount) * 100;
-
-            return (
-              <View key={rating.key} style={styles.ratingChartRow}>
-                <View style={styles.ratingChartHeading}>
-                  <Text style={styles.ratingChartLabel}>{rating.label}</Text>
-                  <Text style={styles.ratingChartCount}>{rating.count}</Text>
-                </View>
-                <View
-                  accessibilityLabel={`${rating.label}: ${rating.count}`}
-                  accessibilityRole="progressbar"
-                  accessibilityValue={{
-                    min: 0,
-                    max: maxRatingCount,
-                    now: rating.count,
-                  }}
-                  style={styles.ratingChartTrack}
-                >
-                  <View
-                    style={[
-                      styles.ratingChartBar,
-                      rating.barStyle,
-                      { width: `${percentage}%` },
-                    ]}
-                  />
-                </View>
+          <View style={styles.ratingMetrics}>
+            {ratingMetrics.map((rating) => (
+              <View
+                accessibilityLabel={`${rating.count} ${rating.label}`}
+                key={rating.key}
+                style={[styles.ratingMetric, rating.metricStyle]}
+              >
+                <Ionicons
+                  color={rating.key === 'rebuy' ? palette.sage : palette.muted}
+                  name={rating.icon}
+                  size={17}
+                />
+                <Text style={styles.ratingMetricCount}>{rating.count}</Text>
+                <Text style={styles.ratingMetricLabel}>{rating.label}</Text>
               </View>
-            );
-          })}
+            ))}
+          </View>
 
-          <View style={styles.divider} />
-          <Text style={styles.subsectionTitle}>Category progress</Text>
-          {summary.categories.map((category) => {
-            const percentage = category.progressPercentage;
-
-            return (
-              <View key={category.category} style={styles.categoryRow}>
-                <View style={styles.categoryLabelRow}>
-                  <Text style={styles.categoryName}>{category.category}</Text>
-                  <Text style={styles.categoryCount}>
-                    {percentage}%
-                  </Text>
-                </View>
-                <View
-                  accessibilityLabel={`${category.category}: ${percentage}% average progress across ${category.total} products`}
-                  accessibilityRole="progressbar"
-                  accessibilityValue={{
-                    min: 0,
-                    max: 100,
-                    now: percentage,
-                  }}
-                  style={styles.categoryTrack}
-                >
+          {summary.categories.length > 0 ? (
+            <>
+              <View style={styles.divider} />
+              <Text style={styles.subsectionTitle}>By category</Text>
+              <View style={styles.categoryList}>
+                {summary.categories.map((category) => (
                   <View
-                    style={[
-                      styles.categoryBar,
-                      { width: `${percentage}%` },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.categoryRemainingBar,
-                      { width: `${100 - percentage}%` },
-                    ]}
-                  />
-                </View>
+                    accessibilityLabel={`${category.category}: ${category.progressPercentage}% average progress across ${category.total} products`}
+                    key={category.category}
+                    style={styles.categoryRow}
+                  >
+                    <Text style={styles.categoryName}>
+                      {category.category}
+                    </Text>
+                    <Text style={styles.categoryCount}>
+                      {category.progressPercentage}% avg · {category.total}{' '}
+                      {category.total === 1 ? 'item' : 'items'}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            );
-          })}
+            </>
+          ) : null}
 
           <View style={styles.durationMetrics}>
             <View style={styles.durationPill}>
@@ -1000,22 +941,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
-  completionTrack: {
-    height: 10,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    marginTop: spacing.sm,
-    backgroundColor: palette.track,
-    borderRadius: 7,
-  },
-  completionBar: {
-    height: '100%',
-    backgroundColor: palette.sage,
-  },
-  completionRemainingBar: {
-    height: '100%',
-    backgroundColor: palette.track,
-  },
   completionCount: {
     color: palette.charcoal,
     fontSize: 12,
@@ -1045,49 +970,45 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  ratingChartRow: {
-    marginBottom: spacing.sm,
+  ratingMetrics: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
-  ratingChartHeading: {
+  ratingMetric: {
+    flex: 1,
+    minHeight: 76,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    padding: spacing.sm,
+    borderRadius: 12,
+  },
+  positiveMetric: {
+    backgroundColor: palette.sageSurface,
+  },
+  neutralMetric: {
+    backgroundColor: palette.track,
+  },
+  ratingMetricCount: {
+    marginTop: spacing.xs,
+    color: palette.charcoal,
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  ratingMetricLabel: {
+    color: palette.muted,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  categoryList: {
+    gap: spacing.xs,
+  },
+  categoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  ratingChartLabel: {
-    color: palette.charcoal,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  ratingChartCount: {
-    color: palette.muted,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  ratingChartTrack: {
-    height: 8,
-    overflow: 'hidden',
-    backgroundColor: palette.track,
-    borderRadius: 4,
-  },
-  ratingChartBar: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  rebuyChartBar: {
-    backgroundColor: palette.sage,
-  },
-  skipChartBar: {
-    backgroundColor: palette.burgundy,
-  },
-  categoryRow: {
-    marginBottom: spacing.sm,
-  },
-  categoryLabelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    paddingVertical: spacing.xs,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.border,
   },
   categoryName: {
     color: palette.charcoal,
@@ -1098,21 +1019,6 @@ const styles = StyleSheet.create({
     color: palette.muted,
     fontSize: 11,
     fontWeight: '600',
-  },
-  categoryTrack: {
-    height: 7,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    backgroundColor: palette.track,
-    borderRadius: 5,
-  },
-  categoryBar: {
-    height: '100%',
-    backgroundColor: palette.sage,
-  },
-  categoryRemainingBar: {
-    height: '100%',
-    backgroundColor: palette.track,
   },
   durationPill: {
     alignSelf: 'flex-start',
@@ -1129,6 +1035,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+    marginTop: spacing.md,
   },
   durationText: {
     color: palette.burgundy,
