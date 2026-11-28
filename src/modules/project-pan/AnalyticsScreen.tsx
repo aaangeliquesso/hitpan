@@ -97,12 +97,10 @@ function EmptyStateCard({
   icon,
   title,
   description,
-  action,
 }: {
   icon: 'bookmark-outline' | 'leaf-outline';
   title: string;
   description: string;
-  action: string;
 }) {
   return (
     <View style={styles.emptyCard}>
@@ -111,7 +109,6 @@ function EmptyStateCard({
       </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyDescription}>{description}</Text>
-      <Text style={styles.emptyAction}>{action}</Text>
     </View>
   );
 }
@@ -320,7 +317,6 @@ export default function AnalyticsScreen() {
           <BrandWordmark width={116} />
         </View>
         <Text style={styles.title}>My Analytics</Text>
-        <Text style={styles.subtitle}>Your consumption loop at a glance</Text>
         <View style={styles.segmentedControl}>
           <Pressable
             accessibilityLabel="Show Project Pan analytics"
@@ -367,20 +363,15 @@ export default function AnalyticsScreen() {
         {initialLoading ? (
           <View style={styles.loadingState}>
             <ActivityIndicator color={palette.burgundy} size="large" />
-            <Text style={styles.loadingText}>Gathering your mindful stats</Text>
+            <Text style={styles.loadingText}>Loading analytics</Text>
           </View>
         ) : selectedView === 'project-pan' ? (
           <>
-            <View style={styles.sectionHeading}>
-              <Text style={styles.sectionEyebrow}>PROJECT PAN UTILIZATION</Text>
-              <Text style={styles.sectionTitle}>Intentional Finishing</Text>
-            </View>
             {panError ? (
               <ErrorMessage message={panError.message} />
             ) : panSummaries.length === 0 ? (
               <EmptyStateCard
-                action="Add a product to your Project Pan"
-                description="Add products to your Project Pan to track your finishing progress year by year."
+                description="Add your first product."
                 icon="leaf-outline"
                 title="Your pan starts here"
               />
@@ -388,7 +379,7 @@ export default function AnalyticsScreen() {
               panSummaries.map((panMetrics) => (
                 <View key={panMetrics.year} style={styles.card}>
                   <Text style={styles.metricLabel}>
-                    {panMetrics.year} Pan Completion Rate
+                    {panMetrics.year}
                   </Text>
                   <View style={styles.completionHeading}>
                     <Text style={styles.completionPercentage}>
@@ -410,7 +401,7 @@ export default function AnalyticsScreen() {
                   </View>
                   <View style={styles.completionFooter}>
                     <Text style={styles.completionCount}>
-                      {panMetrics.finished} of {panMetrics.total} items panned
+                      {panMetrics.finished} of {panMetrics.total} panned
                     </Text>
                     <View style={styles.activeBadge}>
                       <Text style={styles.activeBadgeText}>
@@ -420,7 +411,7 @@ export default function AnalyticsScreen() {
                   </View>
 
                   <View style={styles.divider} />
-                  <Text style={styles.subsectionTitle}>Repurchase verdict</Text>
+                  <Text style={styles.subsectionTitle}>Repurchase</Text>
                   <View style={styles.ratingPills}>
                     <View style={[styles.ratingPill, styles.rebuyPill]}>
                       <Text style={styles.ratingStars}>4-5 ★</Text>
@@ -435,7 +426,7 @@ export default function AnalyticsScreen() {
                         {panMetrics.skipNextTime}
                       </Text>
                       <Text style={styles.ratingCaption}>
-                        Finished, skip next time
+                        Skip next time
                       </Text>
                     </View>
                   </View>
@@ -489,25 +480,17 @@ export default function AnalyticsScreen() {
                       to finish
                     </Text>
                   </View>
-                  <Text style={styles.durationNote}>
-                    Calculated from acquired_on to updated_at for finished items
-                  </Text>
                 </View>
               ))
             )}
           </>
         ) : (
           <>
-            <View style={styles.sectionHeading}>
-              <Text style={styles.sectionEyebrow}>WISHLIST HABITS</Text>
-              <Text style={styles.sectionTitle}>Mindful Buying</Text>
-            </View>
             {wishlistError ? (
               <ErrorMessage message={wishlistError.message} />
             ) : wishlistSummaries.length === 0 ? (
               <EmptyStateCard
-                action="Log your first wishlist item"
-                description="Add wishlist items to see your mindful buying habits year by year."
+                description="Add your first item."
                 icon="bookmark-outline"
                 title="Your wishlist starts here"
               />
@@ -515,7 +498,7 @@ export default function AnalyticsScreen() {
               wishlistSummaries.map((wishlistSummary) => (
                 <View key={wishlistSummary.year} style={styles.card}>
                   <Text style={styles.metricLabel}>
-                    {wishlistSummary.year} Mindful Spending Ratio
+                    {wishlistSummary.year}
                   </Text>
                   <View style={styles.ratioLabels}>
                     <Text style={styles.resistedLabel}>
@@ -549,8 +532,8 @@ export default function AnalyticsScreen() {
                         {wishlistSummary.resisted}
                       </Text>
                       <Text style={styles.resistedDescription}>
-                        {wishlistSummary.resisted === 1 ? 'item' : 'items'} paused
-                        {' & '}unbought
+                        {wishlistSummary.resisted === 1 ? 'item' : 'items'}{' '}
+                        unbought
                       </Text>
                     </View>
                     <View style={styles.boughtPill}>
@@ -564,10 +547,6 @@ export default function AnalyticsScreen() {
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.totalNote}>
-                    Based on {wishlistSummary.total} logged wishlist{' '}
-                    {wishlistSummary.total === 1 ? 'item' : 'items'}
-                  </Text>
                 </View>
               ))
             )}
@@ -598,15 +577,10 @@ const styles = StyleSheet.create({
     fontSize: 23,
     fontWeight: '800',
   },
-  subtitle: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.md,
-    color: palette.muted,
-    fontSize: 13,
-  },
   segmentedControl: {
     flexDirection: 'row',
     gap: spacing.xs,
+    marginTop: spacing.md,
     marginBottom: spacing.lg,
     padding: spacing.xs,
     backgroundColor: palette.track,
@@ -636,21 +610,6 @@ const styles = StyleSheet.create({
   },
   segmentPressed: {
     opacity: 0.8,
-  },
-  sectionHeading: {
-    marginBottom: spacing.sm,
-  },
-  sectionEyebrow: {
-    color: palette.sage,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  sectionTitle: {
-    marginTop: 2,
-    color: palette.charcoal,
-    fontSize: 19,
-    fontWeight: '700',
   },
   card: {
     marginBottom: spacing.lg,
@@ -738,11 +697,6 @@ const styles = StyleSheet.create({
     color: palette.burgundy,
     fontSize: 12,
     fontWeight: '700',
-  },
-  totalNote: {
-    marginTop: spacing.sm,
-    color: palette.muted,
-    fontSize: 11,
   },
   completionHeading: {
     flexDirection: 'row',
@@ -894,11 +848,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  durationNote: {
-    marginTop: spacing.xs,
-    color: palette.muted,
-    fontSize: 10,
-  },
   emptyCard: {
     alignItems: 'center',
     marginBottom: spacing.lg,
@@ -934,12 +883,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     textAlign: 'center',
-  },
-  emptyAction: {
-    marginTop: spacing.sm,
-    color: palette.burgundy,
-    fontSize: 12,
-    fontWeight: '700',
   },
   loadingState: {
     alignItems: 'center',
