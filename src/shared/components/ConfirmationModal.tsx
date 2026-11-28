@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { colors } from '../ui/theme';
 
 interface ConfirmationModalProps {
   visible: boolean;
@@ -131,10 +132,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   destructiveButton: {
-    backgroundColor: '#7A2033',
+    backgroundColor: colors.brand,
   },
   neutralButton: {
-    backgroundColor: '#1E4D2B',
+    backgroundColor: colors.brand,
   },
   confirmText: {
     color: '#FFFFFF',

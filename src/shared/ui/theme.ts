@@ -8,10 +8,10 @@ const palette = {
   brandSurface: 'rgba(122, 32, 51, 0.08)',
   ratingStar: '#E6B800',
   ratingStarEmpty: '#D1D1D6',
-  progressComplete: '#1E4D2B',
+  progressComplete: '#4A7C59',
   wishlistBought: '#7A2033',
   wishlistBoughtSurface: '#FDF2F4',
-  wishlistNeed: '#1E4D2B',
+  wishlistNeed: '#4A7C59',
   wishlistNeedSurface: '#E8F5E9',
   switchInactive: '#E5E5EA',
   switchThumb: '#FFFFFF',
@@ -28,7 +28,7 @@ export const colors = {
   text: palette.textPrimary,
   mutedText: palette.textSecondary,
   accessibleMutedText: palette.textSecondary,
-  success: '#54775A',
+  success: '#4A7C59',
 } as const;
 
 export const spacing = {

@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
     color: colors.brand,
   },
   giftLabel: {
-    color: '#1E4D2B',
+    color: colors.success,
   },
 });
