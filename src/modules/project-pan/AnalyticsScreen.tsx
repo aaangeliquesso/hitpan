@@ -1,10 +1,34 @@
+import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StyleSheet, Text, View } from 'react-native';
 import { BrandWordmark } from '../../shared/components/BrandWordmark';
 import { colors, spacing } from '../../shared/ui/theme';
+import { useWishlist } from '../wishlist/hooks/useWishlist';
 
 export default function AnalyticsScreen() {
+  const currentYear = new Date().getUTCFullYear();
+  const { items, loading, error } = useWishlist(currentYear);
+  const wishlistSummary = useMemo(() => {
+    const total = items.length;
+    const need = items.filter((item) => item.is_need).length;
+    const bought = items.filter((item) => item.is_bought).length;
+    const needPercentage = total ? (need / total) * 100 : 0;
+    const boughtPercentage = total ? (bought / total) * 100 : 0;
+    const markedPercentage = needPercentage + boughtPercentage;
+    const barScale = markedPercentage > 100 ? 100 / markedPercentage : 1;
+
+    return {
+      total,
+      need,
+      bought,
+      needPercentage,
+      boughtPercentage,
+      needBarPercentage: needPercentage * barScale,
+      boughtBarPercentage: boughtPercentage * barScale,
+    };
+  }, [items]);
+
   return (
     <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.content}>
@@ -12,6 +36,62 @@ export default function AnalyticsScreen() {
           <BrandWordmark width={116} />
         </View>
         <Text style={styles.title}>Home</Text>
+        <View style={styles.analyticsCard}>
+          <View style={styles.analyticsHeader}>
+            <Text style={styles.analyticsTitle}>
+              {currentYear} Mindful Spending Ratio
+            </Text>
+            <Text style={styles.analyticsTotal}>
+              {wishlistSummary.total}{' '}
+              {wishlistSummary.total === 1 ? 'item' : 'items'}
+            </Text>
+          </View>
+          <View
+            accessibilityLabel={`${wishlistSummary.needPercentage.toFixed(0)}% intentional, ${wishlistSummary.boughtPercentage.toFixed(0)}% purchased`}
+            accessibilityRole="progressbar"
+            style={styles.analyticsBar}
+          >
+            {wishlistSummary.total > 0 ? (
+              <>
+                <View
+                  style={[
+                    styles.needBar,
+                    { width: `${wishlistSummary.needBarPercentage}%` },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.boughtBar,
+                    { width: `${wishlistSummary.boughtBarPercentage}%` },
+                  ]}
+                />
+              </>
+            ) : null}
+          </View>
+          {loading && !items.length ? (
+            <ActivityIndicator
+              color={colors.brand}
+              style={styles.analyticsStatus}
+            />
+          ) : error && !items.length ? (
+            <Text style={styles.analyticsError}>{error.message}</Text>
+          ) : wishlistSummary.total > 0 ? (
+            <View style={styles.analyticsMetrics}>
+              <Text style={styles.needMetric}>
+                {wishlistSummary.needPercentage.toFixed(0)}% Intentional (
+                {wishlistSummary.need})
+              </Text>
+              <Text style={styles.boughtMetric}>
+                {wishlistSummary.boughtPercentage.toFixed(0)}% Purchased (
+                {wishlistSummary.bought})
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.analyticsEmptyCaption}>
+              No items logged yet
+            </Text>
+          )}
+        </View>
         <View style={styles.card}>
           <View style={styles.icon}>
             <Ionicons color={colors.neutralIcon} name="bar-chart-outline" size={28} />
@@ -48,6 +128,78 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     marginBottom: spacing.md,
+  },
+  analyticsCard: {
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.backgroundPrimary,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+  },
+  analyticsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  analyticsTitle: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  analyticsTotal: {
+    color: colors.mutedText,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  analyticsBar: {
+    height: 11,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    backgroundColor: '#E5E5EA',
+    borderRadius: 6,
+  },
+  analyticsStatus: {
+    marginTop: spacing.sm,
+  },
+  analyticsError: {
+    marginTop: spacing.sm,
+    color: colors.error,
+    fontSize: 12,
+  },
+  analyticsEmptyCaption: {
+    marginTop: spacing.sm,
+    color: colors.mutedText,
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  needBar: {
+    height: '100%',
+    backgroundColor: colors.wishlistNeed,
+  },
+  boughtBar: {
+    height: '100%',
+    backgroundColor: colors.wishlistBought,
+  },
+  analyticsMetrics: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  needMetric: {
+    flex: 1,
+    color: colors.wishlistNeed,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  boughtMetric: {
+    flex: 1,
+    color: colors.wishlistBought,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'right',
   },
   card: {
     alignItems: 'center',
