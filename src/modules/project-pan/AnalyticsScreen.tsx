@@ -22,7 +22,7 @@ import { colors, spacing } from '../../shared/ui/theme';
 import type { VanityItem, WishlistItem } from '../../types';
 import { usePanItems } from './hooks/usePanItems';
 import { getCurrentProgressPercentage } from './progress';
-import { getWishlistItemsForYear } from '../wishlist/services/wishlistService';
+import { getWishlistItemsForAllYears } from '../wishlist/services/wishlistService';
 
 const palette = {
   background: colors.cream,
@@ -45,6 +45,27 @@ interface CategorySummary {
   category: string;
   total: number;
   finished: number;
+}
+
+interface PanSummary {
+  year: number;
+  total: number;
+  finished: number;
+  activeCount: number;
+  completionPercentage: number;
+  wouldRebuy: number;
+  skipNextTime: number;
+  categories: CategorySummary[];
+  averageDaysToFinish: number | null;
+}
+
+interface WishlistSummary {
+  year: number;
+  total: number;
+  bought: number;
+  resisted: number;
+  resistedPercentage: number;
+  boughtPercentage: number;
 }
 
 function getUtcYear(value: string): number | null {
@@ -105,7 +126,6 @@ function ErrorMessage({ message }: { message: string }) {
 export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const navbarSafePadding = getNavbarSafePadding(insets.bottom);
-  const currentYear = new Date().getUTCFullYear();
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState(true);
   const [wishlistError, setWishlistError] = useState<Error | null>(null);
@@ -124,7 +144,7 @@ export default function AnalyticsScreen() {
     setWishlistError(null);
 
     try {
-      const items = await getWishlistItemsForYear(currentYear);
+      const items = await getWishlistItemsForAllYears();
       if (requestId === wishlistRequestId.current) {
         setWishlistItems(items);
       }
@@ -141,7 +161,7 @@ export default function AnalyticsScreen() {
         setWishlistLoading(false);
       }
     }
-  }, [currentYear]);
+  }, []);
 
   useEffect(() => {
     void loadWishlistItems();
@@ -171,81 +191,106 @@ export default function AnalyticsScreen() {
     }, [refreshData]),
   );
 
-  const wishlistSummary = useMemo(() => {
-    const total = wishlistItems.length;
-    const bought = wishlistItems.filter((item) => item.is_bought).length;
-    const resisted = total - bought;
+  const wishlistSummaries = useMemo(() => {
+    const itemsByYear = new Map<number, WishlistItem[]>();
+    for (const item of wishlistItems) {
+      const year = getUtcYear(item.created_at);
+      if (year === null) continue;
 
-    return {
-      total,
-      bought,
-      resisted,
-      resistedPercentage: total ? Math.round((resisted / total) * 100) : 0,
-      boughtPercentage: total
-        ? 100 - Math.round((resisted / total) * 100)
-        : 0,
-    };
-  }, [wishlistItems]);
-
-  const panMetrics = useMemo(() => {
-    const cohort = panItems.filter(
-      (item) => getUtcYear(item.acquired_on) === currentYear,
-    );
-    const finished = cohort.filter(isFinished);
-    const activeCount = cohort.filter(
-      (item) =>
-        item.status === 'active' &&
-        !isFinished(item),
-    ).length;
-    const finishedRatings = finished
-      .map((item) => item.rating)
-      .filter(
-        (rating): rating is number =>
-          typeof rating === 'number' &&
-          Number.isFinite(rating) &&
-          rating >= 1 &&
-          rating <= 5,
-      );
-    const categoryMap = new Map<string, CategorySummary>();
-
-    for (const item of cohort) {
-      const category = item.category || 'Uncategorized';
-      const summary = categoryMap.get(category) ?? {
-        category,
-        total: 0,
-        finished: 0,
-      };
-      summary.total += 1;
-      if (isFinished(item)) summary.finished += 1;
-      categoryMap.set(category, summary);
+      const items = itemsByYear.get(year) ?? [];
+      items.push(item);
+      itemsByYear.set(year, items);
     }
 
-    const durations = finished
-      .map((item) => getDaysBetween(item.acquired_on, item.updated_at))
-      .filter((days): days is number => days !== null);
-    const categories = [...categoryMap.values()].sort(
-      (left, right) =>
-        right.total - left.total ||
-        left.category.localeCompare(right.category),
-    );
+    return [...itemsByYear.entries()]
+      .sort(([yearA], [yearB]) => yearB - yearA)
+      .map(([year, items]): WishlistSummary => {
+        const total = items.length;
+        const bought = items.filter((item) => item.is_bought).length;
+        const resisted = total - bought;
+        const resistedPercentage = Math.round((resisted / total) * 100);
 
-    return {
-      total: cohort.length,
-      finished: finished.length,
-      activeCount,
-      completionPercentage: cohort.length
-        ? Math.round((finished.length / cohort.length) * 100)
-        : 0,
-      wouldRebuy: finishedRatings.filter((rating) => rating >= 4).length,
-      skipNextTime: finishedRatings.filter((rating) => rating <= 3).length,
-      categories,
-      averageDaysToFinish: durations.length
-        ? Math.round(
-            durations.reduce((sum, days) => sum + days, 0) / durations.length,
-          )
-        : null,
-    };
-  }, [currentYear, panItems]);
+        return {
+          year,
+          total,
+          bought,
+          resisted,
+          resistedPercentage,
+          boughtPercentage: 100 - resistedPercentage,
+        };
+      });
+  }, [wishlistItems]);
+
+  const panSummaries = useMemo(() => {
+    const itemsByYear = new Map<number, VanityItem[]>();
+    for (const item of panItems) {
+      const year = getUtcYear(item.acquired_on);
+      if (year === null) continue;
+
+      const items = itemsByYear.get(year) ?? [];
+      items.push(item);
+      itemsByYear.set(year, items);
+    }
+
+    return [...itemsByYear.entries()]
+      .sort(([yearA], [yearB]) => yearB - yearA)
+      .map(([year, cohort]): PanSummary => {
+        const finished = cohort.filter(isFinished);
+        const activeCount = cohort.filter(
+          (item) => item.status === 'active' && !isFinished(item),
+        ).length;
+        const finishedRatings = finished
+          .map((item) => item.rating)
+          .filter(
+            (rating): rating is number =>
+              typeof rating === 'number' &&
+              Number.isFinite(rating) &&
+              rating >= 1 &&
+              rating <= 5,
+          );
+        const categoryMap = new Map<string, CategorySummary>();
+
+        for (const item of cohort) {
+          const category = item.category || 'Uncategorized';
+          const summary = categoryMap.get(category) ?? {
+            category,
+            total: 0,
+            finished: 0,
+          };
+          summary.total += 1;
+          if (isFinished(item)) summary.finished += 1;
+          categoryMap.set(category, summary);
+        }
+
+        const durations = finished
+          .map((item) => getDaysBetween(item.acquired_on, item.updated_at))
+          .filter((days): days is number => days !== null);
+        const categories = [...categoryMap.values()].sort(
+          (left, right) =>
+            right.total - left.total ||
+            left.category.localeCompare(right.category),
+        );
+
+        return {
+          year,
+          total: cohort.length,
+          finished: finished.length,
+          activeCount,
+          completionPercentage: Math.round(
+            (finished.length / cohort.length) * 100,
+          ),
+          wouldRebuy: finishedRatings.filter((rating) => rating >= 4).length,
+          skipNextTime: finishedRatings.filter((rating) => rating <= 3).length,
+          categories,
+          averageDaysToFinish: durations.length
+            ? Math.round(
+                durations.reduce((sum, days) => sum + days, 0) /
+                  durations.length,
+              )
+            : null,
+        };
+      });
+  }, [panItems]);
 
   const initialLoading =
     (wishlistLoading && wishlistItems.length === 0) ||
@@ -270,7 +315,7 @@ export default function AnalyticsScreen() {
         <View style={styles.brandHeader}>
           <BrandWordmark width={116} />
         </View>
-        <Text style={styles.title}>{currentYear} Mindful Overview</Text>
+        <Text style={styles.title}>My Analytics</Text>
         <Text style={styles.subtitle}>Your consumption loop at a glance</Text>
 
         {initialLoading ? (
@@ -286,112 +331,123 @@ export default function AnalyticsScreen() {
             </View>
             {panError ? (
               <ErrorMessage message={panError.message} />
-            ) : panMetrics.total === 0 ? (
+            ) : panSummaries.length === 0 ? (
               <EmptyStateCard
                 action="Add a product to your Project Pan"
-                description={`No products acquired in ${currentYear} yet. Add one to start tracking this year's finishing progress.`}
+                description="Add products to your Project Pan to track your finishing progress year by year."
                 icon="leaf-outline"
                 title="Your pan starts here"
               />
             ) : (
-              <View style={styles.card}>
-                <Text style={styles.metricLabel}>
-                  {currentYear} Pan Completion Rate
-                </Text>
-                <View style={styles.completionHeading}>
-                  <Text style={styles.completionPercentage}>
-                    {panMetrics.completionPercentage}%
+              panSummaries.map((panMetrics) => (
+                <View key={panMetrics.year} style={styles.card}>
+                  <Text style={styles.metricLabel}>
+                    {panMetrics.year} Pan Completion Rate
                   </Text>
-                  <Text style={styles.completionLabel}>Completion Rate</Text>
-                </View>
-                <View
-                  accessibilityLabel={`${panMetrics.completionPercentage}% pan completion`}
-                  accessibilityRole="progressbar"
-                  style={styles.completionTrack}
-                >
+                  <View style={styles.completionHeading}>
+                    <Text style={styles.completionPercentage}>
+                      {panMetrics.completionPercentage}%
+                    </Text>
+                    <Text style={styles.completionLabel}>Completion Rate</Text>
+                  </View>
                   <View
-                    style={[
-                      styles.completionBar,
-                      { width: `${panMetrics.completionPercentage}%` },
-                    ]}
-                  />
-                </View>
-                <View style={styles.completionFooter}>
-                  <Text style={styles.completionCount}>
-                    {panMetrics.finished} of {panMetrics.total} items panned
-                  </Text>
-                  <View style={styles.activeBadge}>
-                    <Text style={styles.activeBadgeText}>
-                      {panMetrics.activeCount} currently panning
+                    accessibilityLabel={`${panMetrics.completionPercentage}% pan completion`}
+                    accessibilityRole="progressbar"
+                    style={styles.completionTrack}
+                  >
+                    <View
+                      style={[
+                        styles.completionBar,
+                        { width: `${panMetrics.completionPercentage}%` },
+                      ]}
+                    />
+                  </View>
+                  <View style={styles.completionFooter}>
+                    <Text style={styles.completionCount}>
+                      {panMetrics.finished} of {panMetrics.total} items panned
+                    </Text>
+                    <View style={styles.activeBadge}>
+                      <Text style={styles.activeBadgeText}>
+                        {panMetrics.activeCount} currently panning
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.divider} />
+                  <Text style={styles.subsectionTitle}>Repurchase verdict</Text>
+                  <View style={styles.ratingPills}>
+                    <View style={[styles.ratingPill, styles.rebuyPill]}>
+                      <Text style={styles.ratingStars}>4-5 ★</Text>
+                      <Text style={styles.rebuyCount}>
+                        {panMetrics.wouldRebuy}
+                      </Text>
+                      <Text style={styles.ratingCaption}>Would rebuy</Text>
+                    </View>
+                    <View style={[styles.ratingPill, styles.skipPill]}>
+                      <Text style={styles.ratingStars}>1-3 ★</Text>
+                      <Text style={styles.skipCount}>
+                        {panMetrics.skipNextTime}
+                      </Text>
+                      <Text style={styles.ratingCaption}>
+                        Finished, skip next time
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.divider} />
+                  <Text style={styles.subsectionTitle}>Category progress</Text>
+                  {panMetrics.categories.map((category) => {
+                    const percentage = Math.round(
+                      (category.finished / category.total) * 100,
+                    );
+                    return (
+                      <View
+                        key={category.category}
+                        style={styles.categoryRow}
+                      >
+                        <View style={styles.categoryLabelRow}>
+                          <Text style={styles.categoryName}>
+                            {category.category}
+                          </Text>
+                          <Text style={styles.categoryCount}>
+                            {category.finished}/{category.total}
+                          </Text>
+                        </View>
+                        <View
+                          accessibilityLabel={`${category.category}: ${category.finished} of ${category.total} items panned`}
+                          accessibilityRole="progressbar"
+                          style={styles.categoryTrack}
+                        >
+                          <View
+                            style={[
+                              styles.categoryBar,
+                              { width: `${percentage}%` },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                    );
+                  })}
+
+                  <View style={styles.durationPill}>
+                    <Ionicons
+                      color={palette.burgundy}
+                      name="time-outline"
+                      size={17}
+                    />
+                    <Text style={styles.durationText}>
+                      Avg.{' '}
+                      {panMetrics.averageDaysToFinish === null
+                        ? '—'
+                        : `${panMetrics.averageDaysToFinish} days`}{' '}
+                      to finish
                     </Text>
                   </View>
-                </View>
-
-                <View style={styles.divider} />
-                <Text style={styles.subsectionTitle}>Repurchase verdict</Text>
-                <View style={styles.ratingPills}>
-                  <View style={[styles.ratingPill, styles.rebuyPill]}>
-                    <Text style={styles.ratingStars}>4-5 ★</Text>
-                    <Text style={styles.rebuyCount}>{panMetrics.wouldRebuy}</Text>
-                    <Text style={styles.ratingCaption}>Would rebuy</Text>
-                  </View>
-                  <View style={[styles.ratingPill, styles.skipPill]}>
-                    <Text style={styles.ratingStars}>1-3 ★</Text>
-                    <Text style={styles.skipCount}>{panMetrics.skipNextTime}</Text>
-                    <Text style={styles.ratingCaption}>Finished, skip next time</Text>
-                  </View>
-                </View>
-
-                <View style={styles.divider} />
-                <Text style={styles.subsectionTitle}>Category progress</Text>
-                {panMetrics.categories.map((category) => {
-                  const percentage = Math.round(
-                    (category.finished / category.total) * 100,
-                  );
-                  return (
-                    <View key={category.category} style={styles.categoryRow}>
-                      <View style={styles.categoryLabelRow}>
-                        <Text style={styles.categoryName}>
-                          {category.category}
-                        </Text>
-                        <Text style={styles.categoryCount}>
-                          {category.finished}/{category.total}
-                        </Text>
-                      </View>
-                      <View
-                        accessibilityLabel={`${category.category}: ${category.finished} of ${category.total} items panned`}
-                        accessibilityRole="progressbar"
-                        style={styles.categoryTrack}
-                      >
-                        <View
-                          style={[
-                            styles.categoryBar,
-                            { width: `${percentage}%` },
-                          ]}
-                        />
-                      </View>
-                    </View>
-                  );
-                })}
-
-                <View style={styles.durationPill}>
-                  <Ionicons
-                    color={palette.burgundy}
-                    name="time-outline"
-                    size={17}
-                  />
-                  <Text style={styles.durationText}>
-                    Avg.{' '}
-                    {panMetrics.averageDaysToFinish === null
-                      ? '—'
-                      : `${panMetrics.averageDaysToFinish} days`}{' '}
-                    to finish
+                  <Text style={styles.durationNote}>
+                    Calculated from acquired_on to updated_at for finished items
                   </Text>
                 </View>
-                <Text style={styles.durationNote}>
-                  Calculated from acquired_on to updated_at for finished items
-                </Text>
-              </View>
+              ))
             )}
 
             <View style={styles.sectionHeading}>
@@ -400,70 +456,72 @@ export default function AnalyticsScreen() {
             </View>
             {wishlistError ? (
               <ErrorMessage message={wishlistError.message} />
-            ) : wishlistItems.length === 0 ? (
+            ) : wishlistSummaries.length === 0 ? (
               <EmptyStateCard
                 action="Log your first wishlist item"
-                description={`Add items you are considering to track your ${currentYear} mindful buying habits.`}
+                description="Add wishlist items to see your mindful buying habits year by year."
                 icon="bookmark-outline"
                 title="Your wishlist starts here"
               />
             ) : (
-              <View style={styles.card}>
-                <Text style={styles.metricLabel}>
-                  {currentYear} Mindful Spending Ratio
-                </Text>
-                <View style={styles.ratioLabels}>
-                  <Text style={styles.resistedLabel}>
-                    {wishlistSummary.resistedPercentage}% Resisted
+              wishlistSummaries.map((wishlistSummary) => (
+                <View key={wishlistSummary.year} style={styles.card}>
+                  <Text style={styles.metricLabel}>
+                    {wishlistSummary.year} Mindful Spending Ratio
                   </Text>
-                  <Text style={styles.boughtLabel}>
-                    {wishlistSummary.boughtPercentage}% Bought
-                  </Text>
-                </View>
-                <View
-                  accessibilityLabel={`${wishlistSummary.resistedPercentage}% resisted, ${wishlistSummary.boughtPercentage}% bought`}
-                  accessibilityRole="progressbar"
-                  style={styles.ratioTrack}
-                >
-                  <View
-                    style={[
-                      styles.resistedBar,
-                      { width: `${wishlistSummary.resistedPercentage}%` },
-                    ]}
-                  />
-                  <View
-                    style={[
-                      styles.boughtBar,
-                      { width: `${wishlistSummary.boughtPercentage}%` },
-                    ]}
-                  />
-                </View>
-                <View style={styles.wishlistStats}>
-                  <View style={styles.resistedStat}>
-                    <Text style={styles.resistedCount}>
-                      {wishlistSummary.resisted}
+                  <View style={styles.ratioLabels}>
+                    <Text style={styles.resistedLabel}>
+                      {wishlistSummary.resistedPercentage}% Resisted
                     </Text>
-                    <Text style={styles.resistedDescription}>
-                      {wishlistSummary.resisted === 1 ? 'item' : 'items'} paused
-                      {' & '}unbought
+                    <Text style={styles.boughtLabel}>
+                      {wishlistSummary.boughtPercentage}% Bought
                     </Text>
                   </View>
-                  <View style={styles.boughtPill}>
-                    <Ionicons
-                      color={palette.burgundy}
-                      name="bag-check-outline"
-                      size={16}
+                  <View
+                    accessibilityLabel={`${wishlistSummary.resistedPercentage}% resisted, ${wishlistSummary.boughtPercentage}% bought`}
+                    accessibilityRole="progressbar"
+                    style={styles.ratioTrack}
+                  >
+                    <View
+                      style={[
+                        styles.resistedBar,
+                        { width: `${wishlistSummary.resistedPercentage}%` },
+                      ]}
                     />
-                    <Text style={styles.boughtPillText}>
-                      {wishlistSummary.bought} bought
-                    </Text>
+                    <View
+                      style={[
+                        styles.boughtBar,
+                        { width: `${wishlistSummary.boughtPercentage}%` },
+                      ]}
+                    />
                   </View>
+                  <View style={styles.wishlistStats}>
+                    <View style={styles.resistedStat}>
+                      <Text style={styles.resistedCount}>
+                        {wishlistSummary.resisted}
+                      </Text>
+                      <Text style={styles.resistedDescription}>
+                        {wishlistSummary.resisted === 1 ? 'item' : 'items'} paused
+                        {' & '}unbought
+                      </Text>
+                    </View>
+                    <View style={styles.boughtPill}>
+                      <Ionicons
+                        color={palette.burgundy}
+                        name="bag-check-outline"
+                        size={16}
+                      />
+                      <Text style={styles.boughtPillText}>
+                        {wishlistSummary.bought} bought
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.totalNote}>
+                    Based on {wishlistSummary.total} logged wishlist{' '}
+                    {wishlistSummary.total === 1 ? 'item' : 'items'}
+                  </Text>
                 </View>
-                <Text style={styles.totalNote}>
-                  Based on {wishlistSummary.total} logged wishlist{' '}
-                  {wishlistSummary.total === 1 ? 'item' : 'items'}
-                </Text>
-              </View>
+              ))
             )}
           </>
         )}

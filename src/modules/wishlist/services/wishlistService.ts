@@ -81,8 +81,8 @@ export async function getWishlistPage(
   return data;
 }
 
-export async function getWishlistItemsForYear(
-  year: number,
+async function getWishlistItems(
+  year: number | null,
 ): Promise<WishlistItem[]> {
   const pageSize = 500;
   const items: WishlistItem[] = [];
@@ -94,6 +94,16 @@ export async function getWishlistItemsForYear(
       return items;
     }
   }
+}
+
+export async function getWishlistItemsForYear(
+  year: number,
+): Promise<WishlistItem[]> {
+  return getWishlistItems(year);
+}
+
+export async function getWishlistItemsForAllYears(): Promise<WishlistItem[]> {
+  return getWishlistItems(null);
 }
 
 export async function getWishlistMonthsWithItems(
