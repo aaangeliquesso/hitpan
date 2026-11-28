@@ -18,14 +18,14 @@ import {
   getNavbarSafePadding,
   NAVBAR_HEIGHT,
 } from '../../shared/ui/navigation';
-import { spacing } from '../../shared/ui/theme';
+import { colors, spacing } from '../../shared/ui/theme';
 import type { VanityItem, WishlistItem } from '../../types';
 import { usePanItems } from './hooks/usePanItems';
 import { getCurrentProgressPercentage } from './progress';
 import { getWishlistItemsForYear } from '../wishlist/services/wishlistService';
 
 const palette = {
-  background: '#FAF6F0',
+  background: colors.cream,
   card: '#FFFEFC',
   border: '#E8DFD5',
   burgundy: '#7A2033',
